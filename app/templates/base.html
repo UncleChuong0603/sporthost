@@ -1,4 +1,41 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{% block title %}SportHost{% endblock %} · SportHost Beta</title><link rel="stylesheet" href="/static/style.css"></head><body>
-<header class="nav"><a class="brand" href="/dashboard">🏸 SportHost <small>BETA</small></a><nav>{% if host or club %}<a href="/dashboard">CLB của tôi</a>{% endif %}{% if host %}<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link-btn">Đăng xuất</button></form>{% endif %}</nav></header>
-<main class="container">{% block content %}{% endblock %}</main><footer class="footer">SportHost Beta · Quản lý CLB cầu lông · Bản dùng thử lấy phản hồi</footer>
+{% from 'icons.html' import icon %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#142d35">
+  <title>{% block title %}SportHost{% endblock %} · SportHost Beta</title>
+  <link rel="stylesheet" href="/static/style.css?v=workspace1">
+  <script src="/static/workspace.js?v=1" defer></script>
+</head>
+<body class="{{ 'host-layout' if host else 'public-layout' }}">
+<a href="#main-content" class="skip-link">Bỏ qua menu, tới nội dung</a>
+{% if host %}
+  <button class="nav-scrim" data-close-nav aria-label="Đóng menu"></button>
+  <aside class="sidebar" id="host-sidebar" aria-label="Điều hướng host">
+    <a class="brand" href="/dashboard"><span class="brand-symbol">{{ icon('club',24) }}</span><span>SportHost<small>HOST WORKSPACE</small></span></a>
+    <div class="workspace-label">KHÔNG GIAN QUẢN LÝ</div>
+    <nav class="sidebar-nav" aria-label="Menu chính">
+      {% for key, path, label, glyph in [('dashboard','/dashboard','Tổng quan','grid'),('schedule','/schedule','Lịch đánh','calendar'),('members','/members','Thành viên','users'),('finance','/finance','Thu chi','wallet'),('clubs','/clubs','CLB của tôi','club')] %}
+      <a href="{{ path }}" class="{{ 'active' if active_section==key else '' }}"{% if active_section==key %} aria-current="page"{% endif %}>{{ icon(glyph) }}<span>{{ label }}</span></a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-clubs"><div class="workspace-label">CÂU LẠC BỘ <a href="/clubs?create=1#create-club" aria-label="Tạo CLB mới">{{ icon('plus',16) }}</a></div>
+    {% for c in nav_clubs %}<a class="club-nav-link {{ 'selected' if club and club.id==c.id else '' }}" href="/clubs/{{ c.id }}"><span class="club-dot">{{ c.name[:1]|upper }}</span><span>{{ c.name }}</span></a>{% else %}<p class="sidebar-hint">Tạo CLB đầu tiên để bắt đầu.</p>{% endfor %}</div>
+    <div class="sidebar-bottom"><div class="trial-note">{{ icon('shield',18) }}<span>Pro trial <strong>Miễn phí</strong></span></div>
+      {% if host.is_platform_admin %}<a class="account-link" href="/admin">{{ icon('shield') }} Quản trị SportHost</a>{% endif %}
+      <a class="account-link" href="/account">{{ icon('settings') }} Cài đặt tài khoản</a>
+      <div class="user-profile"><span class="avatar">{{ host.email[:1]|upper }}</span><span><strong>Host</strong><small>{{ host.email }}</small></span></div>
+      <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="logout-btn">{{ icon('logout',18) }} Đăng xuất</button></form>
+    </div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><div class="topbar-left"><button class="icon-btn menu-toggle" data-toggle-nav aria-controls="host-sidebar" aria-expanded="false" aria-label="Mở menu">{{ icon('menu') }}</button><span class="breadcrumb">SportHost <span>/</span> <strong>{{ section_title }}</strong></span></div><div class="topbar-right"><span class="live-label"><span></span> Pro trial</span>{% if manage_clubs %}<a class="button primary compact" href="/schedule?create=1#create-game">{{ icon('plus',18) }} Tạo buổi đánh</a>{% endif %}</div></header>
+{% else %}
+  <header class="public-nav"><a class="brand" href="/dashboard"><span class="brand-symbol">{{ icon('club',22) }}</span><span>SportHost</span><small>BETA</small></a><a href="/login">Dành cho host {{ icon('arrow',16) }}</a></header>
+{% endif %}
+<main id="main-content" class="{{ 'workspace-content' if host else 'container' }}" tabindex="-1">{% block content %}{% endblock %}</main>
+<footer class="footer">SportHost · Quản lý CLB cầu lông, gọn trong một nơi.</footer>
+{% if host %}</div>{% endif %}
 </body></html>

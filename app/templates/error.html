@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}{{ status }} · Cần kiểm tra lại{% endblock %}{% block content %}
+<section class="auth card"><p class="eyebrow">SPORTHOST · {{ status }}</p><h1>{{ heading }}</h1><p class="muted">{{ message }}</p><div class="heading-actions" style="margin-top:24px">{% if status==401 %}<a href="/login" class="button primary">Đăng nhập</a>{% else %}<a href="/dashboard" class="button primary">Về trang quản lý</a><a href="/" class="button">Trang chủ</a>{% endif %}</div><p class="footnote">Bạn có thể quay lại trang trước để kiểm tra thông tin vừa nhập.</p></section>
+{% endblock %}

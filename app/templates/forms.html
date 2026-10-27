@@ -1,0 +1,34 @@
+{% from 'member_fields.html' import gender_field %}
+{% from 'session_fees.html' import fee_overrides %}
+{% macro club_picker(clubs, selected_id=none) -%}
+<label>Câu lạc bộ<select name="club_id" required>{% for c in clubs %}<option value="{{ c.id }}"{% if c.id==selected_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+{%- endmacro %}
+
+{% macro game_form(clubs, csrf, selected_id=none) -%}
+<form action="/workspace/games" method="post" class="stack form-inner">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+{{ club_picker(clubs, selected_id) }}
+<div class="two"><label>Tên buổi đánh<input name="title" maxlength="150" required placeholder="Buổi cầu lông tối thứ 5"></label><label>Sân / địa điểm<input name="venue" maxlength="180" placeholder="Tên sân, địa chỉ"></label></div>
+<div class="two"><label>Ngày và giờ bắt đầu<input name="starts_at" type="datetime-local" required></label><label>Số chỗ tối đa<input name="capacity" type="number" min="1" max="200" value="20" required></label></div>
+<div class="two"><label>Phí member / buổi (VND)<input name="fixed_fee" type="number" min="0" max="100000000" value="0" required><span class="form-note">Nhập 0 nếu member đã đóng phí tháng.</span></label><label>Phí vãng lai chung (VND)<input name="guest_fee" type="number" min="0" max="100000000" value="70000" required></label></div>
+{{ fee_overrides() }}
+<details><summary>Giới hạn chỗ nam / nữ (tùy chọn)</summary><p class="small muted">Để trống nếu chỉ cần giới hạn tổng. Nhập 0 để không nhận nhóm đó. Giới hạn áp dụng cho cả member và vãng lai.</p><div class="two"><label>Số chỗ nam tối đa<input name="capacity_male" type="number" min="0" max="200" placeholder="Không giới hạn riêng"></label><label>Số chỗ nữ tối đa<input name="capacity_female" type="number" min="0" max="200" placeholder="Không giới hạn riêng"></label></div></details>
+<details><summary>Lặp hằng tuần và xác nhận member</summary><p class="small muted">Mỗi buổi có link RSVP riêng cho member cố định. Link vãng lai mở sau hạn RSVP, theo số chỗ còn lại.</p><div class="two"><label>Số tuần<input name="weeks" type="number" min="1" max="12" value="1"><span class="form-note">1 = buổi đơn lẻ. Chọn 4 để tạo lịch 4 tuần.</span></label><label>Hạn RSVP trước giờ đánh<input name="rsvp_hours" type="number" min="0" max="168" value="24"><span class="form-note">Áp dụng cho lịch lặp, tính theo giờ.</span></label></div></details>
+<div><button class="primary">Tạo lịch đánh</button></div>
+</form>
+{%- endmacro %}
+
+{% macro member_form(clubs, csrf, selected_id=none) -%}
+<form action="/workspace/members" method="post" class="stack form-inner"><input type="hidden" name="csrf" value="{{ csrf }}">{{ club_picker(clubs, selected_id) }}
+<div class="two"><label>Họ tên<input name="name" required maxlength="100" placeholder="Tên người chơi"></label><label>Số điện thoại<input name="phone" type="tel" autocomplete="tel" required placeholder="09xxxxxxxx"></label></div>
+<div class="two">{{ gender_field() }}<label>Loại thành viên<select name="kind"><option value="fixed">Cố định</option><option value="guest">Vãng lai</option></select></label></div>
+<label>Trình độ<input name="level" maxlength="40" placeholder="Ví dụ: Trung bình khá"></label><div><button class="primary">Thêm thành viên</button></div></form>
+{%- endmacro %}
+
+{% macro quota_fields(game) -%}
+<div class="two"><label>Giới hạn nam<input name="capacity_male" type="number" min="0" max="200" value="{{ game.capacity_male if game.capacity_male is not none else '' }}" placeholder="Chỉ giới hạn tổng"></label><label>Giới hạn nữ<input name="capacity_female" type="number" min="0" max="200" value="{{ game.capacity_female if game.capacity_female is not none else '' }}" placeholder="Chỉ giới hạn tổng"></label></div>
+{%- endmacro %}
+
+{% macro club_form(csrf) -%}
+<form action="/clubs" method="post" class="stack form-inner"><input type="hidden" name="csrf" value="{{ csrf }}"><div class="two"><label>Tên CLB<input name="name" required maxlength="100" placeholder="Ví dụ: CLB Cầu lông Quận 8"></label><label>Khu vực / sân thường chơi<input name="location" maxlength="180" placeholder="Quận, thành phố hoặc tên sân"></label></div><div><button class="primary">Tạo CLB</button></div></form>
+{%- endmacro %}

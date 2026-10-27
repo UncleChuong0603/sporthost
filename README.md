@@ -1,30 +1,22 @@
-﻿# SportHost Beta
+# SportHost Beta
 
-Ứng dụng quản lý CLB cầu lông dành cho host, dựa trên ClubHost Sprint 0–1.
-FastAPI, Jinja2, SQLAlchemy, PostgreSQL và Alembic; beta đã chạy trên Vercel.
+Quản lý CLB cầu lông cho host — [mở bản thử nghiệm](https://sporthost.vercel.app).
+FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 
-**Bản thử nghiệm:** https://sporthost.vercel.app/signup
+## Chức năng
 
-Triển khai ngày 27/10/2026: Vercel Singapore, Neon PostgreSQL riêng cho beta (gói Free,
-Singapore), schema `clubhost`, Alembic `0003_gender_fees`. Database VPS hiện tại không bị thay đổi.
+- Workspace có sidebar, tổng quan, lịch, thành viên, thu chi, cài đặt từng CLB và hỗ trợ mobile.
+- Lịch tuần, RSVP riêng, ưu tiên member, duyệt vãng lai, danh sách chờ và điểm danh.
+- Nam/nữ, phí riêng theo giới tính/loại thành viên; giới hạn tổng và chỗ nam/nữ tùy chọn.
+- Vãng lai nhập điện thoại trước, tự điền hồ sơ trong CLB, kiểm tra rồi xác nhận.
+- Upload QR, biên nhận riêng tư và đối soát thủ công; phí tháng, chi phí, CSV.
+- Đồng quản lý, quyền điều hành/thu chi, audit, tài khoản và quản trị Pro trial miễn phí.
 
-## Chức năng hiện có
+[Chi tiết tính năng](FULL_ROADMAP.md) · [Triển khai](DEPLOY_VERCEL.md) · [Vận hành](OPERATIONS.md)
 
-- Đăng ký/đăng nhập host; tạo và sửa CLB, member cố định/vãng lai.
-- Member có giới tính Nam/Nữ độc lập với loại cố định/vãng lai; dữ liệu cũ là Chưa cập nhật.
-- Từng buổi có phí chung và phí nam/nữ tùy chọn cho cả member và khách vãng lai.
-  Để trống dùng phí chung, nhập 0 để miễn phí. Sức chứa vẫn tính chung cho mọi người chơi.
-- Booking giữ mức phí lúc đăng ký, nên sửa giới tính/loại member không đổi tiền buổi cũ.
-  Phí tháng vẫn do host nhập theo từng member.
-- Tạo buổi đánh thủ công, link đăng ký khách, duyệt khách và danh sách chờ.
-- Đăng ký khách theo số điện thoại trước: tra cứu trong đúng CLB, tự điền hồ sơ đã có
-  và chờ người chơi xác nhận. Tra cứu chưa tạo member/booking; số mới tự nhập thông tin.
-  Hỗ trợ `09...`/`+84...`, có form hai bước khi tắt JavaScript. Hồ sơ đã lưu chỉ host sửa.
-- Điểm danh, thu tiền thủ công, phí tháng, chi phí và xuất CSV.
-- Phân tách dữ liệu theo host, CSRF và cookie HttpOnly.
-- Schema PostgreSQL `clubhost`; migration riêng, không tự tạo bảng khi khởi động app.
-
-**Hướng dẫn đưa host test: [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md).**
+**Email thật cần cấu hình SMTP.** Hiện đổi mật khẩu trong phiên đăng nhập hoạt động;
+quên mật khẩu/xác minh email chỉ gửi được khi dịch vụ email được cấu hình.
+Upload biên nhận không tự xác nhận đã thu. Chưa thu phí phần mềm trong beta.
 
 ## Chạy local
 
@@ -35,7 +27,9 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Mở http://127.0.0.1:8000/signup. `.env` được đọc tự động; SQLite chỉ dùng cho local/test.
+Mở http://127.0.0.1:8000/signup. SQLite và ảnh local chỉ dùng development/test.
+Staging/production yêu cầu PostgreSQL, HTTPS cookie, khóa bí mật và private Blob.
+Migration chạy riêng, không chạy khi app khởi động hoặc Vercel build.
 
 ## Kiểm thử
 
@@ -43,30 +37,13 @@ Mở http://127.0.0.1:8000/signup. `.env` được đọc tự động; SQLite c
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Bộ test mặc định dùng SQLite tạm, không truy cập database thật. Test cấu hình Vercel và
-SQL PostgreSQL offline không thay thế kiểm thử migration trên PostgreSQL thật.
-
-Đã kiểm thử bổ sung trên PostgreSQL thật và URL Vercel: đăng ký host, tạo CLB/member,
-tenant isolation, public guest booking, hai lượt duyệt đồng thời với capacity=1,
-thu tiền/chi phí, CSV và readiness. Migration bổ sung giới tính và giá đã được thử trên
-schema PostgreSQL riêng, xác minh dữ liệu cũ và giá booking đã thu được giữ nguyên.
-Các bản ghi thử được xóa sau kiểm tra.
-
-Luồng tra cứu điện thoại có CSRF, response `private, no-store`, token xác nhận gắn với
-buổi/số điện thoại và giới hạn tra cứu theo IP/buổi trong mỗi process. Giới hạn này không
-được chia sẻ giữa các instance Vercel. Số điện thoại chưa được xác minh bằng OTP.
-
-## Phạm vi beta
-
-Chưa có lịch lặp, RSVP tự động, upload QR/biên nhận, email verification, reset mật khẩu
-hoặc rate limit. Luồng xác nhận booking đã khóa hàng buổi đánh trên PostgreSQL để tuần tự
-hóa kiểm tra sức chứa; đã xác minh hai lượt duyệt đồng thời chỉ xác nhận một booking
-khi capacity=1. Đây chưa phải kiểm thử tải lớn.
-SportHost Beta có `noindex` để tránh lập chỉ mục, đây không phải cơ chế hạn chế truy cập.
+Bộ mặc định dùng SQLite tạm. PostgreSQL, migration giữ dữ liệu, private Blob,
+backup/restore và trình duyệt được kiểm chứng riêng trong schema/tài khoản test.
+Không chạy kiểm thử ghi dữ liệu trên CLB đang dùng. Chưa kiểm thử tải lớn.
 
 ## Nguồn gốc
 
-Source nhập từ `clubhost-sprint01-postgresql.zip`; bản alpha giữ nguyên bên ngoài repo.
-Giữ schema và tên cookie `clubhost` để tương thích. `SPRINT_0_1.md`, `BUILD_PLAN.md` và
-`CODEX_PROMPT.md` là tài liệu bàn giao/roadmap cũ, không phải trạng thái triển khai mới
-hoặc yêu cầu cần thực thi trong đợt này. Trạng thái mới ghi ở README và DEPLOY_VERCEL.md.
+Dựa trên `clubhost-sprint01-postgresql.zip`; giữ schema/cookie `clubhost` để tương thích.
+`SPRINT_0_1.md`, `BUILD_PLAN.md`, `CODEX_PROMPT.md` là tài liệu bàn giao cũ;
+trạng thái hiện tại ở README, FULL_ROADMAP và OPERATIONS. UI áp dụng UI UX Pro Max;
+quyết định thiết kế lưu tại `design-system/sporthost/MASTER.md`.

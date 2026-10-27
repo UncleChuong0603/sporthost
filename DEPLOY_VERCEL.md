@@ -32,7 +32,7 @@ có quyền tạo schema/bảng (chỉ lưu ở máy quản trị). Có thể b�
 .\.venv\Scripts\python.exe -m scripts.check_db
 ```
 
-`--init-schema` chỉ tạo `DB_SCHEMA` nếu chưa có; Alembic tạo 7 bảng và bảng version bên trong.
+`--init-schema` chỉ tạo `DB_SCHEMA` nếu chưa có; Alembic tạo các bảng và bảng version bên trong.
 Schema có bảng lạ hoặc thiếu lịch sử migration bị từ chối. Lần sau chạy `python -m scripts.migrate`.
 Không chạy migration trong build/startup Vercel. Database dùng chung cần backup và cấp
 schema/role riêng trước. Nếu tách role runtime, cấp quyền theo
@@ -53,6 +53,9 @@ schema/role riêng trước. Nếu tách role runtime, cấp quyền theo
 | `DB_SCHEMA` | `clubhost` |
 | `SECRET_KEY` | Bí mật 32+ ký tự, giữ ổn định giữa các deploy |
 | `COOKIE_SECURE` | `true` |
+| `PUBLIC_BASE_URL` | `https://sporthost.vercel.app` hoặc domain thực tế |
+| `ADMIN_EMAILS` | `lovetobangbang@gmail.com` |
+| `BLOB_READ_WRITE_TOKEN` | Token do private Vercel Blob store cấp |
 
 Không thêm `DATABASE_MIGRATION_URL` hay SSH key vào Vercel. URL `postgres://` và
 `postgresql://` được tự chọn driver psycopg 3. Vercel tự cung cấp biến `VERCEL`.
@@ -81,14 +84,14 @@ Source dùng Python 3.12, function Singapore (`sin1`), timeout 30 giây. CSS tro
 - Sau redeploy, xác nhận dữ liệu CLB/member vẫn còn trong PostgreSQL.
 
 Preview từ code không tin cậy không được dùng cùng DB/schema. Preview cần database/branch
-riêng và migration riêng. Beta chưa có reset mật khẩu, host cần giữ mật khẩu đã đăng ký.
+riêng và migration riêng. Reset mật khẩu/xác minh email cần cấu hình SMTP; xem [OPERATIONS.md](OPERATIONS.md).
 Thu feedback theo từng luồng và các bước tái hiện lỗi.
 
 ## 5. Khi dùng URL chính thức
 
 Gắn domain/HTTPS trong Vercel và cập nhật link chia sẻ; giữ hoặc chuyển database theo kế hoạch
 backup/restore. Đổi domain cần đăng nhập lại vì cookie không chuyển giữa các domain.
-Lịch lặp, RSVP tự động, QR upload và reset mật khẩu vẫn là các tính năng cần phát triển tiếp.
+Lịch lặp, RSVP, QR/biên nhận và bảo mật tài khoản đã có; xem [FULL_ROADMAP.md](FULL_ROADMAP.md).
 
 Tài liệu chính thức: [FastAPI trên Vercel](https://vercel.com/docs/frameworks/backend/fastapi),
 [PostgreSQL qua Marketplace](https://vercel.com/docs/postgres).

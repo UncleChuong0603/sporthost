@@ -1,0 +1,17 @@
+{% from 'icons.html' import icon %}
+{% from 'member_fields.html' import gender_field %}
+{% macro empty(title, text, glyph='calendar', href=none, cta=none) -%}
+<div class="empty-state"><div class="empty-icon">{{ icon(glyph,26) }}</div><h3>{{ title }}</h3><p>{{ text }}</p>{% if href %}<a class="button primary" href="{{ href }}">{{ cta }} {{ icon('arrow',16) }}</a>{% endif %}</div>
+{%- endmacro %}
+
+{% macro games_table(rows) -%}
+<div class="scroll"><table><thead><tr><th>Buổi đánh</th><th>Câu lạc bộ</th><th>Ngày giờ</th><th>Người chơi</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+{% for row in rows %}<tr><td><strong><a href="/games/{{ row.game.id }}">{{ row.game.title }}</a></strong><div class="small muted">{{ row.game.venue or 'Chưa đặt địa điểm' }}{% if row.game.recurring_rule_id %} · Hằng tuần{% endif %}</div></td><td>{{ row.club.name }}</td><td>{{ row.game.starts_at[:10].split('-')|reverse|join('/') }}<br><span class="small muted">{{ row.game.starts_at[11:] }}</span></td><td><strong>{{ row.confirmed }}/{{ row.game.capacity }}</strong><div class="capacity-bar"><span style="width:{{ ((row.confirmed/row.game.capacity)*100)|int }}%"></span></div>{% if row.pending %}<span class="small muted">{{ row.pending }} chờ xử lý</span>{% endif %}</td><td><span class="tag {{ 'cancelled' if row.game.is_cancelled else 'ok' if row.game.is_open else '' }}">{{ 'Đã hủy' if row.game.is_cancelled else 'Mở đăng ký' if row.game.is_open else 'Đã đóng' }}</span></td><td><a class="button mini" href="/games/{{ row.game.id }}">Quản lý {{ icon('chevron',14) }}</a></td></tr>
+{% endfor %}</tbody></table></div>
+{%- endmacro %}
+
+{% macro member_table(members, csrf, club_map=none, editable_ids=none) -%}
+<div class="scroll"><table><thead><tr><th>Thành viên</th><th>Số điện thoại</th><th>Giới tính</th><th>Loại</th><th>Trình độ</th><th></th></tr></thead><tbody>
+{% for m in members %}<tr><td><div class="person-name"><span class="avatar">{{ m.name[:1]|upper }}</span><span><strong>{{ m.name }}</strong>{% if club_map %}<small>{{ club_map[m.club_id].name }}</small>{% endif %}</span></div></td><td>{{ m.phone }}</td><td>{{ gender_labels[m.gender] }}</td><td><span class="tag {{ 'ok' if m.kind=='fixed' else '' }}">{{ 'Cố định' if m.kind=='fixed' else 'Vãng lai' }}</span></td><td>{{ m.level or '—' }}</td><td>{% if editable_ids is none or m.club_id in editable_ids %}<details class="row-menu"><summary>Sửa {{ icon('chevron',13) }}</summary><form action="/clubs/{{ m.club_id }}/members/{{ m.id }}/edit" method="post" class="stack"><input type="hidden" name="csrf" value="{{ csrf }}"><label>Họ tên<input name="name" value="{{ m.name }}" required maxlength="100"></label><label>Số điện thoại<input name="phone" value="{{ m.phone }}" required></label>{{ gender_field(m.gender) }}<label>Loại<select name="kind"><option value="fixed"{% if m.kind=='fixed' %} selected{% endif %}>Cố định</option><option value="guest"{% if m.kind=='guest' %} selected{% endif %}>Vãng lai</option></select></label><label>Trình độ<input name="level" value="{{ m.level }}" maxlength="40"></label><button class="primary mini">Lưu thay đổi</button></form></details>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+{%- endmacro %}

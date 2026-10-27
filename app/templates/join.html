@@ -15,9 +15,10 @@
   {% elif message=='already' %}<p class="success">Số điện thoại này đã đăng ký buổi đánh. Hãy liên hệ host để kiểm tra trạng thái.</p>
   {% elif message=='fixed' %}<p class="alert">Số điện thoại này thuộc thành viên cố định. Vui lòng liên hệ host để xác nhận lịch.</p>
   {% elif message=='closed' %}<p class="alert">Buổi đánh đã đóng đăng ký.</p>{% endif %}
+  {% if own_link %}<p><a class="button primary" href="{{ own_link }}">Xem ??ng k? &amp; thanh to?n c?a t?i</a></p>{% endif %}
   {% if lookup_error %}<p class="alert" role="alert">{{ lookup_error }}</p>{% endif %}
 
-  {% if not game.is_open %}
+  {% if not guest_open %}
     <p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>
   {% elif lookup %}
     <h2>2. Kiểm tra thông tin và xác nhận</h2>
