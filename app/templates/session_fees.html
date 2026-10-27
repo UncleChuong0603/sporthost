@@ -1,0 +1,19 @@
+{% macro fee_overrides() -%}
+<details><summary>Phí riêng cho nam / nữ (không bắt buộc)</summary>
+<p class="muted small">Để trống dùng phí chung. Nhập 0 nếu miễn phí. Người chưa cập nhật giới tính dùng phí chung.</p>
+<div class="two"><label>Member nam (VND)<input name="fixed_fee_male" type="number" min="0" max="100000000" placeholder="Dùng phí member chung"></label><label>Member nữ (VND)<input name="fixed_fee_female" type="number" min="0" max="100000000" placeholder="Dùng phí member chung"></label></div>
+<div class="two"><label>Vãng lai nam (VND)<input name="guest_fee_male" type="number" min="0" max="100000000" placeholder="Dùng phí vãng lai chung"></label><label>Vãng lai nữ (VND)<input name="guest_fee_female" type="number" min="0" max="100000000" placeholder="Dùng phí vãng lai chung"></label></div>
+</details>
+{%- endmacro %}
+
+{% macro fee_summary(game, kind) -%}
+{% set common = game.fixed_fee if kind == 'fixed' else game.guest_fee %}
+{% set male = game.fixed_fee_male if kind == 'fixed' else game.guest_fee_male %}
+{% set female = game.fixed_fee_female if kind == 'fixed' else game.guest_fee_female %}
+<div class="list-item"><span>Phí {{ 'member' if kind == 'fixed' else 'vãng lai' }} chung</span><strong>{{ common|vnd }}</strong></div>
+{% if male is not none or female is not none %}
+<div class="list-item"><span>Nam</span><strong>{{ (male if male is not none else common)|vnd }}</strong></div>
+<div class="list-item"><span>Nữ</span><strong>{{ (female if female is not none else common)|vnd }}</strong></div>
+<p class="muted small">Chưa cập nhật giới tính: {{ common|vnd }}. Phí được ghi nhận khi đăng ký; liên hệ host nếu cần điều chỉnh thông tin trước khi đăng ký.</p>
+{% endif %}
+{%- endmacro %}

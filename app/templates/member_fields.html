@@ -1,0 +1,3 @@
+{% macro gender_field(selected='unspecified') -%}
+<label>Giới tính<select name="gender">{% for value, label in gender_labels.items() %}<option value="{{ value }}"{% if value == selected %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+{%- endmacro %}

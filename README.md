@@ -6,11 +6,16 @@ FastAPI, Jinja2, SQLAlchemy, PostgreSQL và Alembic; beta đã chạy trên Verc
 **Bản thử nghiệm:** https://sporthost.vercel.app/signup
 
 Triển khai ngày 27/10/2026: Vercel Singapore, Neon PostgreSQL riêng cho beta (gói Free,
-Singapore), schema `clubhost`, Alembic `0001_initial`. Database VPS hiện tại không bị thay đổi.
+Singapore), schema `clubhost`, Alembic `0003_gender_fees`. Database VPS hiện tại không bị thay đổi.
 
 ## Chức năng hiện có
 
 - Đăng ký/đăng nhập host; tạo và sửa CLB, member cố định/vãng lai.
+- Member có giới tính Nam/Nữ độc lập với loại cố định/vãng lai; dữ liệu cũ là Chưa cập nhật.
+- Từng buổi có phí chung và phí nam/nữ tùy chọn cho cả member và khách vãng lai.
+  Để trống dùng phí chung, nhập 0 để miễn phí. Sức chứa vẫn tính chung cho mọi người chơi.
+- Booking giữ mức phí lúc đăng ký, nên sửa giới tính/loại member không đổi tiền buổi cũ.
+  Phí tháng vẫn do host nhập theo từng member.
 - Tạo buổi đánh thủ công, link đăng ký khách, duyệt khách và danh sách chờ.
 - Điểm danh, thu tiền thủ công, phí tháng, chi phí và xuất CSV.
 - Phân tách dữ liệu theo host, CSRF và cookie HttpOnly.
@@ -40,7 +45,9 @@ SQL PostgreSQL offline không thay thế kiểm thử migration trên PostgreSQL
 
 Đã kiểm thử bổ sung trên PostgreSQL thật và URL Vercel: đăng ký host, tạo CLB/member,
 tenant isolation, public guest booking, hai lượt duyệt đồng thời với capacity=1,
-thu tiền/chi phí, CSV và readiness. Các bản ghi thử được xóa sau kiểm tra.
+thu tiền/chi phí, CSV và readiness. Migration bổ sung giới tính và giá đã được thử trên
+schema PostgreSQL riêng, xác minh dữ liệu cũ và giá booking đã thu được giữ nguyên.
+Các bản ghi thử được xóa sau kiểm tra.
 
 ## Phạm vi beta
 
