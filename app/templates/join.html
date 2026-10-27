@@ -1,5 +1,56 @@
-{% extends 'base.html' %}{% from 'member_fields.html' import gender_field %}{% from 'session_fees.html' import fee_summary %}{% block title %}Đăng ký vãng lai{% endblock %}{% block content %}
-<section class="auth card"><p class="eyebrow">🏸 Đăng ký đánh vãng lai</p><h1>{{ game.title }}</h1><p class="muted">{{ club.name }} · {{ game.venue }}</p><div class="list-item"><span>Thời gian</span><strong>{{ game.starts_at.replace('T',' ') }}</strong></div>{{ fee_summary(game, 'guest') }}<div class="list-item"><span>Đã xác nhận / tối đa</span><strong>{{ confirmed }}/{{ game.capacity }}</strong></div>
-{% if message=='success' %}<p class="success">Đã nhận đăng ký. Host sẽ duyệt và liên hệ trực tiếp với bạn. Chưa phải xác nhận giữ chỗ.</p>{% elif message=='already' %}<p class="success">Số điện thoại này đã đăng ký buổi đánh. Hãy liên hệ host để kiểm tra trạng thái.</p>{% elif message=='fixed' %}<p class="alert">Số điện thoại này thuộc thành viên cố định. Vui lòng liên hệ host để xác nhận lịch.</p>{% elif message=='closed' %}<p class="alert">Buổi đánh đã đóng đăng ký.</p>{% endif %}
-{% if game.is_open %}<form class="stack" method="post" action="/join/{{ game.public_id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><label>Họ tên<input name="name" required maxlength="100" placeholder="Tên để host nhận diện"></label><label>Số điện thoại<input name="phone" type="tel" required placeholder="09xxxxxxxx"></label>{{ gender_field() }}<label>Trình độ<input name="level" placeholder="Ví dụ: Trung bình khá"></label><p class="muted small">Khi đăng ký, bạn đồng ý cung cấp thông tin trên cho host của CLB này để liên hệ và tổ chức buổi đánh. Không chuyển tiền trước khi được host xác nhận.</p><button class="primary">Gửi yêu cầu tham gia</button></form>{% else %}<p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>{% endif %}
-</section>{% endblock %}
+{% extends 'base.html' %}
+{% from 'member_fields.html' import gender_field %}
+{% from 'session_fees.html' import fee_summary %}
+{% block title %}Đăng ký vãng lai{% endblock %}
+{% block content %}
+<section class="auth card guest-registration" tabindex="-1">
+  <p class="eyebrow">🏸 Đăng ký đánh vãng lai</p>
+  <h1>{{ game.title }}</h1>
+  <p class="muted">{{ club.name }} · {{ game.venue }}</p>
+  <div class="list-item"><span>Thời gian</span><strong>{{ game.starts_at.replace('T',' ') }}</strong></div>
+  {{ fee_summary(game, 'guest') }}
+  <div class="list-item"><span>Đã xác nhận / tối đa</span><strong>{{ confirmed }}/{{ game.capacity }}</strong></div>
+
+  {% if message=='success' %}<p class="success">Đã nhận đăng ký. Host sẽ duyệt và liên hệ trực tiếp với bạn. Chưa phải xác nhận giữ chỗ.</p>
+  {% elif message=='already' %}<p class="success">Số điện thoại này đã đăng ký buổi đánh. Hãy liên hệ host để kiểm tra trạng thái.</p>
+  {% elif message=='fixed' %}<p class="alert">Số điện thoại này thuộc thành viên cố định. Vui lòng liên hệ host để xác nhận lịch.</p>
+  {% elif message=='closed' %}<p class="alert">Buổi đánh đã đóng đăng ký.</p>{% endif %}
+  {% if lookup_error %}<p class="alert" role="alert">{{ lookup_error }}</p>{% endif %}
+
+  {% if not game.is_open %}
+    <p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>
+  {% elif lookup %}
+    <h2>2. Kiểm tra thông tin và xác nhận</h2>
+    <p class="muted small">{{ 'Đã tìm thấy hồ sơ của bạn trong CLB.' if lookup.found else 'Bạn chưa có hồ sơ tại CLB này. Điền thông tin để tiếp tục.' }}</p>
+    <form class="stack" method="post" action="/join/{{ game.public_id }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="lookup_token" value="{{ lookup.token }}">
+      <label>Số điện thoại<input name="phone" type="tel" value="{{ lookup.phone }}" readonly required></label>
+      <a class="small" href="/join/{{ game.public_id }}">Đổi số điện thoại</a>
+      <label>Họ tên<input name="name" value="{{ lookup.name }}" required maxlength="100" placeholder="Tên để host nhận diện"{% if lookup.found %} readonly{% endif %}></label>
+      {{ gender_field(lookup.gender, locked=lookup.found) }}
+      <label>Trình độ<input name="level" value="{{ lookup.level }}" maxlength="40" placeholder="Ví dụ: Trung bình khá"{% if lookup.found %} readonly{% endif %}></label>
+      {% if lookup.kind == 'fixed' %}
+        <p class="alert">Bạn là thành viên cố định. Vui lòng liên hệ host để xác nhận lịch.</p>
+      {% else %}
+        {% if lookup.found %}
+          <div class="list-item"><span>Phí buổi của bạn</span><strong>{{ lookup.fee|vnd }}</strong></div>
+          <p class="muted small">Nếu thông tin chưa đúng, liên hệ host để cập nhật hồ sơ trước khi đăng ký.</p>
+        {% endif %}
+        <p class="muted small">Kiểm tra thông tin trước khi gửi. Khi xác nhận, bạn đồng ý cung cấp thông tin cho host để liên hệ và tổ chức buổi đánh. Không chuyển tiền trước khi được host xác nhận.</p>
+        <button class="primary" data-confirm-join>Xác nhận gửi yêu cầu</button>
+      {% endif %}
+    </form>
+  {% else %}
+    <h2>1. Nhập số điện thoại</h2>
+    <p class="muted small">Dùng số đã đăng ký với CLB để tự điền họ tên, giới tính và trình độ. Bạn sẽ kiểm tra lại trước khi gửi yêu cầu.</p>
+    <form class="stack" method="post" action="/join/{{ game.public_id }}/lookup" data-phone-lookup>
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Số điện thoại<input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="22" value="{{ phone }}" required autofocus placeholder="09xxxxxxxx"></label>
+      <p class="muted small" role="status" aria-live="polite" data-lookup-status></p>
+      <button class="primary">Tiếp tục</button>
+    </form>
+  {% endif %}
+</section>
+<script src="/static/join.js" defer></script>
+{% endblock %}

@@ -8,6 +8,9 @@ import hashlib
 import secrets
 import csv
 import io
+import time
+from collections import OrderedDict, deque
+from threading import Lock
 from datetime import datetime, timezone
 from urllib.parse import quote
 
@@ -43,6 +46,9 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 signer = URLSafeTimedSerializer(SECRET_KEY, salt='clubhost-session-v1')
 csrf_signer = URLSafeTimedSerializer(SECRET_KEY, salt='clubhost-csrf-v1')
+lookup_signer = URLSafeTimedSerializer(SECRET_KEY, salt='sporthost-guest-review-v1')
+_lookup_attempts = OrderedDict()
+_lookup_lock = Lock()
 
 class Base(DeclarativeBase):
     metadata = MetaData(schema=SETTINGS['schema'])
@@ -217,7 +223,37 @@ def redirect(path: str):
 def digits_phone(phone: str):
     phone = re.sub(r'[\s.\-()]', '', phone.strip())
     if not re.fullmatch(r'\+?[0-9]{9,15}', phone): raise HTTPException(400, 'Invalid phone')
+    if re.fullmatch(r'(?:\+84|84)[35789][0-9]{8}', phone):
+        phone = '0' + phone[-9:]
     return phone
+
+
+def phone_aliases(phone: str):
+    aliases = [phone]
+    if re.fullmatch(r'0[35789][0-9]{8}', phone):
+        aliases.extend(['+84' + phone[1:], '84' + phone[1:]])
+    return aliases
+
+
+def member_by_phone(db: Session, club_id: int, phone: str):
+    return db.scalar(select(Member).where(Member.club_id == club_id,
+                                         Member.phone.in_(phone_aliases(phone))).order_by(Member.id))
+
+
+def limit_guest_lookup(request: Request, public_id: str):
+    # Best effort per process; bounded memory, including on serverless instances.
+    key = (request.client.host if request.client else 'unknown', public_id)
+    now = time.monotonic()
+    with _lookup_lock:
+        attempts = _lookup_attempts.setdefault(key, deque())
+        _lookup_attempts.move_to_end(key)
+        while attempts and attempts[0] <= now - 60:
+            attempts.popleft()
+        if len(attempts) >= 30:
+            raise HTTPException(429, 'Too many lookups; try again in one minute', headers={'Retry-After': '60', 'Cache-Control': 'no-store'})
+        attempts.append(now)
+        while len(_lookup_attempts) > 1024:
+            _lookup_attempts.popitem(last=False)
 
 
 def money(n):
@@ -329,7 +365,7 @@ def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phon
     if gender is not None:
         member.gender = validated_gender(gender)
     phone=digits_phone(phone)
-    conflict=db.scalar(select(Member).where(Member.club_id==club_id,Member.phone==phone,Member.id!=member_id))
+    conflict=db.scalar(select(Member).where(Member.club_id==club_id,Member.phone.in_(phone_aliases(phone)),Member.id!=member_id))
     if conflict:return redirect(f'/clubs/{club_id}?message=phone_exists')
     member.name=name.strip()[:100];member.phone=phone;member.kind=kind;member.level=level.strip()[:40]
     db.commit();return redirect(f'/clubs/{club_id}')
@@ -340,7 +376,7 @@ def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind
     if kind not in ('fixed','guest') or not name.strip(): raise HTTPException(400,'Invalid member')
     gender = validated_gender(gender)
     phone=digits_phone(phone)
-    existing=db.scalar(select(Member).where(Member.club_id==club_id,Member.phone==phone))
+    existing=member_by_phone(db,club_id,phone)
     if existing: return redirect(f'/clubs/{club_id}?message=phone_exists')
     db.add(Member(club_id=club_id,name=name.strip()[:100],phone=phone,kind=kind,gender=gender,level=level.strip()[:40]));db.commit()
     return redirect(f'/clubs/{club_id}')
@@ -430,15 +466,48 @@ def add_expense(request:Request,game_id:int,title:str=Form(),amount:int=Form(),c
     if not title.strip():raise HTTPException(400,'Missing description')
     db.add(Expense(session_id=game_id,title=title.strip()[:100],amount=money(amount)));db.commit();return redirect(f'/games/{game_id}')
 
+def guest_review(game: GameSession, phone: str, member: Member | None):
+    profile = {'phone': phone, 'name': member.name if member else '',
+               'gender': member.gender if member else 'unspecified',
+               'level': member.level if member else '', 'kind': member.kind if member else 'guest',
+               'found': member is not None, 'fee': member_fee(game, member) if member else None}
+    token = lookup_signer.dumps({'game': game.public_id, 'phone': phone,
+                                'member': member.id if member else None,
+                                'profile': [profile[k] for k in ('name', 'gender', 'level', 'kind', 'fee')]})
+    return {**profile, 'token': token}
+
+
+def join_view(request: Request, db: Session, game: GameSession, *, lookup=None, error=None, phone=''):
+    club=db.get(Club,game.club_id)
+    response = page(request,'join.html',game=game,club=club,confirmed=confirm_count(db,game.id),
+                    message=request.query_params.get('message'),lookup=lookup,lookup_error=error,phone=phone)
+    response.headers['Cache-Control'] = 'private, no-store'
+    return response
+
+
 @app.get('/join/{public_id}',response_class=HTMLResponse)
 def join_page(request:Request,public_id:str,db:Session=Depends(db_session)):
     game=db.scalar(select(GameSession).where(GameSession.public_id==public_id))
     if not game:raise HTTPException(404)
-    club=db.get(Club,game.club_id)
-    return page(request,'join.html',game=game,club=club,confirmed=confirm_count(db,game.id),message=request.query_params.get('message'))
+    return join_view(request, db, game)
+
+
+@app.post('/join/{public_id}/lookup', response_class=HTMLResponse)
+def lookup_guest(request:Request,public_id:str,phone:str=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
+    ensure_csrf(request,csrf)
+    game=db.scalar(select(GameSession).where(GameSession.public_id==public_id))
+    if not game:raise HTTPException(404)
+    if not game.is_open:return redirect(f'/join/{public_id}?message=closed')
+    limit_guest_lookup(request, public_id)
+    try:
+        phone = digits_phone(phone)
+    except HTTPException:
+        return join_view(request, db, game, error='Số điện thoại chưa hợp lệ. Vui lòng kiểm tra lại.', phone=phone[:22])
+    member = member_by_phone(db, game.club_id, phone)
+    return join_view(request, db, game, lookup=guest_review(game, phone, member))
 
 @app.post('/join/{public_id}')
-def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),csrf:str=Form(),db:Session=Depends(db_session)):
+def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),lookup_token:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
     ensure_csrf(request,csrf)
     game=db.scalar(select(GameSession).where(GameSession.public_id==public_id))
     if not game:raise HTTPException(404)
@@ -446,7 +515,19 @@ def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:st
     if not name.strip():raise HTTPException(400,'Name required')
     gender = validated_gender(gender)
     phone=digits_phone(phone)
-    member=db.scalar(select(Member).where(Member.club_id==game.club_id,Member.phone==phone))
+    member=member_by_phone(db,game.club_id,phone)
+    if lookup_token:
+        try:
+            reviewed = lookup_signer.loads(lookup_token, max_age=60*15)
+            if reviewed['game'] != public_id or reviewed['phone'] != phone:
+                raise BadSignature('Review belongs to a different phone or session')
+        except (BadSignature, SignatureExpired, KeyError):
+            raise HTTPException(403, 'Invalid or expired review; look up your phone again')
+        current = guest_review(game, phone, member)
+        profile = [current[k] for k in ('name', 'gender', 'level', 'kind', 'fee')]
+        if reviewed.get('member') != (member.id if member else None) or reviewed.get('profile') != profile:
+            return join_view(request, db, game, lookup=current,
+                             error='Thông tin vừa được cập nhật. Vui lòng kiểm tra và xác nhận lại.')
     if member and member.kind=='fixed':return redirect(f'/join/{public_id}?message=fixed')
     if not member:
         member=Member(club_id=game.club_id,name=name.strip()[:100],phone=phone,kind='guest',gender=gender,level=level.strip()[:40]);db.add(member);db.flush()

@@ -17,6 +17,9 @@ Singapore), schema `clubhost`, Alembic `0003_gender_fees`. Database VPS hiện t
 - Booking giữ mức phí lúc đăng ký, nên sửa giới tính/loại member không đổi tiền buổi cũ.
   Phí tháng vẫn do host nhập theo từng member.
 - Tạo buổi đánh thủ công, link đăng ký khách, duyệt khách và danh sách chờ.
+- Đăng ký khách theo số điện thoại trước: tra cứu trong đúng CLB, tự điền hồ sơ đã có
+  và chờ người chơi xác nhận. Tra cứu chưa tạo member/booking; số mới tự nhập thông tin.
+  Hỗ trợ `09...`/`+84...`, có form hai bước khi tắt JavaScript. Hồ sơ đã lưu chỉ host sửa.
 - Điểm danh, thu tiền thủ công, phí tháng, chi phí và xuất CSV.
 - Phân tách dữ liệu theo host, CSRF và cookie HttpOnly.
 - Schema PostgreSQL `clubhost`; migration riêng, không tự tạo bảng khi khởi động app.
@@ -48,6 +51,10 @@ tenant isolation, public guest booking, hai lượt duyệt đồng thời với
 thu tiền/chi phí, CSV và readiness. Migration bổ sung giới tính và giá đã được thử trên
 schema PostgreSQL riêng, xác minh dữ liệu cũ và giá booking đã thu được giữ nguyên.
 Các bản ghi thử được xóa sau kiểm tra.
+
+Luồng tra cứu điện thoại có CSRF, response `private, no-store`, token xác nhận gắn với
+buổi/số điện thoại và giới hạn tra cứu theo IP/buổi trong mỗi process. Giới hạn này không
+được chia sẻ giữa các instance Vercel. Số điện thoại chưa được xác minh bằng OTP.
 
 ## Phạm vi beta
 
