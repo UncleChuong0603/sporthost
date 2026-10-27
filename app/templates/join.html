@@ -4,22 +4,23 @@
 {% block title %}Đăng ký vãng lai{% endblock %}
 {% block content %}
 <section class="auth card guest-registration" tabindex="-1">
-  <p class="eyebrow">🏸 Đăng ký đánh vãng lai</p>
+  <p class="eyebrow">Đăng ký đánh vãng lai</p>
   <h1>{{ game.title }}</h1>
   <p class="muted">{{ club.name }} · {{ game.venue }}</p>
   <div class="list-item"><span>Thời gian</span><strong>{{ game.starts_at.replace('T',' ') }}</strong></div>
   {{ fee_summary(game, 'guest') }}
   <div class="list-item"><span>Đã xác nhận / tối đa</span><strong>{{ confirmed }}/{{ game.capacity }}</strong></div>
+  {% if game.capacity_male is not none or game.capacity_female is not none %}<p class="small muted">Giới hạn riêng: nam {{ game.capacity_male if game.capacity_male is not none else 'theo tổng' }} · nữ {{ game.capacity_female if game.capacity_female is not none else 'theo tổng' }}. Host cần xác nhận chỗ theo giới hạn của buổi đánh.</p>{% endif %}
 
   {% if message=='success' %}<p class="success">Đã nhận đăng ký. Host sẽ duyệt và liên hệ trực tiếp với bạn. Chưa phải xác nhận giữ chỗ.</p>
   {% elif message=='already' %}<p class="success">Số điện thoại này đã đăng ký buổi đánh. Hãy liên hệ host để kiểm tra trạng thái.</p>
   {% elif message=='fixed' %}<p class="alert">Số điện thoại này thuộc thành viên cố định. Vui lòng liên hệ host để xác nhận lịch.</p>
   {% elif message=='closed' %}<p class="alert">Buổi đánh đã đóng đăng ký.</p>{% endif %}
-  {% if own_link %}<p><a class="button primary" href="{{ own_link }}">Xem ??ng k? &amp; thanh to?n c?a t?i</a></p>{% endif %}
+  {% if own_link %}<p><a class="button primary" href="{{ own_link }}">Xem đăng ký &amp; thanh toán của tôi</a></p>{% endif %}
   {% if lookup_error %}<p class="alert" role="alert">{{ lookup_error }}</p>{% endif %}
 
   {% if not guest_open %}
-    <p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>
+    {% if game.is_cancelled %}<p class="alert">Buổi đánh đã hủy.</p>{% elif game.is_open and game.rsvp_deadline %}<p class="notice">Ưu tiên member xác nhận trước. Đăng ký vãng lai mở từ {{ game.rsvp_deadline.replace('T',' ') }} (giờ Việt Nam).</p>{% else %}<p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>{% endif %}
   {% elif lookup %}
     <h2>2. Kiểm tra thông tin và xác nhận</h2>
     <p class="muted small">{{ 'Đã tìm thấy hồ sơ của bạn trong CLB.' if lookup.found else 'Bạn chưa có hồ sơ tại CLB này. Điền thông tin để tiếp tục.' }}</p>
