@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}{{ 'Đăng ký host' if mode=='signup' else 'Đăng nhập' }}{% endblock %}{% block content %}
+<section class="auth card"><p class="eyebrow">Dành cho host cầu lông</p><h1>{{ 'Tạo tài khoản quản lý CLB' if mode=='signup' else 'Chào mừng trở lại' }}</h1><p class="muted">Quản lý member cố định, tuyển vãng lai và thu chi buổi đánh.</p>
+{% if error %}<p class="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/{{ mode }}" class="stack"><input type="hidden" name="csrf" value="{{ csrf }}"><label>Email<input name="email" type="email" required autocomplete="email" placeholder="host@example.com"></label><label>Mật khẩu<input name="password" type="password" minlength="10" required autocomplete="{{ 'new-password' if mode=='signup' else 'current-password' }}" placeholder="Ít nhất 10 ký tự"></label><button class="primary">{{ 'Tạo tài khoản' if mode=='signup' else 'Đăng nhập' }}</button></form>
+<p class="muted footnote">{% if mode=='signup' %}Đã có tài khoản? <a href="/login">Đăng nhập</a>{% else %}Chưa có tài khoản? <a href="/signup">Tạo tài khoản</a>{% endif %}</p></section>
+{% endblock %}

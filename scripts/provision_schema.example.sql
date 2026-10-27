@@ -1,0 +1,15 @@
+-- Reviewed DBA/owner-only example. Do not run blindly on an existing DB.
+-- Run ONLY against the approved PostgreSQL database after verified backup.
+-- Dedicated roles require DBA approval. Replace identifiers safely in psql.
+-- CREATE ROLE clubhost_migrator LOGIN PASSWORD '<secret>';
+-- CREATE ROLE clubhost_app LOGIN PASSWORD '<secret>';
+-- CREATE SCHEMA clubhost AUTHORIZATION clubhost_migrator;
+-- GRANT CONNECT ON DATABASE <database_name> TO clubhost_migrator, clubhost_app;
+-- GRANT USAGE ON SCHEMA clubhost TO clubhost_app;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA clubhost TO clubhost_app;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA clubhost TO clubhost_app;
+-- ALTER DEFAULT PRIVILEGES FOR ROLE clubhost_migrator IN SCHEMA clubhost
+--   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO clubhost_app;
+-- ALTER DEFAULT PRIVILEGES FOR ROLE clubhost_migrator IN SCHEMA clubhost
+--   GRANT USAGE, SELECT ON SEQUENCES TO clubhost_app;
+-- The app account should NOT have CREATE on the schema or any public tables.

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+!.env.postgres.example
+!.env.vercel.example
+.vercel/
+dist/
+*.db
+*.db-journal
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]

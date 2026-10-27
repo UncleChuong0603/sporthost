@@ -1,0 +1,4 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{% block title %}SportHost{% endblock %} · SportHost Beta</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header class="nav"><a class="brand" href="/dashboard">🏸 SportHost <small>BETA</small></a><nav>{% if host or club %}<a href="/dashboard">CLB của tôi</a>{% endif %}{% if host %}<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link-btn">Đăng xuất</button></form>{% endif %}</nav></header>
+<main class="container">{% block content %}{% endblock %}</main><footer class="footer">SportHost Beta · Quản lý CLB cầu lông · Bản dùng thử lấy phản hồi</footer>
+</body></html>
