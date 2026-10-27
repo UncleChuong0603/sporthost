@@ -115,7 +115,9 @@ if SETTINGS['driver'] == 'sqlite':
     Base.metadata.create_all(engine)
 app = FastAPI(title='SportHost', version='0.1.0')
 BASE_DIR = os.path.dirname(__file__)
-app.mount('/static', StaticFiles(directory=os.path.join(BASE_DIR, '..', 'public', 'static')), name='static')
+# Vercel serves public/ from its CDN and omits it from the Python bundle.
+if not SETTINGS['serverless']:
+    app.mount('/static', StaticFiles(directory=os.path.join(BASE_DIR, '..', 'public', 'static')), name='static')
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, 'templates'))
 templates.env.filters['vnd'] = lambda n: f'{int(n):,}'.replace(',', '.') + 'đ'
 

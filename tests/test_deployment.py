@@ -57,6 +57,7 @@ with patch('sqlalchemy.engine.Engine.connect', side_effect=AssertionError('Start
     from sqlalchemy.pool import NullPool
     assert index.app.title == 'SportHost'
     assert isinstance(engine.pool, NullPool)
+    assert not any(getattr(route, 'path', None) == '/static' for route in index.app.routes)
 '''
     result = subprocess.run([sys.executable, '-c', code], env=env, capture_output=True,
                             text=True, timeout=30, cwd=Path(__file__).resolve().parents[1])
