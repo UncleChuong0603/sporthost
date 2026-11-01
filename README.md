@@ -1,10 +1,11 @@
 # SportHost Beta
 
-Quản lý CLB cầu lông cho host — [mở bản thử nghiệm](https://sporthost.vercel.app).
+Quản lý CLB thể thao cho host — [mở bản thử nghiệm](https://sporthost.vercel.app).
 FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 
 ## Chức năng
 
+- Chọn môn thể thao, hướng dẫn trình độ/sân, chính sách hủy và các mặc định của CLB.
 - Workspace có sidebar, tổng quan, lịch, thành viên, thu chi, cài đặt từng CLB và hỗ trợ mobile.
 - Lịch tuần, RSVP riêng, ưu tiên member, duyệt vãng lai, danh sách chờ và điểm danh.
 - Nam/nữ, phí riêng theo giới tính/loại thành viên; giới hạn tổng và chỗ nam/nữ tùy chọn.
@@ -17,6 +18,27 @@ FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 **Email thật cần cấu hình SMTP.** Hiện đổi mật khẩu trong phiên đăng nhập hoạt động;
 quên mật khẩu/xác minh email chỉ gửi được khi dịch vụ email được cấu hình.
 Upload biên nhận không tự xác nhận đã thu. Chưa thu phí phần mềm trong beta.
+
+## Action plan 01/11/2026 — trạng thái nhánh này
+
+Đã audit và triển khai code Sprint 1: danh mục môn, cài đặt CLB, phân quyền sửa,
+audit trước/sau, nhãn tiếng Việt và giới hạn người mặc định trên form tạo buổi.
+Migration `0005_club_settings` chỉ thêm cột/constraints trong schema riêng `clubhost`;
+**chưa chạy migration trên database triển khai hoặc deploy các thay đổi này**.
+
+Approval/fee mode và chính sách hủy mới được lưu cấu hình ở CLB. Tự động duyệt,
+thực thi hạn hủy, đăng ký hộ, engine chia đều và ledger/chốt sổ thuộc Sprint 2–5,
+chưa được triển khai trong đợt Sprint 0/1 này. Các buổi cũ giữ cách duyệt và mức phí cũ.
+
+[Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·
+[Kịch bản nghiệm thu](docs/SPORT_HOST_E2E_SCENARIOS.md) ·
+[Báo cáo sprint](docs/SPORT_HOST_SPRINT_REPORT.md) ·
+[Test/migration](docs/SPORT_HOST_TESTING.md)
+
+Tiếp tục dùng PostgreSQL hiện có qua SSH tunnel do operator cấu hình, trong schema
+riêng đã được cấp. Không tạo/chuyển dịch vụ DB theo ví dụ deploy cũ. Kiểm thử migration
+trên PostgreSQL non-production và backup/restore là điều kiện trước migration production;
+production luôn cần phê duyệt riêng.
 
 ## Chạy local
 

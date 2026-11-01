@@ -68,10 +68,22 @@ class Host(Base):
 
 class Club(Base):
     __tablename__ = 'clubs'
+    __table_args__ = (
+        CheckConstraint('default_capacity BETWEEN 1 AND 200', name='ck_club_default_capacity'),
+        CheckConstraint("default_approval_mode IN ('MANUAL_APPROVE', 'AUTO_APPROVE')", name='ck_club_approval_mode'),
+        CheckConstraint("default_fee_mode IN ('COST_SHARING', 'FIXED_PRICE')", name='ck_club_fee_mode'),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('hosts.id'), index=True)
     name: Mapped[str]
     location: Mapped[str] = mapped_column(default='')
+    sport_type: Mapped[str] = mapped_column(default='badminton', server_default='badminton')
+    skill_guidance: Mapped[str] = mapped_column(default='', server_default='')
+    default_capacity: Mapped[int] = mapped_column(default=20, server_default='20')
+    default_approval_mode: Mapped[str] = mapped_column(default='MANUAL_APPROVE', server_default='MANUAL_APPROVE')
+    cancellation_policy: Mapped[str] = mapped_column(default='', server_default='')
+    default_fee_mode: Mapped[str] = mapped_column(default='FIXED_PRICE', server_default='FIXED_PRICE')
+    venue_instructions: Mapped[str] = mapped_column(default='', server_default='')
     bank_name: Mapped[str] = mapped_column(default='', server_default='')
     account_holder: Mapped[str] = mapped_column(default='', server_default='')
     account_number: Mapped[str] = mapped_column(default='', server_default='')
@@ -170,11 +182,15 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, 'templates'))
 templates.env.filters['vnd'] = lambda n: f'{int(n):,}'.replace(',', '.') + 'đ'
 GENDER_LABELS = {'male': 'Nam', 'female': 'Nữ', 'unspecified': 'Chưa cập nhật'}
 templates.env.globals['gender_labels'] = GENDER_LABELS
+from app.sports import SPORTS, sport_label, equipment_label
+from app.club_settings import APPROVAL_MODES, FEE_MODES, validate_settings, settings_snapshot, record_settings_audit, settings_audit_details
+templates.env.globals.update(sports=SPORTS, sport_label=sport_label, equipment_label=equipment_label,
+                             approval_modes=APPROVAL_MODES, fee_modes=FEE_MODES, settings_audit_details=settings_audit_details)
 
 
 def validated_gender(value: str):
     if value not in GENDER_LABELS:
-        raise HTTPException(400, 'Invalid gender')
+        raise HTTPException(400, 'Giới tính không hợp lệ')
     return value
 
 
@@ -211,7 +227,7 @@ def current_host(request: Request, db: Session):
 
 def require_host(request: Request, db: Session):
     host = current_host(request, db)
-    if not host: raise HTTPException(status_code=401, detail='Please sign in')
+    if not host: raise HTTPException(status_code=401, detail='Vui lòng đăng nhập')
     return host
 
 
@@ -224,7 +240,7 @@ def owned_club(request: Request, db: Session, club_id: int, permission=None):
     host = require_host(request, db)
     club = db.get(Club, club_id)
     access = db.scalar(select(ClubAccess).where(ClubAccess.club_id == club_id, ClubAccess.host_id == host.id)) if club else None
-    if not club or (club.owner_id != host.id and not access): raise HTTPException(404, 'Club not found')
+    if not club or (club.owner_id != host.id and not access): raise HTTPException(404, 'Không tìm thấy CLB')
     permission = permission or ('view' if request.method in ('GET','HEAD') else 'manage')
     allowed = {'manager': {'view', 'manage'}, 'finance': {'view', 'finance'}}
     if club.owner_id != host.id and permission not in allowed.get(access.role, set()):
@@ -253,7 +269,7 @@ def ensure_csrf(request: Request, token: str):
         if not hmac.compare_digest(data['session'], request.cookies.get('clubhost','public')):
             raise ValueError('Invalid CSRF')
     except (BadSignature, SignatureExpired, KeyError, ValueError):
-        raise HTTPException(403, 'Invalid or expired form token; refresh page')
+        raise HTTPException(403, 'Biểu mẫu đã hết hạn hoặc không hợp lệ. Vui lòng tải lại trang')
 
 
 def page(request: Request, template: str, **kwargs):
@@ -298,7 +314,7 @@ def redirect(path: str):
 
 def digits_phone(phone: str):
     phone = re.sub(r'[\s.\-()]', '', phone.strip())
-    if not re.fullmatch(r'\+?[0-9]{9,15}', phone): raise HTTPException(400, 'Invalid phone')
+    if not re.fullmatch(r'\+?[0-9]{9,15}', phone): raise HTTPException(400, 'Số điện thoại không hợp lệ')
     if re.fullmatch(r'(?:\+84|84)[35789][0-9]{8}', phone):
         phone = '0' + phone[-9:]
     return phone
@@ -326,7 +342,7 @@ def limit_guest_lookup(request: Request, public_id: str):
         while attempts and attempts[0] <= now - 60:
             attempts.popleft()
         if len(attempts) >= 30:
-            raise HTTPException(429, 'Too many lookups; try again in one minute', headers={'Retry-After': '60', 'Cache-Control': 'no-store'})
+            raise HTTPException(429, 'Bạn tra cứu quá nhiều lần. Vui lòng thử lại sau một phút', headers={'Retry-After': '60', 'Cache-Control': 'no-store'})
         attempts.append(now)
         while len(_lookup_attempts) > 1024:
             _lookup_attempts.popitem(last=False)
@@ -335,8 +351,8 @@ def limit_guest_lookup(request: Request, public_id: str):
 def money(n):
     try:
         result = int(n)
-    except (ValueError, TypeError): raise HTTPException(400, 'Invalid amount')
-    if result < 0 or result > 100_000_000: raise HTTPException(400, 'Invalid amount')
+    except (ValueError, TypeError): raise HTTPException(400, 'Số tiền phải là số nguyên từ 0 đến 100.000.000đ')
+    if result < 0 or result > 100_000_000: raise HTTPException(400, 'Số tiền phải là số nguyên từ 0 đến 100.000.000đ')
     return result
 
 
@@ -405,7 +421,7 @@ def login(request: Request, email: str=Form(), password: str=Form(), csrf: str=F
     ensure_csrf(request,csrf)
     from app.security import rate_limit
     rate_limit(request,'login',limit=30,seconds=300)
-    if len(password)>256:raise HTTPException(400,'Invalid password')
+    if len(password)>256:raise HTTPException(400,'Mật khẩu không hợp lệ')
     host=db.scalar(select(Host).where(Host.email==email.strip().lower()))
     if not host or not check_password(password, host.password_hash):
         return page(request,'auth.html',mode='login',error='Email hoặc mật khẩu không đúng')
@@ -425,11 +441,13 @@ def dashboard(request:Request,db:Session=Depends(db_session)):
     return render_dashboard(request,db,host)
 
 @app.post('/clubs')
-def create_club(request:Request,name:str=Form(),location:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
-    host=require_host(request,db);ensure_csrf(request,csrf)
-    if not (1<=len(name.strip())<=100): raise HTTPException(400,'Invalid club name')
+async def create_club(request:Request,db:Session=Depends(db_session)):
+    host=require_host(request,db)
+    form=await request.form();ensure_csrf(request,form.get('csrf',''))
+    values=validate_settings(form)
     from datetime import timedelta
-    club=Club(owner_id=host.id,name=name.strip(),location=location.strip()[:180],trial_ends_at=(datetime.now(timezone.utc)+timedelta(days=30)).isoformat());db.add(club);db.commit()
+    club=Club(owner_id=host.id,**values,trial_ends_at=(datetime.now(timezone.utc)+timedelta(days=30)).isoformat())
+    db.add(club);db.flush();record_settings_audit(db,club,host.id,None);db.commit()
     return redirect(f'/clubs/{club.id}')
 
 @app.get('/clubs/{club_id}',response_class=HTMLResponse)
@@ -447,18 +465,21 @@ def club_page(request:Request,club_id:int,db:Session=Depends(db_session)):
     return page(request,'club.html',host=host,club=club,members=members,games=games,dues=dues_info,game_rows=rows)
 
 @app.post('/clubs/{club_id}/settings')
-def update_club(request:Request,club_id:int,name:str=Form(),location:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
-    _,club=owned_club(request,db,club_id,permission='owner');ensure_csrf(request,csrf)
-    if not (1<=len(name.strip())<=100):raise HTTPException(400,'Invalid club name')
-    club.name=name.strip();club.location=location.strip()[:180]
-    db.commit();return redirect(f'/clubs/{club_id}')
+async def update_club(request:Request,club_id:int,db:Session=Depends(db_session)):
+    host,club=owned_club(request,db,club_id,permission='owner')
+    form=await request.form();ensure_csrf(request,form.get('csrf',''))
+    db.refresh(club,with_for_update=True)
+    values=validate_settings(form,club);before=settings_snapshot(club)
+    for field,value in values.items():setattr(club,field,value)
+    record_settings_audit(db,club,host.id,before)
+    db.commit();return redirect(f'/clubs/{club_id}/settings?saved=1#general')
 
 @app.post('/clubs/{club_id}/members/{member_id}/edit')
 def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phone:str=Form(),kind:str=Form(),level:str=Form(''),gender:str|None=Form(None),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_club(request,db,club_id);ensure_csrf(request,csrf)
     member=db.get(Member,member_id)
-    if not member or member.club_id!=club_id: raise HTTPException(404,'Member not found')
-    if not name.strip() or kind not in ('fixed','guest'):raise HTTPException(400,'Invalid member')
+    if not member or member.club_id!=club_id: raise HTTPException(404,'Không tìm thấy thành viên')
+    if not name.strip() or kind not in ('fixed','guest'):raise HTTPException(400,'Thông tin thành viên không hợp lệ')
     if gender is not None:
         member.gender = validated_gender(gender)
         for booking in db.scalars(select(Booking).where(Booking.member_id==member.id,Booking.status!='confirmed')):
@@ -472,7 +493,7 @@ def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phon
 @app.post('/clubs/{club_id}/members')
 def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_club(request,db,club_id);ensure_csrf(request,csrf)
-    if kind not in ('fixed','guest') or not name.strip(): raise HTTPException(400,'Invalid member')
+    if kind not in ('fixed','guest') or not name.strip(): raise HTTPException(400,'Thông tin thành viên không hợp lệ')
     gender = validated_gender(gender)
     phone=digits_phone(phone)
     existing=member_by_phone(db,club_id,phone)
@@ -484,8 +505,8 @@ def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind
 def create_game(request:Request,club_id:int,title:str=Form(),venue:str=Form(''),starts_at:str=Form(),capacity:int=Form(),fixed_fee:int=Form(0),guest_fee:int=Form(0),fixed_fee_male:str=Form(''),fixed_fee_female:str=Form(''),guest_fee_male:str=Form(''),guest_fee_female:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_club(request,db,club_id);ensure_csrf(request,csrf)
     try: datetime.strptime(starts_at,'%Y-%m-%dT%H:%M')
-    except ValueError: raise HTTPException(400,'Invalid start time')
-    if not 1<=capacity<=200 or not title.strip(): raise HTTPException(400,'Invalid game')
+    except ValueError: raise HTTPException(400,'Ngày giờ bắt đầu không hợp lệ')
+    if not 1<=capacity<=200 or not title.strip(): raise HTTPException(400,'Thông tin buổi đánh không hợp lệ')
     game=GameSession(club_id=club_id,public_id=secrets.token_urlsafe(18),title=title.strip()[:150],venue=venue.strip()[:180],starts_at=starts_at,capacity=capacity,fixed_fee=money(fixed_fee),guest_fee=money(guest_fee),fixed_fee_male=optional_money(fixed_fee_male),fixed_fee_female=optional_money(fixed_fee_female),guest_fee_male=optional_money(guest_fee_male),guest_fee_female=optional_money(guest_fee_female))
     db.add(game);db.commit();return redirect(f'/games/{game.id}')
 
@@ -493,8 +514,8 @@ def create_game(request:Request,club_id:int,title:str=Form(),venue:str=Form(''),
 def add_due(request:Request,club_id:int,member_id:int=Form(),period:str=Form(),amount:int=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_club(request,db,club_id,permission='finance');ensure_csrf(request,csrf)
     m=db.get(Member,member_id)
-    if not m or m.club_id!=club_id or m.kind!='fixed':raise HTTPException(400,'Invalid member')
-    if not re.fullmatch(r'20\d\d-(0[1-9]|1[0-2])',period):raise HTTPException(400,'Invalid period')
+    if not m or m.club_id!=club_id or m.kind!='fixed':raise HTTPException(400,'Thông tin thành viên không hợp lệ')
+    if not re.fullmatch(r'20\d\d-(0[1-9]|1[0-2])',period):raise HTTPException(400,'Kỳ thu không hợp lệ')
     due=db.scalar(select(MonthlyDue).where(MonthlyDue.member_id==member_id,MonthlyDue.period==period))
     if due:
         if due.paid and due.amount!=money(amount):raise HTTPException(409,'Hoàn tác đã thu trước khi sửa số tiền')
@@ -535,7 +556,7 @@ def game_page(request:Request,game_id:int,db:Session=Depends(db_session)):
 @app.post('/games/{game_id}/fixed')
 def add_fixed_to_game(request:Request,game_id:int,member_id:int=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
     game,club=owned_session(request,db,game_id,lock=True);ensure_csrf(request,csrf)
-    if game.is_cancelled:raise HTTPException(400,'Session cancelled')
+    if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
     member=db.get(Member,member_id)
     if not member or member.club_id!=club.id or member.kind!='fixed':raise HTTPException(400)
     booking=db.scalar(select(Booking).where(Booking.session_id==game_id,Booking.member_id==member_id))
@@ -565,7 +586,7 @@ def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:st
     elif action=='refund':booking.paid=False;booking.payment_status='refunded'
     elif action=='attended':booking.attended=True
     elif action=='absent':booking.attended=False
-    else:raise HTTPException(400,'Invalid action')
+    else:raise HTTPException(400,'Thao tác không hợp lệ')
     if previous_status=='confirmed' and booking.status!='confirmed':
         from app.payments import promote_waitlist
         db.flush();promote_waitlist(db,game,exclude_id=booking.id)
@@ -580,13 +601,13 @@ def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:st
 @app.post('/games/{game_id}/toggle-open')
 def toggle_open(request:Request,game_id:int,csrf:str=Form(),db:Session=Depends(db_session)):
     game,_=owned_session(request,db,game_id);ensure_csrf(request,csrf)
-    if game.is_cancelled:raise HTTPException(400,'Session cancelled')
+    if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
     game.is_open=not game.is_open;db.commit();return redirect(f'/games/{game_id}')
 
 @app.post('/games/{game_id}/expenses')
 def add_expense(request:Request,game_id:int,title:str=Form(),amount:int=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_session(request,db,game_id,permission='finance');ensure_csrf(request,csrf)
-    if not title.strip():raise HTTPException(400,'Missing description')
+    if not title.strip():raise HTTPException(400,'Vui lòng nhập nội dung khoản chi')
     db.add(Expense(session_id=game_id,title=title.strip()[:100],amount=money(amount)));db.commit();return redirect(f'/games/{game_id}')
 
 def guest_review(game: GameSession, phone: str, member: Member | None):
@@ -646,7 +667,7 @@ def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:st
     if not game:raise HTTPException(404)
     if not guest_open(game):return redirect(f'/join/{public_id}?message=closed')
     db.execute(select(Club).where(Club.id==game.club_id).with_for_update())
-    if not name.strip():raise HTTPException(400,'Name required')
+    if not name.strip():raise HTTPException(400,'Vui lòng nhập tên người chơi')
     gender = validated_gender(gender)
     phone=digits_phone(phone)
     member=member_by_phone(db,game.club_id,phone)
@@ -656,7 +677,7 @@ def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:st
             if reviewed['game'] != public_id or reviewed['phone'] != phone:
                 raise BadSignature('Review belongs to a different phone or session')
         except (BadSignature, SignatureExpired, KeyError):
-            raise HTTPException(403, 'Invalid or expired review; look up your phone again')
+            raise HTTPException(403, 'Thông tin xác nhận đã hết hạn hoặc không hợp lệ. Vui lòng tra cứu lại số điện thoại')
         current = guest_review(game, phone, member)
         profile = [current[k] for k in ('name', 'gender', 'level', 'kind', 'fee')]
         if reviewed.get('member') != (member.id if member else None) or reviewed.get('profile') != profile:

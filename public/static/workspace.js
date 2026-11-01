@@ -41,6 +41,16 @@
   }
   addEventListener('hashchange', selectTabs);
   selectTabs();
+  document.querySelectorAll('[data-game-create]').forEach((form) => {
+    const picker = form.elements.club_id;
+    const capacity = form.elements.capacity;
+    // Only replace an untouched default; keep a host's explicitly chosen limit.
+    let edited = false;
+    capacity.addEventListener('input', () => { edited = true; });
+    picker.addEventListener('change', () => {
+      if (!edited) capacity.value = picker.selectedOptions[0]?.dataset.defaultCapacity || '20';
+    });
+  });
   document.querySelectorAll('[data-copy]').forEach((button) => button.addEventListener('click', async () => {
     const field = document.getElementById(button.dataset.copy);
     try {
