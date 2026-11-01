@@ -69,7 +69,11 @@ tài chính, rollback ứng dụng cần bản tương thích ledger và kiểm 
 - Edge mobile 375px pass luồng phát hành → ảnh báo 70k → host xác nhận thực nhận 30k →
   khách còn nợ 40k → thu tiền mặt 40k → đã thu đủ. Không tràn ngang/không lỗi JS.
 - Compileall và diff whitespace check pass. Production migration 0008 đã áp dụng sau
-  kiểm tra backup/hash/restore; deployment và smoke cập nhật khi chạy hoàn tất.
+  kiểm tra backup/hash/restore. Commit `713164a` đã push main; deployment
+  `dpl_FG6gg3zs6T3oGFYjoiWXFXBGGFa5` READY trên https://sporthost.vercel.app.
+- `smoke_group_release --run --billing` pass regression Sprint 2/3 và AA chính xác 180.001đ,
+  issue retry, partial bank + cash, overpay/refund, cơ sở khóa, giữ công nợ walk-in.
+  Chỉ xóa các tài khoản/CLB/dòng tiền giả lập do lượt QA này tạo, không đụng dữ liệu thật.
 
 ## Còn lại
 
