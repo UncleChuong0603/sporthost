@@ -46,7 +46,11 @@ Không sửa fee/paid/proofs/dues; destructive downgrade bị chặn để giữ
 - Compileall và `git diff --check` pass. Test PostgreSQL theo tên DB riêng vẫn opt-in/skip;
   kiểm chứng PostgreSQL thực tế trên đã chạy riêng, không thay bằng SQLite.
 
-Release production sẽ cập nhật tại đây sau khi deployment READY và smoke hoàn tất.
+Release production hoàn tất: commit `4db623f` đã push main, migration 0007 đã áp dụng sau
+backup/restore, deployment `dpl_9eV9Y79FN19pMeTFE2jQ467tEmoM` READY trên
+https://sporthost.vercel.app. `smoke_group_release --run --attendance` pass cả regression
+MANUAL/AUTO Sprint 2 và nhóm 3 người/2 đến/1 vắng, walk-in, checkout, stale version,
+guest edit freeze, kết thúc mà không tự ghi đã thu. Chỉ tài khoản/CLB QA của lượt chạy được dọn.
 
 ## Tiếp theo
 
