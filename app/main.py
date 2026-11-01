@@ -113,7 +113,10 @@ class GameSession(Base):
     __tablename__ = 'game_sessions'
     __table_args__ = (UniqueConstraint('recurring_rule_id', 'starts_at', name='uq_rule_occurrence'),
                       CheckConstraint("approval_mode IN ('AUTO_APPROVE','MANUAL_APPROVE')", name='ck_session_approval_mode'),
-                      CheckConstraint("lifecycle_status IN ('DRAFT','OPEN','IN_PROGRESS','PLAY_FINISHED','SETTLED','CANCELLED')",name='ck_session_lifecycle'))
+                      CheckConstraint("lifecycle_status IN ('DRAFT','OPEN','IN_PROGRESS','PLAY_FINISHED','SETTLED','CANCELLED')",name='ck_session_lifecycle'),
+                      CheckConstraint("fee_mode IN ('FIXED_PRICE','COST_SHARING')",name='ck_session_fee_mode'),
+                      CheckConstraint("no_show_policy IN ('FREE','FULL')",name='ck_session_no_show'),
+                      CheckConstraint("monthly_policy IN ('EXEMPT_PAID','SESSION_FEE')",name='ck_session_monthly_policy'))
     id: Mapped[int] = mapped_column(primary_key=True)
     club_id: Mapped[int] = mapped_column(ForeignKey('clubs.id'), index=True)
     public_id: Mapped[str] = mapped_column(unique=True, index=True)
@@ -144,10 +147,14 @@ class GameSession(Base):
     cancellation_deadline: Mapped[str | None]
     lifecycle_status: Mapped[str] = mapped_column(default='OPEN', server_default='OPEN')
     attendance_locked: Mapped[bool] = mapped_column(default=False, server_default=false())
+    fee_mode: Mapped[str] = mapped_column(default='FIXED_PRICE', server_default='FIXED_PRICE')
+    no_show_policy: Mapped[str] = mapped_column(default='FREE', server_default='FREE')
+    monthly_policy: Mapped[str] = mapped_column(default='EXEMPT_PAID', server_default='EXEMPT_PAID')
 
 class Booking(Base):
     __tablename__ = 'bookings'
-    __table_args__ = (UniqueConstraint('session_id', 'member_id', name='uq_booking_member_session'),)
+    __table_args__ = (UniqueConstraint('session_id', 'member_id', name='uq_booking_member_session'),
+                      CheckConstraint("payer_mode IN ('GROUP','SPLIT')",name='ck_booking_payer_mode'))
     id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[int] = mapped_column(ForeignKey('game_sessions.id'), index=True)
     member_id: Mapped[int] = mapped_column(ForeignKey('members.id'), index=True)
@@ -164,6 +171,7 @@ class Booking(Base):
     channel: Mapped[str] = mapped_column(default='direct', server_default='direct')
     decision_reason: Mapped[str] = mapped_column(default='', server_default='')
     policy_snapshot: Mapped[str] = mapped_column(default='{}', server_default='{}')
+    payer_mode: Mapped[str] = mapped_column(default='GROUP', server_default='GROUP')
     participants: Mapped[list['BookingParticipant']] = relationship(back_populates='booking', cascade='all, delete-orphan', order_by='BookingParticipant.position', lazy='selectin')
 
     @property
@@ -199,14 +207,23 @@ class BookingParticipant(Base):
     left_at: Mapped[str | None]
     attendance_actor_id: Mapped[int | None] = mapped_column(ForeignKey('hosts.id'))
     attendance_version: Mapped[int] = mapped_column(default=0, server_default='0')
+    charge_exempt: Mapped[bool] = mapped_column(default=False, server_default=false())
+    fee_discount: Mapped[int] = mapped_column(default=0, server_default='0')
+    adjustment_reason: Mapped[str] = mapped_column(default='', server_default='')
     booking: Mapped['Booking'] = relationship(back_populates='participants')
 
 class Expense(Base):
     __tablename__ = 'expenses'
+    __table_args__ = (CheckConstraint("category IN ('COURT','EQUIPMENT','OTHER')",name='ck_expense_category'),)
     id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[int] = mapped_column(ForeignKey('game_sessions.id'), index=True)
     title: Mapped[str]
     amount: Mapped[int]
+    category: Mapped[str] = mapped_column(default='OTHER', server_default='OTHER')
+    note: Mapped[str] = mapped_column(default='', server_default='')
+    created_by: Mapped[int | None] = mapped_column(ForeignKey('hosts.id'))
+    created_at: Mapped[str | None]
+    allocated: Mapped[bool] = mapped_column(default=True, server_default='true')
 
 class MonthlyDue(Base):
     __tablename__ = 'monthly_dues'
@@ -222,6 +239,7 @@ class MonthlyDue(Base):
 
 from app.models_extra import RecurringRule, ClubAccess, AuditLog, StoredAsset, PaymentProof, EmailToken, SubscriptionRequest
 from app.security import RequestLimit
+from app.finance_models import ChargeBatch, Charge, MoneyMovement
 
 # Only disposable/local SQLite gets automatic table creation. PostgreSQL is
 # ALWAYS managed by Alembic, including local PostgreSQL and staging.
@@ -431,7 +449,10 @@ def member_fee(game: GameSession, member: Member):
     return getattr(game, f'{kind}_fee')
 
 
-def booking_fee(game: GameSession, booking: Booking, member: Member):
+def booking_fee(game: GameSession, booking: Booking, member: Member, db=None):
+    if db is not None and game.attendance_locked:
+        from app.finance_service import batch_for, balances
+        if batch_for(db,game):return sum(row['amount'] for row in balances(db,game,booking.id))
     if booking.fee_amount is not None:
         return booking.fee_amount
     # Legacy bookings have the original common fee, never a new gender override.
@@ -607,10 +628,15 @@ def game_page(request:Request,game_id:int,db:Session=Depends(db_session)):
     bookings=db.scalars(select(Booking).where(Booking.session_id==game_id).order_by(Booking.id.desc())).all()
     member_by_id={m.id:m for m in db.scalars(select(Member).where(Member.club_id==club.id)).all()}
     expenses=db.scalars(select(Expense).where(Expense.session_id==game_id)).all()
-    rows=[{'booking':b,'member':member_by_id[b.member_id], 'fee':booking_fee(game,b,member_by_id[b.member_id])} for b in bookings]
+    rows=[{'booking':b,'member':member_by_id[b.member_id], 'fee':booking_fee(game,b,member_by_id[b.member_id],db)} for b in bookings]
     total_collected=sum(r['fee'] for r in rows if r['booking'].status=='confirmed' and r['booking'].paid)
     total_due=sum(r['fee'] for r in rows if r['booking'].status=='confirmed' and not r['booking'].paid)
     total_expenses=sum(e.amount for e in expenses)
+    from app.finance_service import batch_for, balances, summary
+    issued_batch=batch_for(db,game)
+    if issued_batch:
+        ledger_summary=summary(balances(db,game))
+        total_collected=ledger_summary['net'];total_due=ledger_summary['outstanding']
     gender_counts = {key: sum(p.gender == key for r in rows if r['booking'].status == 'confirmed' for p in r['booking'].participants) for key in GENDER_LABELS}
     from app.payments import can_finance
     for booking in bookings:
@@ -650,6 +676,10 @@ def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:st
     booking=db.get(Booking,booking_id)
     if not booking or booking.session_id!=game_id:raise HTTPException(404)
     previous_status=booking.status
+    if action in ('paid','unpaid','refund'):
+        from app.finance_service import batch_for
+        if batch_for(db,game):raise HTTPException(409,'Đã phát hành tiền. Ghi thu / hoàn / hoàn tác trong đối soát để giữ lịch sử.')
+        if game.fee_mode=='COST_SHARING':raise HTTPException(409,'Chia đều cần phát hành tiền trước khi xác nhận thực nhận.')
     if action not in ('paid','unpaid','refund'):
         from app.attendance import mutable_attendance
         mutable_attendance(game)
@@ -660,7 +690,7 @@ def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:st
     if action=='approve':
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
         from app.booking_service import registration_open
-        if not registration_open(game):raise HTTPException(400,'Đã đóng đăng ký hoặc qua hạn nhận người')
+        if not registration_open(game) and game.lifecycle_status!='IN_PROGRESS':raise HTTPException(400,'Đã đóng đăng ký hoặc qua hạn nhận người')
         if booking.status!='confirmed' and not has_space(db,game,booking.gender_at_booking,booking=booking):
             booking.status='waitlist'
             from app.workspace import audit
@@ -698,10 +728,19 @@ def toggle_open(request:Request,game_id:int,csrf:str=Form(),db:Session=Depends(d
     game.is_open=not game.is_open;db.commit();return redirect(f'/games/{game_id}')
 
 @app.post('/games/{game_id}/expenses')
-def add_expense(request:Request,game_id:int,title:str=Form(),amount:int=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
-    owned_session(request,db,game_id,permission='finance');ensure_csrf(request,csrf)
+def add_expense(request:Request,game_id:int,title:str=Form(),amount:int=Form(),csrf:str=Form(),
+                category:str=Form('OTHER'),note:str=Form(''),allocated:bool=Form(True),db:Session=Depends(db_session)):
+    game,club=owned_session(request,db,game_id,lock=True,permission='finance');ensure_csrf(request,csrf)
+    from app.finance_service import require_draft
+    from app.attendance import log_change
+    require_draft(game,db)
+    if category not in ('COURT','EQUIPMENT','OTHER') or len(note)>500:raise HTTPException(400,'Loại hoặc ghi chú khoản chi không hợp lệ')
     if not title.strip():raise HTTPException(400,'Vui lòng nhập nội dung khoản chi')
-    db.add(Expense(session_id=game_id,title=title.strip()[:100],amount=money(amount)));db.commit();return redirect(f'/games/{game_id}')
+    expense=Expense(session_id=game_id,title=title.strip()[:100],amount=money(amount),category=category,
+                    note=note.strip(),allocated=allocated,created_by=require_host(request,db).id,created_at=datetime.now(timezone.utc).isoformat())
+    db.add(expense);db.flush()
+    log_change(db,club.id,expense.created_by,'Ghi chi phí',None,dict(id=expense.id,amount=expense.amount,title=expense.title,category=category,allocated=allocated,note=expense.note))
+    db.commit();return redirect(f'/games/{game_id}#finance')
 
 def guest_review(game: GameSession, phone: str, member: Member | None):
     profile = {'phone': phone, 'name': member.name if member else '',
@@ -814,7 +853,7 @@ def export_game(request:Request,game_id:int,db:Session=Depends(db_session)):
     buf=io.StringIO();w=csv.writer(buf);w.writerow(['Họ tên','Số điện thoại','Giới tính','Loại','Trình độ','Trạng thái','Phí buổi (VND)','Đã thu','Đã điểm danh','Số người','Người đi cùng'])
     for b in bookings:
         m=db.get(Member,b.member_id)
-        cells=[m.name,m.phone,GENDER_LABELS[m.gender],m.kind,m.level,b.status,str(booking_fee(game,b,m)),'Có' if b.paid else 'Không','Có' if b.attended else 'Không',str(b.party_size),'; '.join(p.name for p in b.participants if p.position>0)]
+        cells=[m.name,m.phone,GENDER_LABELS[m.gender],m.kind,m.level,b.status,str(booking_fee(game,b,m,db)),'Có' if b.paid else 'Không','Có' if b.attended else 'Không',str(b.party_size),'; '.join(p.name for p in b.participants if p.position>0)]
         w.writerow(["'"+cell if cell.startswith(('=','+','-','@')) else cell for cell in cells])
     return StreamingResponse(iter([buf.getvalue().encode('utf-8-sig')]),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':f'attachment; filename="sporthost-game-{game_id}.csv"'})
 
@@ -848,6 +887,8 @@ payments.register_routes()
 accounts.register_routes()
 booking_routes.register_routes()
 attendance.register_routes()
+from app import finance_routes
+finance_routes.register_routes()
 
 
 @app.exception_handler(StarletteHTTPException)

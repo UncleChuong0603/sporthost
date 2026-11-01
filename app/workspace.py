@@ -61,7 +61,21 @@ def game_rows(data):
 
 def ledger(db,data):
     members={m.id:m for m in data['members']};games={g.id:g for g in data['games']};rows=[]
+    from app.finance_service import batch_for, balances
+    issued={g.id for g in games.values() if batch_for(db,g)}
+    for game_id in issued:
+        game=games[game_id]
+        for payer in balances(db,game):
+            base={'game_id':game.id,'club_id':game.club_id,'title':payer['name'],'period':game.starts_at[:7],
+                  'date':game.starts_at[:10],'cancelled':False,'direction':'income'}
+            if payer['net']:
+                rows.append({**base,'type':'money','id':payer['booking_id'],'amount':payer['net'],'paid':True,
+                             'status':'confirmed','description':game.title+' · thực nhận sau hoàn'})
+            if payer['outstanding']:
+                rows.append({**base,'type':'receivable','id':payer['booking_id'],'amount':payer['outstanding'],'paid':False,
+                             'status':'unpaid','description':game.title+' · còn nợ đã phát hành'})
     for booking in data['bookings']:
+        if booking.session_id in issued:continue
         if booking.status not in ('confirmed','cancelled') and not booking.paid:continue
         game=games[booking.session_id];member=members[booking.member_id]
         amount=booking_fee(game,booking,member)
@@ -164,8 +178,13 @@ def register_routes():
     async def edit_game(request:Request,game_id:int,db=Depends(db_session)):
         form=await request.form();ensure_csrf(request,form.get('csrf',''));game,club=owned_session(request,db,game_id,lock=True)
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
+        from app.finance_service import require_draft
+        require_draft(game, db)
+        financial_fields=('fee_mode','no_show_policy','monthly_policy')
+        if any(name in form and str(form[name])!=getattr(game,name) for name in financial_fields) and db.scalar(select(Booking.id).where(Booking.session_id==game.id).limit(1)):
+            raise HTTPException(409,'Đã có đăng ký. Giữ chính sách phí đã công bố; dùng miễn/giảm có lý do khi chốt tiền.')
         tracked=('title','venue','starts_at','capacity','approval_mode','skill_guidance','venue_instructions',
-                 'cancellation_policy','participation_conditions','maps_url','registration_deadline','cancellation_deadline')
+                 'cancellation_policy','participation_conditions','maps_url','registration_deadline','cancellation_deadline')+financial_fields
         before={name:getattr(game,name) for name in tracked}
         try:
             capacity=int(form.get('capacity',0));starts_at=datetime.strptime(form.get('starts_at',''),'%Y-%m-%dT%H:%M')
@@ -187,6 +206,8 @@ def register_routes():
         # Publish policy changes explicitly; club edits never change existing sessions.
         policy_fields=('approval_mode','skill_guidance','venue_instructions','cancellation_policy','participation_conditions','maps_url','registration_deadline','cancellation_deadline')
         changed=session_policy(club,form)
+        for name in financial_fields:
+            if name in form:setattr(game,name,changed[name])
         for name in policy_fields:
             if name in form:setattr(game,name,changed[name])
         policy_changed=any(before[name]!=getattr(game,name) for name in policy_fields)
@@ -198,6 +219,7 @@ def register_routes():
                 'approval_mode':'Cách duyệt','skill_guidance':'Trình độ','venue_instructions':'Hướng dẫn sân',
                 'cancellation_policy':'Chính sách hủy','participation_conditions':'Điều kiện tham gia',
                 'maps_url':'Bản đồ','registration_deadline':'Hạn đăng ký','cancellation_deadline':'Hạn tự sửa/hủy'}
+        labels.update(fee_mode='Cách tính phí',no_show_policy='Chính sách vắng mặt',monthly_policy='Phí tháng / buổi')
         details='\n'.join(f'{labels[name]}: {before[name] or "Chưa cài đặt"} → {getattr(game,name) or "Chưa cài đặt"}'
                            for name in tracked if before[name]!=getattr(game,name))
         db.add(AuditLog(club_id=club.id,host_id=require_host(request,db).id,action='Sửa thông tin buổi đánh',details=f'Lý do: {reason or "Cập nhật thông tin"}\n{details}'))

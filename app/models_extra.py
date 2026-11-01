@@ -73,6 +73,8 @@ class PaymentProof(Base):
     created_at: Mapped[str] = mapped_column(default=utc_now)
     reviewed_at: Mapped[str | None]
     note: Mapped[str] = mapped_column(default='')
+    reported_amount: Mapped[int | None]
+    payer_participant_id: Mapped[int | None] = mapped_column(ForeignKey('booking_participants.id'))
 
 
 class EmailToken(Base):

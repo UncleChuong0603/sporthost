@@ -32,9 +32,11 @@ bảng cũ và map mỗi booking cũ đúng một participant. Trạng thái rel
 
 Sprint 3 thêm điểm danh từng người, walk-in, về sớm, thay người và kết thúc đánh;
 [báo cáo Sprint 3](docs/SPORT_HOST_SPRINT_3_REPORT.md) ghi rõ kiểm chứng và release.
-Engine chia đều, partial payments, ledger/chốt sổ và
-granular co-host thuộc Sprint 4–5, chưa hoàn tất. COST_SHARING mới lưu cấu hình;
-không tự đổi nghĩa vụ tiền cũ. Nhóm hiện dùng một người liên hệ/thanh toán cho cả nhóm.
+Sprint 4 thêm engine chia đều/giá cố định, miễn phí tháng đã đóng, bản nháp/phát hành,
+thu thiếu/đủ/thừa nhiều lần, hoàn thủ công, tách payer và snapshot QR/tài khoản.
+[Báo cáo Sprint 4](docs/SPORT_HOST_SPRINT_4_REPORT.md) ghi phạm vi, tương thích và kiểm chứng.
+Chốt sổ, điều chỉnh khoản đã phát hành, granular co-host và platform ledger còn Sprint 5.
+Không tự đổi nghĩa vụ tiền cũ; session chưa phát hành vẫn giữ luồng legacy giá cố định.
 
 [Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·
 [Kịch bản nghiệm thu](docs/SPORT_HOST_E2E_SCENARIOS.md) ·

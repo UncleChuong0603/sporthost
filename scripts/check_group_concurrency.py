@@ -108,6 +108,46 @@ def worker():
             assert sorted(outcomes)==[200,409],outcomes
             with SessionLocal() as db:assert confirm_count(db,race_game)==1
             print('Two PostgreSQL attendance scenarios passed: conflicting host updates and two walk-ins racing for one freed seat')
+        if hasattr(GameSession,'fee_mode'):
+            from app.main import ChargeBatch,MoneyMovement
+            from app.finance_service import draft,fingerprint,balances
+            result=submit(host,f'/clubs/{club_id}/games',{'title':'Money race','starts_at':starts,
+                          'capacity':1,'guest_fee':70000,'approval_mode':'AUTO_APPROVE'},f'/clubs/{club_id}')
+            money_game=int(result.url.path.split('/')[-1]);path=f'/games/{money_game}'
+            with SessionLocal() as db:public='/join/'+db.get(GameSession,money_game).public_id
+            with TestClient(app) as player:
+                assert submit(player,public,{'name':'Payer','phone':'0902345685'},public).status_code==200
+            with SessionLocal() as db:
+                b=db.scalar(select(Booking).where(Booking.session_id==money_game));pid=b.participants[0].id
+            submit(host,path+'/lifecycle/start',{},path)
+            submit(host,f'{path}/participants/{pid}/attendance',{'action':'check_in','version':0},path)
+            submit(host,path+'/lifecycle/finish',{},path)
+            with SessionLocal() as db:expected=fingerprint(draft(db,db.get(GameSession,money_game)))
+            def issue_money(index):
+                with TestClient(app) as finance:
+                    finance.cookies.set('clubhost',cookie)
+                    return submit(finance,path+'/billing/issue',{'draft_hash':expected},path+'/billing').status_code
+            with ThreadPoolExecutor(max_workers=2) as pool:outcomes=list(pool.map(issue_money,(0,1)))
+            assert outcomes==[200,200],outcomes
+            with SessionLocal() as db:
+                assert len(db.scalars(select(ChargeBatch).where(ChargeBatch.session_id==money_game)).all())==1
+            def receive(value):
+                amount,key=value
+                with TestClient(app) as finance:
+                    finance.cookies.set('clubhost',cookie)
+                    return submit(finance,f'{path}/billing/bookings/{b.id}/money',{'amount':amount,'kind':'RECEIVED',
+                        'source':'CASH','request_key':key},path+'/billing').status_code
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes=list(pool.map(receive,[(10000,'duplicate-money-race')]*2))
+            assert outcomes==[200,200],outcomes
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes=list(pool.map(receive,[(20000,'distinct-money-one'),(30000,'distinct-money-two')]))
+            assert outcomes==[200,200],outcomes
+            with SessionLocal() as db:
+                assert len(db.scalars(select(MoneyMovement).where(MoneyMovement.session_id==money_game)).all())==3
+                result=balances(db,db.get(GameSession,money_game))[0]
+                assert result['net']==60000 and result['outstanding']==10000
+            print('Three PostgreSQL billing scenarios passed: concurrent issue, duplicate receipt retry, distinct partial receipts')
 
 
 def main():

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-01 — Action plan Sprint 4
+
+- Engine FIXED_PRICE/COST_SHARING, làm tròn chính xác tới 1 VND, policy phí tháng/no-show
+  công khai trước đăng ký; miễn/giảm có lý do, chi phí phân loại và khoản CLB tự chịu.
+- Bản nháp, phát hành một lần, snapshot cơ sở/QR/ngân hàng, khóa attendance/expense/payer.
+- GROUP/SPLIT không thu trùng, ledger nhiều lần bank/cash, thiếu/thừa/hoàn/hoàn tác có audit.
+- Nhiều biên nhận, hash chống ảnh trùng; xác nhận phải nhập tiền thực nhận, retry không ghi trùng.
+- Sổ thu chi/dashboard/CSV theo khoản đã phát hành và net receipts; duyệt waitlist tại sân
+  không cần mở đăng ký public trở lại. Migration additive `0008_manual_billing`.
+
 ## 2026-11-01 — Action plan Sprint 3
 
 - Điểm danh từng người, vắng mặt trả chỗ, giờ đến/về sớm, thay người có lý do/audit.

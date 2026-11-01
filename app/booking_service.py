@@ -42,7 +42,8 @@ def ensure_token(booking, game=None):
 def booked_policy(booking, game):
     policy = json.loads(booking.policy_snapshot or '{}')
     return policy or {'cancellation_deadline': game.cancellation_deadline or game.starts_at,
-                      'cancellation_policy': game.cancellation_policy}
+                      'cancellation_policy': game.cancellation_policy, 'fee_mode': game.fee_mode,
+                      'no_show_policy': game.no_show_policy, 'monthly_policy': game.monthly_policy}
 
 
 def token_valid(booking, raw):
@@ -100,6 +101,8 @@ def registration_open(game):
 
 
 def allow_guest_change(db, booking, game, *, editing=True):
+    if game.attendance_locked or game.lifecycle_status in ('PLAY_FINISHED','SETTLED'):
+        raise HTTPException(409, 'Buổi đã kết thúc hoặc đã phát hành tiền. Liên hệ host để điều chỉnh.')
     now = now_local().strftime('%Y-%m-%dT%H:%M')
     if game.is_cancelled or now >= booked_policy(booking, game)['cancellation_deadline']:
         raise HTTPException(400, 'Đã qua hạn thay đổi đăng ký. Vui lòng liên hệ host.')
@@ -113,6 +116,13 @@ def session_policy(club, form=None):
     values = dict(approval_mode=club.default_approval_mode, sport_snapshot=club.sport_type,
                   skill_guidance=club.skill_guidance, venue_instructions=club.venue_instructions,
                   cancellation_policy=club.cancellation_policy)
+    choices = {'fee_mode': (('FIXED_PRICE', 'COST_SHARING'), club.default_fee_mode),
+               'no_show_policy': (('FREE', 'FULL'), 'FREE'),
+               'monthly_policy': (('EXEMPT_PAID', 'SESSION_FEE'), 'EXEMPT_PAID')}
+    for name, (allowed, default) in choices.items():
+        value = str(form.get(name, '') or default)
+        if value not in allowed:raise HTTPException(400, 'Chính sách tính phí không hợp lệ')
+        values[name] = value
     limits = {'skill_guidance': 500, 'venue_instructions': 2000, 'cancellation_policy': 2000,
               'participation_conditions': 2000, 'maps_url': 500}
     for name, maximum in limits.items():

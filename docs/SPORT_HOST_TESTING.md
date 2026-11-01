@@ -12,7 +12,7 @@ python -m scripts.check_group_concurrency --env-file PRIVATE_ENV_FILE
 python -m scripts.apply_verified_release --env-file PRIVATE_ENV_FILE --apply
 # Sau khi deployment mới READY:
 # Scrub chỉ dành cho cutover 0006; không chạy lại trên revision 0007.
-python -m scripts.smoke_group_release --env-file PRIVATE_ENV_FILE --run --attendance
+python -m scripts.smoke_group_release --env-file PRIVATE_ENV_FILE --run --billing
 ```
 
 `verify_release` đọc file môi trường riêng tại `.vercel/action-plan-production.env`,
@@ -22,6 +22,11 @@ Script concurrency dùng schema ngẫu nhiên tách dữ liệu thật. Các sch
 chỉ khi chính lượt chạy đã tạo; không chạm schema ứng dụng khác. Production smoke dùng
 hai tài khoản ngẫu nhiên + một CLB QA, không gửi email/ghi nhận tiền thực, dọn bằng owner/
 marker chính xác sau khi chạy. Không dùng pytest CRUD suite trực tiếp lên schema production.
+
+Sprint 4 thêm ba race billing: concurrent issue, retry cùng receipt key và hai receipt khác
+nhau cùng lúc. Smoke `--billing` bao gồm nhóm/attendance và các dòng tiền giả lập chỉ trong
+CLB QA: AA có phần dư, issue retry, bank + cash, thừa/hoàn và cơ sở bị khóa. Chỉ xóa các dòng
+QA được tạo trong lượt đó, không đụng ledger thật. Mọi upload trong tests local nằm ở thư mục tạm.
 
 0006 là expand → deploy → scrub capability: không scrub plaintext khi app cũ còn chạy.
 Sau scrub, old links xác thực bằng hash; rollback sang app cần plaintext phải có kế hoạch

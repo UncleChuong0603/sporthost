@@ -114,8 +114,14 @@ def register_routes():
         from app.booking_service import ensure_token,booked_policy
         ensure_token(booking,game);db.commit()
         proofs=db.scalars(select(PaymentProof).where(PaymentProof.booking_id==booking.id).order_by(PaymentProof.id.desc())).all()
+        from app.finance_service import batch_for, balances
+        import json
+        batch=batch_for(db,game)
         response=page(request,'participant.html',booking=booking,game=game,member=member,club=club,
-            fee=booking_fee(game,booking,member),proofs=proofs,booking_policy=booked_policy(booking,game),deadline_passed=bool(game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline))
+            fee=booking_fee(game,booking,member),proofs=proofs,booking_policy=booked_policy(booking,game),
+            billing_batch=batch,billing_snapshot=json.loads(batch.snapshot) if batch else None,
+            billing_rows=balances(db,game,booking.id) if batch else [],
+            deadline_passed=bool(game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline))
         response.headers['Cache-Control']='private, no-store';response.headers['Referrer-Policy']='no-referrer'
         return response
 
@@ -153,20 +159,41 @@ def register_routes():
     def participant_qr(request:Request,key:str,db=Depends(db_session)):
         booking,game,member,club=participant(db,key,request=request)
         qr=booking.qr_key or club.qr_key
+        from app.finance_service import batch_for
+        import json
+        batch=batch_for(db,game)
+        if batch:qr=json.loads(batch.snapshot)['payment']['qr_key']
         if not qr:raise HTTPException(404)
         return image_response(qr)
 
     @app.post('/attend/{key}/proof')
-    def upload_proof(request:Request,key:str,csrf:str=Form(),proof:UploadFile=File(),db=Depends(db_session)):
+    def upload_proof(request:Request,key:str,csrf:str=Form(),proof:UploadFile=File(),
+                     reported_amount:str=Form(''),payer_participant_id:str=Form(''),db=Depends(db_session)):
         from app.security import rate_limit
         rate_limit(request,'proof-upload',limit=15,seconds=300)
         ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True,request=request)
-        if game.is_cancelled or booking.status!='confirmed' or booking.paid or booking.payment_status=='refunded':
+        from app.finance_service import batch_for,balances
+        from app.main import money
+        batch=batch_for(db,game)
+        if game.is_cancelled or booking.status!='confirmed' or (not batch and (booking.paid or booking.payment_status=='refunded')):
             raise HTTPException(400,'Chỉ gửi biên nhận cho booking đã xác nhận và chưa thanh toán')
-        if db.scalar(select(PaymentProof.id).where(PaymentProof.booking_id==booking.id,PaymentProof.status=='reported')):
+        if not batch and game.fee_mode=='COST_SHARING':raise HTTPException(409,'Chờ host phát hành tiền sau khi chia đều trước khi báo chuyển')
+        if not batch and db.scalar(select(PaymentProof.id).where(PaymentProof.booking_id==booking.id,PaymentProof.status=='reported')):
             raise HTTPException(409,'Biên nhận đang chờ host đối chiếu')
+        amount=None;payer_id=None
+        if batch:
+            amount=money(reported_amount)
+            if not amount:raise HTTPException(400,'Cần số tiền đã báo chuyển')
+            try:payer_id=int(payer_participant_id) if payer_participant_id else None
+            except ValueError:raise HTTPException(400,'Người thanh toán không hợp lệ')
+            if not any(r['payer_participant_id']==payer_id for r in balances(db,game,booking.id)):
+                raise HTTPException(400,'Người thanh toán không thuộc lượt đăng ký')
         asset=store_asset(db,proof,club.id,'proof')
-        db.add(PaymentProof(booking_id=booking.id,asset_id=asset.id));booking.payment_status='reported'
+        if db.scalar(select(PaymentProof.id).join(StoredAsset).where(PaymentProof.booking_id==booking.id,StoredAsset.sha256==asset.sha256)):
+            delete_image(asset.key)
+            raise HTTPException(409,'Ảnh này đã được gửi cho lượt đăng ký. Không cần tải lại.')
+        db.add(PaymentProof(booking_id=booking.id,asset_id=asset.id,reported_amount=amount,payer_participant_id=payer_id))
+        if not booking.paid:booking.payment_status='reported'
         audit(db,club.id,None,'Nhận biên nhận',f'Booking #{booking.id}')
         try:db.commit()
         except Exception:delete_image(asset.key);raise
@@ -222,10 +249,12 @@ def register_routes():
         for proof in proofs:
             if proof.booking_id:
                 target=db.get(Booking,proof.booking_id);game=db.get(GameSession,target.session_id);member=db.get(Member,target.member_id)
-                amount=booking_fee(game,target,member);title=game.title
+                amount=booking_fee(game,target,member,db);title=game.title
             else:
                 target=db.get(MonthlyDue,proof.due_id);member=db.get(Member,target.member_id);amount=target.amount;title='Phí tháng '+target.period
-            rows.append({'proof':proof,'member':member,'title':title,'amount':amount})
+            from app.finance_service import batch_for
+            rows.append({'proof':proof,'member':member,'title':title,'amount':amount,
+                         'issued':bool(proof.booking_id and batch_for(db,game))})
         return page(request,'payment_review.html',host=host,clubs=clubs,rows=rows,club_id=club_id)
 
     @app.get('/proofs/{proof_id}/image')
@@ -237,12 +266,41 @@ def register_routes():
         return image_response(asset.key)
 
     @app.post('/proofs/{proof_id}/review')
-    def review_proof(request:Request,proof_id:int,action:str=Form(),note:str=Form(''),csrf:str=Form(),db=Depends(db_session)):
+    def review_proof(request:Request,proof_id:int,action:str=Form(),note:str=Form(''),csrf:str=Form(),
+                     received_amount:str=Form(''),occurred_at:str=Form(''),db=Depends(db_session)):
         ensure_csrf(request,csrf);proof=db.get(PaymentProof,proof_id)
         if not proof:raise HTTPException(404)
         asset=db.get(StoredAsset,proof.asset_id);host,club=owned_club(request,db,asset.club_id,permission='finance')
         if action not in ('confirm','reject'):raise HTTPException(400)
         target_model=Booking if proof.booking_id else MonthlyDue;target_id=proof.booking_id or proof.due_id
+        if proof.booking_id:
+            # All billing/attendance mutations lock the session first, including proof review.
+            from app.main import GameSession
+            from app.finance_service import batch_for,record_money
+            from app.attendance import log_change
+            from zoneinfo import ZoneInfo
+            target=db.get(Booking,target_id)
+            game=db.scalar(select(GameSession).where(GameSession.id==target.session_id).with_for_update())
+            db.refresh(proof);db.refresh(target)
+            if batch_for(db,game):
+                if proof.status!='reported':
+                    if action=='confirm' and proof.status=='confirmed':
+                        from app.main import MoneyMovement
+                        entry=db.scalar(select(MoneyMovement).where(MoneyMovement.proof_id==proof.id))
+                        if entry and str(entry.amount)==received_amount:return redirect(f'/payments/review?club_id={club.id}')
+                    raise HTTPException(409,'Biên nhận này đã được xử lý')
+                if action=='confirm':
+                    try:moment=datetime.fromisoformat(occurred_at).replace(tzinfo=ZoneInfo('Asia/Ho_Chi_Minh')).isoformat() if occurred_at else None
+                    except ValueError:raise HTTPException(400,'Thời điểm giao dịch không hợp lệ')
+                    record_money(db,game,target,host.id,amount=received_amount,kind='RECEIVED',source='BANK_TRANSFER',
+                        request_key=f'proof-review-{proof.id}',payer_participant_id=proof.payer_participant_id,
+                        reason=note,occurred_at=moment,proof_id=proof.id)
+                proof.status='confirmed' if action=='confirm' else 'rejected';proof.reviewed_by=host.id
+                proof.reviewed_at=now_iso();proof.note=note.strip()[:300]
+                log_change(db,club.id,host.id,'Đối soát biên nhận',{'status':'reported'},
+                    {'proof_id':proof.id,'status':proof.status,'received_amount':received_amount if action=='confirm' else None},note)
+                db.commit();return redirect(f'/payments/review?club_id={club.id}')
+            if game.fee_mode=='COST_SHARING' and action=='confirm':raise HTTPException(409,'Cần phát hành tiền trước khi đối soát chia đều')
         target=db.scalar(select(target_model).where(target_model.id==target_id).with_for_update())
         db.refresh(proof)
         if proof.status!='reported' or target.paid:raise HTTPException(409,'Biên nhận này đã được xử lý')
