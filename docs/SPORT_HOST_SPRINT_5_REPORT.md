@@ -49,7 +49,10 @@ rollback dùng bản tương thích schema/ledger, backup phải được kiểm
 - Full regression browser: **104 passed, 1 skipped in 119.51s**; kiểm tra lại riêng quyền /
   platform / luồng mobile chốt còn nợ: **5 passed in 15.11s**. Compileall/diff check pass.
 - Migration production 0009 đã áp dụng sau backup/hash/restore verification; deployment
-  và smoke sẽ ghi sau khi chạy hoàn tất.
+  và deployment `dpl_BR5aV8uKE8gR2YN7VFXdFpDze5ZF` READY sau push `7934679` lên main.
+  `smoke_group_release --run --closing` pass regression nhóm/attendance/AA/thu nhiều lần,
+  chốt khi còn nợ, thu sau chốt, điều chỉnh/retry/stale version và isolation. Chỉ dữ liệu
+  QA tạo trong lượt chạy được dọn. Site: https://sporthost.vercel.app.
 
 ## Bước tiếp
 
