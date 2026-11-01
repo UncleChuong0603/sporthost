@@ -187,7 +187,21 @@ def main():
                     with engine.connect() as con:
                         assert con.scalar(text('SELECT lifecycle_status FROM clubhost.game_sessions WHERE id=:game'),{'game':game_id})=='SETTLED'
                     assert outsider.get(path+'/billing').status_code==404
+                    assert post(host,f'/clubs/{club_id}/cohosts',{'email':emails[1],'role':'custom','permissions':['manage_finance']},f'/clubs/{club_id}/settings').status_code==200
+                    assert outsider.get(path+'/billing').status_code==200
+                    assert '/attend/' not in outsider.get(path).text
+                    assert post(outsider,f'{path}/participants/{people[0]}/attendance',{'action':'reset','version':1,'reason':'QA denied'},path).status_code==403
+                    assert post(host,f'/clubs/{club_id}/cohosts',{'email':emails[1],'role':'custom','permissions':['check_in']},f'/clubs/{club_id}/settings').status_code==200
+                    restricted=outsider.get(path).text
+                    assert '/attend/' not in restricted and '0902345680' not in restricted
+                    assert 'Đã thu theo buổi' not in restricted
+                    assert outsider.get(path+'/billing').status_code==403
+                    with engine.connect() as con:
+                        access_id=con.scalar(text('SELECT a.id FROM clubhost.club_access a JOIN clubhost.hosts h ON h.id=a.host_id WHERE a.club_id=:club AND h.email=:email'),{'club':club_id,'email':emails[1]})
+                    assert post(host,f'/clubs/{club_id}/cohosts/{access_id}/remove',{},f'/clubs/{club_id}/settings').status_code==200
+                    assert outsider.get(path).status_code==404
                     print('Sprint 5 production closing passed: closed while unpaid, collected after close, versioned adjustment/retry/stale denial and isolation',flush=True)
+                    print('Sprint 6 production privacy passed: phone lookup, finance-only capability hiding, check-in-only data restrictions and access revocation',flush=True)
         print('Production smoke checks passed', flush=True)
     finally:
         for client in clients:
@@ -216,6 +230,7 @@ def main():
                     con.execute(text('DELETE FROM clubhost.game_sessions WHERE club_id=:club'), params)
                     con.execute(text('DELETE FROM clubhost.members WHERE club_id=:club'), params)
                     con.execute(text('DELETE FROM clubhost.audit_logs WHERE club_id=:club'), params)
+                    con.execute(text('DELETE FROM clubhost.club_access WHERE club_id=:club'), params)
                     con.execute(text('DELETE FROM clubhost.clubs WHERE id=:club'), params)
                 con.execute(text('DELETE FROM clubhost.audit_logs WHERE host_id=:host'), {'host': host_id})
                 con.execute(text('DELETE FROM clubhost.hosts WHERE id=:host AND email IN (:first,:second)'),

@@ -1,5 +1,33 @@
 # Báo cáo SportHost — action plan 01/11/2026
 
+## Chỉ mục sau triển khai Sprint 0–6
+
+Giữ stack và PostgreSQL hiện có, schema riêng `clubhost`. Người dùng đã cho phép push,
+deploy và test production; từng migration được backup/restore/schema thử trước khi apply.
+
+| Sprint | Phạm vi | Migration | Báo cáo / files / tests / giới hạn |
+| --- | --- | --- | --- |
+| 0 | Audit, baseline, gap analysis, test isolation | Không | Phần lịch sử bên dưới, inventory và E2E scenarios |
+| 1 | Môn thể thao, cài đặt/mặc định CLB, tiếng Việt/mobile | 0005 | Phần lịch sử bên dưới |
+| 2 | Nhóm không account, policy, duyệt/waitlist atomic, capability | 0006 | [Báo cáo Sprint 2](SPORT_HOST_SPRINT_2_REPORT.md) |
+| 3 | Điều hành tại sân, attendance từng người/walk-in/checkout | 0007 | [Báo cáo Sprint 3](SPORT_HOST_SPRINT_3_REPORT.md) |
+| 4 | AA/fixed, issue snapshot, ledger thiếu/thừa/hoàn, tách payer | 0008 | [Báo cáo Sprint 4](SPORT_HOST_SPRINT_4_REPORT.md) |
+| 5 | Chốt còn nợ, adjustments/version, granular co-host/platform ledger | 0009 | [Báo cáo Sprint 5](SPORT_HOST_SPRINT_5_REPORT.md) |
+| 6 | E2E 15 người, privacy/upload/DB retry, QR text tháng, backup ảnh | 0010 | [Báo cáo Sprint 6](SPORT_HOST_SPRINT_6_REPORT.md) |
+
+Full suite mới nhất: 110 passed / 1 opt-in skipped; 10 race PostgreSQL và backup/restore
+DB/ảnh synthetic pass. Kịch bản mobile 15 người chốt **1.050.000đ phải thu, 500.000đ đã nhận,
+550.000đ còn nợ**; ảnh chưa được đối soát vẫn chưa trả tiền. Kết quả production mới nhất
+ghi trong báo cáo Sprint 6. Chưa chứng nhận tải lớn, mọi thiết bị/in-app browser, SMTP thật,
+SSH tunnel hoặc lịch backup provider; đọc [giới hạn vận hành](SPORT_HOST_BETA_OPERATIONS.md).
+
+Production hiện ở schema revision `0010_payment_config_snapshot`, bản source `8ee0239`
+đã READY và smoke regression/finance/closing/privacy/co-host pass trên CLB QA riêng, đã dọn
+đúng dữ liệu thử. [Mở SportHost](https://sporthost.vercel.app).
+
+Phần bên dưới giữ nguyên lịch sử Sprint 0/1; các nhận định thiếu môi trường/chưa release
+ở thời điểm baseline đã được thay bằng báo cáo theo sprint, không phải trạng thái hiện tại.
+
 **Cập nhật phiên tiếp tục:** người dùng đã cho phép push/deploy/test production.
 Sprint 1 đã push `7a8ae26`, migration 0005 trên production sau backup/restore vào schema
 thử riêng và đối chiếu dữ liệu cũ. Production smoke tạo/sửa CLB, sport/capacity, CSRF,

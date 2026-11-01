@@ -57,7 +57,15 @@ destructive bị chặn. Backup source 0009 gồm 22 bảng, restore schema ng�
 - `check_backup_restore`: **21 model tables + private image pass**, restore sang schema và
   thư mục ảnh khác, hash khớp, session invalidation và sequence ID đúng; dọn 2 schema thử.
 - `verify_release`: backup 22 bảng schema production 0009, restore và migrate 0010 pass;
-  mọi cột legacy không đổi. Production release ghi sau khi deployment/smoke hoàn tất.
+  mọi cột legacy không đổi. Migration 0010 đã apply sau xác minh backup/hash.
+- Production: source `77a8a2e` và bản siết capability `8ee0239` đã push main. Deployment
+  cuối `dpl_J8UBBKBMgzfaX3taASBQVZ2SzP8A` READY, alias https://sporthost.vercel.app.
+  `smoke_group_release --run --closing` pass nhóm MANUAL/AUTO, capacity/waitlist/token,
+  attendance/walk-in/checkout, AA/issue retry/partial bank + cash/refund, chốt còn nợ,
+  thu sau chốt, adjustment/version, privacy lookup, finance-only không thấy capability,
+  check-in-only không thấy contact/thu chi và thu hồi quyền. Cleanup chỉ CLB/tài khoản/
+  dòng tiền synthetic của lượt chạy. Không upload proof vào storage production trong smoke;
+  UI upload/đối soát được kiểm chứng local với ảnh riêng tư test.
 
 ## Tài liệu và giới hạn thực tế
 
