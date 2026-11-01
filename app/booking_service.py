@@ -75,7 +75,8 @@ def initialize_booking(db, flush_context, instances):
 def can_fit(db, game, genders, exclude_id=None):
     gender_column = func.coalesce(BookingParticipant.gender, Booking.gender_at_booking)
     query = select(gender_column, func.count()).select_from(Booking).outerjoin(BookingParticipant).where(
-        Booking.session_id == game.id, Booking.status == 'confirmed')
+        Booking.session_id == game.id, Booking.status == 'confirmed',
+        (BookingParticipant.id.is_(None) | (BookingParticipant.attendance_status != 'NO_SHOW')))
     if exclude_id is not None:
         query = query.where(Booking.id != exclude_id)
     counts = dict(db.execute(query.group_by(gender_column)).all())
@@ -91,7 +92,7 @@ def can_fit(db, game, genders, exclude_id=None):
 
 
 def registration_open(game):
-    if not game.is_open or game.is_cancelled:
+    if not game.is_open or game.is_cancelled or game.lifecycle_status!='OPEN':
         return False
     now = now_local().strftime('%Y-%m-%dT%H:%M')
     deadline = game.registration_deadline or game.starts_at
@@ -103,7 +104,7 @@ def allow_guest_change(db, booking, game, *, editing=True):
     if game.is_cancelled or now >= booked_policy(booking, game)['cancellation_deadline']:
         raise HTTPException(400, 'Đã qua hạn thay đổi đăng ký. Vui lòng liên hệ host.')
     from app.main import PaymentProof
-    if booking.attended or (editing and (booking.paid or db.scalar(select(PaymentProof.id).where(PaymentProof.booking_id == booking.id)))):
+    if booking.attended or any(p.attendance_status!='NOT_MARKED' for p in booking.participants) or (editing and (booking.paid or db.scalar(select(PaymentProof.id).where(PaymentProof.booking_id == booking.id)))):
         raise HTTPException(409, 'Đăng ký đã có điểm danh hoặc giao dịch. Liên hệ host để điều chỉnh có đối soát.')
 
 

@@ -47,7 +47,8 @@ def game_rows(data):
     rows=[]
     for game in data['games']:
         bookings=[b for b in data['bookings'] if b.session_id==game.id]
-        confirmed=sum(b.party_size for b in bookings if b.status=='confirmed')
+        confirmed=sum(sum(p.attendance_status!='NO_SHOW' for p in b.participants) if b.participants else 1
+                      for b in bookings if b.status=='confirmed')
         pending=sum(b.party_size for b in bookings if b.status in ('pending','waitlist'))
         rows.append({'game':game,'club':data['club_map'][game.club_id],'confirmed':confirmed,
                      'pending':pending,'slots':max(0,game.capacity-confirmed),
@@ -149,6 +150,9 @@ def register_routes():
     def invite_fixed(request:Request,game_id:int,csrf:str=Form(),db=Depends(db_session)):
         ensure_csrf(request,csrf);game,club=owned_session(request,db,game_id,lock=True)
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
+        from app.attendance import mutable_attendance
+        mutable_attendance(game)
+        if game.lifecycle_status!='OPEN':raise HTTPException(409,'Chỉ tạo lời mời trước khi bắt đầu buổi đánh')
         existing=set(db.scalars(select(Booking.member_id).where(Booking.session_id==game_id)))
         for member in db.scalars(select(Member).where(Member.club_id==club.id,Member.kind=='fixed')):
             if member.id not in existing:
@@ -361,7 +365,9 @@ def register_routes():
     @app.post('/games/{game_id}/cancel')
     def cancel_game(request:Request,game_id:int,csrf:str=Form(),db=Depends(db_session)):
         ensure_csrf(request,csrf);game,club=owned_session(request,db,game_id,lock=True)
-        game.is_cancelled=True;game.is_open=False
+        from app.attendance import mutable_attendance
+        mutable_attendance(game)
+        game.is_cancelled=True;game.is_open=False;game.lifecycle_status='CANCELLED'
         for booking in db.scalars(select(Booking).where(Booking.session_id==game_id)):booking.status='cancelled'
         audit(db,club.id,require_host(request,db).id,'Hủy buổi đánh',game.title);db.commit()
         return redirect(f'/games/{game_id}')

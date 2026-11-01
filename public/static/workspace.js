@@ -33,7 +33,7 @@
       links.forEach((a) => {
         const active = a === selected;
         a.classList.toggle('active', active);
-        a.setAttribute('aria-selected', String(active));
+        if (active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
         const panel = document.getElementById(a.hash.slice(1));
         if (panel) panel.hidden = !active;
       });

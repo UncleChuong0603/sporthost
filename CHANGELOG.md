@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-01 — Action plan Sprint 3
+
+- Điểm danh từng người, vắng mặt trả chỗ, giờ đến/về sớm, thay người có lý do/audit.
+- Walk-in kiểm tra sức chứa atomically; version chặn hai host ghi đè, retry không thêm trùng.
+- Ba tab mobile; mở/đang đánh/kết thúc tách khỏi thu tiền và chốt sổ.
+- Migration additive `0007_session_attendance`; backfill bằng chứng attendance legacy.
+- 90 tests pass, 1 opt-in skipped; kiểm chứng thêm 2 race PostgreSQL và restore/migration.
+
 ## 2026-11-01 — Action plan Sprint 2
 
 - Đăng ký nhóm không tài khoản; một liên hệ/thanh toán chính, mỗi người chiếm một slot.

@@ -77,6 +77,37 @@ def worker():
                 assert sorted(states) == ['confirmed', 'waitlist'], states
                 assert confirm_count(db, game_id) == size <= capacity
         print('Three PostgreSQL concurrency scenarios passed: single-slot race, whole-group auto race, manual approval race')
+        if hasattr(GameSession,'lifecycle_status'):
+            from app.main import BookingParticipant
+            result=submit(host,f'/clubs/{club_id}/games',{'title':'Attendance race','starts_at':starts,
+                          'capacity':1,'approval_mode':'AUTO_APPROVE'},f'/clubs/{club_id}')
+            race_game=int(result.url.path.split('/')[-1])
+            path=f'/games/{race_game}'
+            with SessionLocal() as db:public='/join/'+db.get(GameSession,race_game).public_id
+            with TestClient(app) as player:
+                assert submit(player,public,{'name':'Attendance','phone':'0902345670'},public).status_code==200
+            with SessionLocal() as db:
+                person=db.scalar(select(BookingParticipant).join(Booking).where(Booking.session_id==race_game))
+            cookie=host.cookies.get('clubhost')
+            def update_attendance(action):
+                with TestClient(app) as manager:
+                    manager.cookies.set('clubhost',cookie)
+                    return submit(manager,f'{path}/participants/{person.id}/attendance',{'action':action,'version':0},path).status_code
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes=list(pool.map(update_attendance,('check_in','no_show')))
+            assert sorted(outcomes)==[200,409],outcomes
+            with SessionLocal.begin() as db:
+                p=db.get(BookingParticipant,person.id)
+                p.attendance_status='NO_SHOW';p.arrived_at=None
+            def walkin(index):
+                with TestClient(app) as manager:
+                    manager.cookies.set('clubhost',cookie)
+                    return submit(manager,path+'/walk-ins',{'name':'Walk in','phone':f'090455555{index}'},path).status_code
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes=list(pool.map(walkin,(0,1)))
+            assert sorted(outcomes)==[200,409],outcomes
+            with SessionLocal() as db:assert confirm_count(db,race_game)==1
+            print('Two PostgreSQL attendance scenarios passed: conflicting host updates and two walk-ins racing for one freed seat')
 
 
 def main():

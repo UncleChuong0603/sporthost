@@ -11,8 +11,8 @@ python -m scripts.verify_release
 python -m scripts.check_group_concurrency --env-file PRIVATE_ENV_FILE
 python -m scripts.apply_verified_release --env-file PRIVATE_ENV_FILE --apply
 # Sau khi deployment mới READY:
-python -m scripts.scrub_booking_tokens --env-file PRIVATE_ENV_FILE --apply
-python -m scripts.smoke_group_release --env-file PRIVATE_ENV_FILE --run
+# Scrub chỉ dành cho cutover 0006; không chạy lại trên revision 0007.
+python -m scripts.smoke_group_release --env-file PRIVATE_ENV_FILE --run --attendance
 ```
 
 `verify_release` đọc file môi trường riêng tại `.vercel/action-plan-production.env`,

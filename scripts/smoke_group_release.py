@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--env-file', required=True)
     parser.add_argument('--run', action='store_true')
+    parser.add_argument('--attendance', action='store_true')
     args = parser.parse_args()
     if not args.run:
         raise SystemExit('No requests made; --run requires release authorization')
@@ -111,7 +112,35 @@ def main():
             assert host.post(f'{path}/bookings/{other["id"]}/approve', data={'csrf': 'bad'}).status_code == 403
             assert second.get(other_link).status_code == 200
             print(mode + ' production flow passed: whole groups, capacity, edits/cancel, waitlist, hashed links and isolation', flush=True)
-        print('Production Sprint 2 smoke checks passed', flush=True)
+        if args.attendance:
+            response = post(host, f'/clubs/{club_id}/games', {'title': marker + ' attendance',
+                            'starts_at': starts, 'capacity': 3, 'guest_fee': 70000,
+                            'approval_mode': 'AUTO_APPROVE'}, f'/clubs/{club_id}')
+            assert response.status_code == 200
+            game_id = int(response.url.path.split('/')[-1]); path = f'/games/{game_id}'
+            public = re.search(r'http[^"\s]+/join/[A-Za-z0-9_-]+', response.text).group(0).removeprefix(BASE_URL)
+            link = register(guest, public, '0902345680', 3)
+            booking = own_booking(game_id, '0902345680')
+            with engine.connect() as con:
+                people = list(con.execute(text('SELECT id FROM clubhost.booking_participants WHERE booking_id=:booking ORDER BY position'),
+                                          {'booking': booking['id']}).scalars())
+            assert len(people) == 3
+            assert post(host, path + '/lifecycle/start', {}, path).status_code == 200
+            for person, action in zip(people, ('check_in', 'check_in', 'no_show')):
+                assert post(host, f'{path}/participants/{person}/attendance', {'action': action, 'version': 0}, path).status_code == 200
+            assert post(host, f'{path}/participants/{people[0]}/attendance',
+                        {'action': 'no_show', 'version': 0, 'reason': 'stale QA'}, path).status_code == 409
+            assert post(host, path + '/walk-ins', {'name': 'QA walk-in', 'phone': '0902345681'}, path).status_code == 200
+            assert post(host, f'{path}/participants/{people[1]}/attendance', {'action': 'check_out', 'version': 1}, path).status_code == 200
+            assert post(guest, link + '/edit', {'companion_name': ['QA changed']}, link).status_code == 409
+            assert post(host, path + '/lifecycle/finish', {}, path).status_code == 200
+            with engine.connect() as con:
+                assert con.scalar(text('SELECT lifecycle_status FROM clubhost.game_sessions WHERE id=:game AND club_id=:club'),
+                                  {'game': game_id, 'club': club_id}) == 'PLAY_FINISHED'
+                assert con.scalar(text('SELECT count(*) FROM clubhost.bookings WHERE session_id=:game AND paid=true'), {'game': game_id}) == 0
+                assert con.scalar(text('SELECT count(*) FROM clubhost.booking_participants p JOIN clubhost.bookings b ON b.id=p.booking_id WHERE b.session_id=:game AND p.attendance_status=\'CHECKED_IN\''), {'game': game_id}) == 3
+            print('Sprint 3 production attendance passed: partial group, stale update, walk-in, checkout, guest edit freeze, finish without payment', flush=True)
+        print('Production smoke checks passed', flush=True)
     finally:
         for client in clients:
             client.close()
