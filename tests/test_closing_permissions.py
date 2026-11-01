@@ -74,6 +74,7 @@ def test_custom_finance_settings_permissions_and_revocation(context):
     host,guest,club=context;gid,record=finished(context,size=1)
     finance,email=cohost(context,['manage_finance'])
     try:
+        assert '/attend/' not in finance.get(f'/games/{gid}').text
         assert finance.get(f'/games/{gid}/billing').status_code==200
         assert issue(finance,gid).status_code==200
         assert post(finance,f'/games/{gid}/billing/close',{},f'/games/{gid}/billing').status_code==200

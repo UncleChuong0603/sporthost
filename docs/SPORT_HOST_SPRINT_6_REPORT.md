@@ -41,6 +41,9 @@ destructive bị chặn. Backup source 0009 gồm 22 bảng, restore schema ng�
 
 - Full suite Edge enabled: **110 passed, 1 skipped in 131.54s**. Sau thêm guard dung lượng
   request, chạy lại hardening: **5 passed in 4.98s**. Compileall và diff whitespace check pass.
+- Rà soát capability cuối: chỉ hiện link quản lý khách khi vừa có finance vừa có
+  manage_bookings, tránh người chỉ thu chi dùng link guest để sửa booking. Regression quyền
+  và hardening sau sửa: **9 passed in 11.36s**; không cần migration thêm.
 - F-01 `test_real_session_browser.py`: mobile 375×812 hoàn chỉnh qua trang host/guest,
   tạo buổi thứ Sáu, QR tĩnh, 8 fixed đã đóng tháng và 10 người khách (một nhóm 3), duyệt
   7 khách/3 chờ, hủy/nhận lại, một no-show, walk-in, về sớm, nhập sân 900k + cầu 150k,
