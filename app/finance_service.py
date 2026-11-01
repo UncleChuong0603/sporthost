@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.main import (Booking, BookingParticipant, Member, MonthlyDue, Expense, Club,
-                      ChargeBatch, Charge, MoneyMovement, money)
+                      ChargeBatch, Charge, MoneyMovement, ChargeAdjustment, money)
 from app.attendance import log_change
 
 
@@ -94,14 +94,18 @@ def balances(db, game, booking_id=None):
     if booking_id is not None:
         query = query.where(Charge.booking_id == booking_id)
     rows = {}
+    adjustments=db.scalars(select(ChargeAdjustment).where(ChargeAdjustment.batch_id==batch.id).order_by(ChargeAdjustment.version)).all()
     for charge in db.scalars(query.order_by(Charge.id)):
         key = (charge.booking_id, charge.payer_participant_id)
         if key not in rows:
             person = names[charge.participant_id]
             rows[key] = dict(booking_id=charge.booking_id, payer_participant_id=charge.payer_participant_id,
                 name=person['payer_name'], amount=0, received=0, refunded=0, net=0, people=[], movements=[])
-        row = rows[key]; row['amount'] += charge.amount
-        row['people'].append(dict(name=names[charge.participant_id]['name'], amount=charge.amount,
+        changes=[a for a in adjustments if a.charge_id==charge.id]
+        current=charge.amount+sum(a.amount for a in changes)
+        row = rows[key]; row['amount'] += current
+        row['people'].append(dict(name=names[charge.participant_id]['name'], amount=current,charge_id=charge.id,
+                                 original_amount=charge.amount,adjustments=changes,
                                  explanation=names[charge.participant_id]['explanation']))
     movements = select(MoneyMovement).where(MoneyMovement.session_id == game.id).order_by(MoneyMovement.id)
     if booking_id is not None:
@@ -221,3 +225,42 @@ def record_money(db, game, booking, host_id, *, amount, kind, source, request_ke
              amount=signed, kind=kind, source=source, proof_id=proof_id, reverses_id=reverses_id), reason)
     sync_legacy(db, game, booking)
     return entry
+
+
+def close_session(db,game,host_id):
+    batch=batch_for(db,game)
+    if not batch or game.is_cancelled:raise HTTPException(409,'Cần phát hành cơ sở tính phí trước khi chốt sổ')
+    if game.lifecycle_status=='SETTLED':return batch
+    if game.lifecycle_status!='PLAY_FINISHED':raise HTTPException(409,'Cần kết thúc đánh trước khi chốt sổ')
+    totals=summary(balances(db,game))
+    batch.closed_at=datetime.now(timezone.utc).isoformat();game.lifecycle_status='SETTLED';game.is_open=False
+    game.attendance_locked=True
+    log_change(db,game.club_id,host_id,'Chốt sổ buổi đánh',{'status':'PLAY_FINISHED'},
+               {'status':'SETTLED','batch_id':batch.id,'version':batch.version,'totals':totals})
+    return batch
+
+
+def adjust_charge(db,game,host_id,charge_id,amount,version,reason,request_key):
+    batch=batch_for(db,game)
+    if not batch:raise HTTPException(409,'Chưa phát hành tiền cần đóng')
+    if not reason.strip() or len(reason)>500 or not 8<=len(request_key)<=128:
+        raise HTTPException(400,'Cần lý do và mã thao tác hợp lệ')
+    if not amount or abs(amount)>100_000_000:raise HTTPException(400,'Điều chỉnh phải khác 0 và không quá 100 triệu đồng')
+    old=db.scalar(select(ChargeAdjustment).where(ChargeAdjustment.batch_id==batch.id,ChargeAdjustment.request_key==request_key))
+    if old:
+        if (old.charge_id,old.amount,old.reason)!=(charge_id,amount,reason.strip()):raise HTTPException(409,'Mã thao tác đã dùng')
+        return old
+    if version!=batch.version:raise HTTPException(409,'Sổ vừa được thay đổi. Xem lại số tiền trước khi điều chỉnh.')
+    charge=db.scalar(select(Charge).where(Charge.id==charge_id,Charge.batch_id==batch.id))
+    if not charge:raise HTTPException(404)
+    prior=db.scalars(select(ChargeAdjustment).where(ChargeAdjustment.charge_id==charge.id)).all()
+    before=charge.amount+sum(a.amount for a in prior)
+    money(before+amount)
+    batch.version+=1
+    adjustment=ChargeAdjustment(batch_id=batch.id,charge_id=charge.id,amount=amount,version=batch.version,
+        reason=reason.strip(),created_by=host_id,request_key=request_key)
+    db.add(adjustment);db.flush()
+    log_change(db,game.club_id,host_id,'Điều chỉnh khoản phải thu',{'charge_id':charge.id,'amount':before,'version':version},
+        {'amount':before+amount,'version':batch.version,'adjustment_id':adjustment.id},reason.strip())
+    sync_legacy(db,game,db.get(Booking,charge.booking_id))
+    return adjustment

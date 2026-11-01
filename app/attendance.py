@@ -85,7 +85,7 @@ def register_routes():
     @app.post('/games/{game_id}/participants/{person_id}/attendance')
     def attendance(request: Request, game_id: int, person_id: int, action: str=Form(),
                    version: int=Form(), csrf: str=Form(), reason: str=Form(''), db=Depends(db_session)):
-        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True)
+        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True,permission="check_in")
         person = db.scalar(select(BookingParticipant).join(Booking).where(
             BookingParticipant.id == person_id, Booking.session_id == game.id))
         if not person:raise HTTPException(404)
@@ -97,7 +97,7 @@ def register_routes():
     def replace_person(request: Request, game_id: int, person_id: int, name: str=Form(),
                        gender: str=Form('unspecified'), level: str=Form(''), reason: str=Form(),
                        version: int=Form(), csrf: str=Form(), db=Depends(db_session)):
-        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True)
+        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True,permission="manage_bookings")
         mutable_attendance(game)
         person = db.scalar(select(BookingParticipant).join(Booking).where(
             BookingParticipant.id == person_id, Booking.session_id == game.id))
@@ -121,7 +121,9 @@ def register_routes():
     @app.post('/games/{game_id}/walk-ins')
     def walk_in(request: Request, game_id: int, name: str=Form(), phone: str=Form(),
                 gender: str=Form('unspecified'), level: str=Form(''), csrf: str=Form(), db=Depends(db_session)):
-        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True)
+        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True,permission="manage_bookings")
+        from app.main import owned_club
+        owned_club(request,db,club.id,permission='check_in')
         mutable_attendance(game)
         if game.lifecycle_status not in ('OPEN','IN_PROGRESS'):raise HTTPException(409, 'Buổi đã kết thúc. Mở lại có lý do trước khi thêm người')
         if not name.strip() or len(name.strip())>100 or len(level)>40:raise HTTPException(400, 'Thông tin người đến sân không hợp lệ')

@@ -35,7 +35,9 @@ Sprint 3 thêm điểm danh từng người, walk-in, về sớm, thay người 
 Sprint 4 thêm engine chia đều/giá cố định, miễn phí tháng đã đóng, bản nháp/phát hành,
 thu thiếu/đủ/thừa nhiều lần, hoàn thủ công, tách payer và snapshot QR/tài khoản.
 [Báo cáo Sprint 4](docs/SPORT_HOST_SPRINT_4_REPORT.md) ghi phạm vi, tương thích và kiểm chứng.
-Chốt sổ, điều chỉnh khoản đã phát hành, granular co-host và platform ledger còn Sprint 5.
+Sprint 5 thêm chốt sổ còn nợ, điều chỉnh có version/lý do, quyền co-host chi tiết và
+sổ nền tảng riêng; [báo cáo Sprint 5](docs/SPORT_HOST_SPRINT_5_REPORT.md).
+Kiểm chứng E2E 15 người/hardening và tài liệu beta tiếp tục Sprint 6.
 Không tự đổi nghĩa vụ tiền cũ; session chưa phát hành vẫn giữ luồng legacy giá cố định.
 
 [Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·

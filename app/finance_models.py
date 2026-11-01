@@ -54,3 +54,37 @@ class MoneyMovement(Base):
     request_key: Mapped[str]
     proof_id: Mapped[int | None] = mapped_column(ForeignKey('payment_proofs.id'))
     reverses_id: Mapped[int | None] = mapped_column(ForeignKey('money_movements.id'))
+
+
+class ChargeAdjustment(Base):
+    __tablename__ = 'charge_adjustments'
+    __table_args__ = (UniqueConstraint('batch_id','version',name='uq_adjustment_version'),
+                     UniqueConstraint('batch_id','request_key',name='uq_adjustment_request'),
+                     CheckConstraint('amount!=0',name='ck_adjustment_nonzero'))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    batch_id: Mapped[int] = mapped_column(ForeignKey('charge_batches.id'),index=True)
+    charge_id: Mapped[int] = mapped_column(ForeignKey('charges.id'),index=True)
+    amount: Mapped[int]
+    version: Mapped[int]
+    reason: Mapped[str]
+    created_by: Mapped[int] = mapped_column(ForeignKey('hosts.id'))
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+    request_key: Mapped[str]
+
+
+class PlatformLedgerEntry(Base):
+    __tablename__ = 'platform_ledger_entries'
+    __table_args__ = (CheckConstraint('amount>0',name='ck_platform_amount'),
+                     CheckConstraint("direction IN ('INCOME','EXPENSE')",name='ck_platform_direction'))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entry_date: Mapped[str]
+    direction: Mapped[str]
+    category: Mapped[str]
+    amount: Mapped[int]
+    note: Mapped[str]
+    created_by: Mapped[int] = mapped_column(ForeignKey('hosts.id'))
+    created_at: Mapped[str] = mapped_column(default=utc_now)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey('hosts.id'))
+    updated_at: Mapped[str | None]
+    version: Mapped[int] = mapped_column(default=0)
+    request_key: Mapped[str] = mapped_column(unique=True)

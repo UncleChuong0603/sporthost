@@ -239,7 +239,7 @@ class MonthlyDue(Base):
 
 from app.models_extra import RecurringRule, ClubAccess, AuditLog, StoredAsset, PaymentProof, EmailToken, SubscriptionRequest
 from app.security import RequestLimit
-from app.finance_models import ChargeBatch, Charge, MoneyMovement
+from app.finance_models import ChargeBatch, Charge, MoneyMovement, ChargeAdjustment, PlatformLedgerEntry
 
 # Only disposable/local SQLite gets automatic table creation. PostgreSQL is
 # ALWAYS managed by Alembic, including local PostgreSQL and staging.
@@ -322,8 +322,8 @@ def owned_club(request: Request, db: Session, club_id: int, permission=None):
     access = db.scalar(select(ClubAccess).where(ClubAccess.club_id == club_id, ClubAccess.host_id == host.id)) if club else None
     if not club or (club.owner_id != host.id and not access): raise HTTPException(404, 'Không tìm thấy CLB')
     permission = permission or ('view' if request.method in ('GET','HEAD') else 'manage')
-    allowed = {'manager': {'view', 'manage'}, 'finance': {'view', 'finance'}}
-    if club.owner_id != host.id and permission not in allowed.get(access.role, set()):
+    from app.permissions import can
+    if not can(db,host,club,permission):
         raise HTTPException(403, 'Bạn không có quyền thực hiện thao tác này')
     return host, club
 
@@ -357,15 +357,22 @@ def page(request: Request, template: str, **kwargs):
     if host:
         with SessionLocal() as nav_db:
             kwargs.setdefault('nav_clubs', accessible_clubs(nav_db, host))
-            manager_ids=set(nav_db.scalars(select(ClubAccess.club_id).where(ClubAccess.host_id==host.id,ClubAccess.role=='manager')))
-            manage_ids={c.id for c in kwargs['nav_clubs'] if c.owner_id==host.id or c.id in manager_ids}
+            from app.permissions import can,PERMISSIONS
+            manage_ids={c.id for c in kwargs['nav_clubs'] if can(nav_db,host,c,'manage_session')}
+            kwargs.setdefault('contact_ids',{c.id for c in kwargs['nav_clubs'] if can(nav_db,host,c,'contacts')})
+            kwargs.setdefault('booking_manage_ids',{c.id for c in kwargs['nav_clubs'] if can(nav_db,host,c,'manage_bookings')})
+            kwargs.setdefault('booking_manage_clubs',[c for c in kwargs['nav_clubs'] if can(nav_db,host,c,'manage_bookings')])
+            kwargs.setdefault('permission_labels',PERMISSIONS)
             kwargs.setdefault('manage_ids',manage_ids)
             kwargs.setdefault('manage_clubs',[c for c in kwargs['nav_clubs'] if c.id in manage_ids])
             if kwargs.get('club'):
                 selected_club=kwargs['club']
                 kwargs.setdefault('can_manage_club',selected_club.id in manage_ids)
-                kwargs.setdefault('can_finance_club',selected_club.owner_id==host.id or bool(nav_db.scalar(select(ClubAccess.id).where(
-                    ClubAccess.club_id==selected_club.id,ClubAccess.host_id==host.id,ClubAccess.role=='finance'))))
+                kwargs.setdefault('can_finance_club',can(nav_db,host,selected_club,'manage_finance'))
+                kwargs.setdefault('can_manage_bookings',can(nav_db,host,selected_club,'manage_bookings'))
+                kwargs.setdefault('can_check_in',can(nav_db,host,selected_club,'check_in'))
+                kwargs.setdefault('can_contacts',can(nav_db,host,selected_club,'contacts'))
+                kwargs.setdefault('can_edit_club',can(nav_db,host,selected_club,'edit_club_settings'))
         path = request.url.path
         section = ('schedule' if path.startswith(('/schedule','/games')) else 'members' if path.startswith('/members')
                    else 'finance' if path.startswith('/finance') else 'account' if path.startswith('/account')
@@ -536,18 +543,19 @@ def club_page(request:Request,club_id:int,db:Session=Depends(db_session)):
     host,club=owned_club(request,db,club_id)
     members=db.scalars(select(Member).where(Member.club_id==club_id).order_by(Member.kind,Member.name)).all()
     games=db.scalars(select(GameSession).where(GameSession.club_id==club_id).order_by(GameSession.starts_at.desc())).all()
-    periods=db.scalars(select(MonthlyDue).join(Member,MonthlyDue.member_id==Member.id).where(Member.club_id==club_id).order_by(MonthlyDue.period.desc())).all()
+    from app.permissions import can
+    periods=db.scalars(select(MonthlyDue).join(Member,MonthlyDue.member_id==Member.id).where(Member.club_id==club_id).order_by(MonthlyDue.period.desc())).all() if can(db,host,club,'finance') else []
     dues_info=[{'item':due,'member':next(m for m in members if m.id==due.member_id)} for due in periods]
     from app.workspace import context,game_rows
     rows=game_rows(context(db,host,club_id))
     for due in periods:
         if not due.access_key:due.access_key=secrets.token_urlsafe(24)
     db.commit()
-    return page(request,'club.html',host=host,club=club,members=members,games=games,dues=dues_info,game_rows=rows)
+    return page(request,'club.html',host=host,club=club,members=members if can(db,host,club,'contacts') else [],games=games,dues=dues_info,game_rows=rows)
 
 @app.post('/clubs/{club_id}/settings')
 async def update_club(request:Request,club_id:int,db:Session=Depends(db_session)):
-    host,club=owned_club(request,db,club_id,permission='owner')
+    host,club=owned_club(request,db,club_id,permission='edit_club_settings')
     form=await request.form();ensure_csrf(request,form.get('csrf',''))
     db.refresh(club,with_for_update=True)
     values=validate_settings(form,club);before=settings_snapshot(club)
@@ -557,7 +565,7 @@ async def update_club(request:Request,club_id:int,db:Session=Depends(db_session)
 
 @app.post('/clubs/{club_id}/members/{member_id}/edit')
 def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phone:str=Form(),kind:str=Form(),level:str=Form(''),gender:str|None=Form(None),csrf:str=Form(),db:Session=Depends(db_session)):
-    owned_club(request,db,club_id);ensure_csrf(request,csrf)
+    owned_club(request,db,club_id,permission="manage_bookings");ensure_csrf(request,csrf)
     member=db.get(Member,member_id)
     if not member or member.club_id!=club_id: raise HTTPException(404,'Không tìm thấy thành viên')
     if not name.strip() or kind not in ('fixed','guest'):raise HTTPException(400,'Thông tin thành viên không hợp lệ')
@@ -575,7 +583,7 @@ def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phon
 
 @app.post('/clubs/{club_id}/members')
 def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),csrf:str=Form(),db:Session=Depends(db_session)):
-    owned_club(request,db,club_id);ensure_csrf(request,csrf)
+    owned_club(request,db,club_id,permission="manage_bookings");ensure_csrf(request,csrf)
     if kind not in ('fixed','guest') or not name.strip(): raise HTTPException(400,'Thông tin thành viên không hợp lệ')
     gender = validated_gender(gender)
     phone=digits_phone(phone)
@@ -653,7 +661,7 @@ def game_page(request:Request,game_id:int,db:Session=Depends(db_session)):
 
 @app.post('/games/{game_id}/fixed')
 def add_fixed_to_game(request:Request,game_id:int,member_id:int=Form(),csrf:str=Form(),db:Session=Depends(db_session)):
-    game,club=owned_session(request,db,game_id,lock=True);ensure_csrf(request,csrf)
+    game,club=owned_session(request,db,game_id,lock=True,permission="manage_bookings");ensure_csrf(request,csrf)
     if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
     from app.attendance import mutable_attendance
     mutable_attendance(game)
@@ -671,7 +679,7 @@ def add_fixed_to_game(request:Request,game_id:int,member_id:int=Form(),csrf:str=
 
 @app.post('/games/{game_id}/bookings/{booking_id}/{action}')
 def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:str=Form(),reason:str=Form(''),db:Session=Depends(db_session)):
-    permission='finance' if action in ('paid','unpaid','refund') else 'manage'
+    permission='finance' if action in ('paid','unpaid','refund') else 'check_in' if action in ('attended','absent') else 'manage_bookings'
     game,club=owned_session(request,db,game_id,lock=True,permission=permission);ensure_csrf(request,csrf)
     booking=db.get(Booking,booking_id)
     if not booking or booking.session_id!=game_id:raise HTTPException(404)
@@ -848,7 +856,7 @@ async def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),le
 
 @app.get('/games/{game_id}/export.csv')
 def export_game(request:Request,game_id:int,db:Session=Depends(db_session)):
-    game,_=owned_session(request,db,game_id)
+    game,_=owned_session(request,db,game_id,permission="finance")
     bookings=db.scalars(select(Booking).where(Booking.session_id==game_id)).all()
     buf=io.StringIO();w=csv.writer(buf);w.writerow(['Họ tên','Số điện thoại','Giới tính','Loại','Trình độ','Trạng thái','Phí buổi (VND)','Đã thu','Đã điểm danh','Số người','Người đi cùng'])
     for b in bookings:
@@ -889,6 +897,8 @@ booking_routes.register_routes()
 attendance.register_routes()
 from app import finance_routes
 finance_routes.register_routes()
+from app import platform_ledger
+platform_ledger.register_routes()
 
 
 @app.exception_handler(StarletteHTTPException)

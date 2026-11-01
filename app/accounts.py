@@ -138,7 +138,7 @@ def register_routes():
         host=admin_host(request,db)
         clubs=db.scalars(select(Club).order_by(Club.id.desc())).all()
         hosts=db.scalars(select(Host).order_by(Host.id.desc())).all()
-        logs=db.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(60)).all()
+        logs=db.scalars(select(AuditLog).where(AuditLog.club_id.is_(None)).order_by(AuditLog.id.desc()).limit(60)).all()
         return page(request,'admin.html',host=host,all_clubs=clubs,all_hosts=hosts,logs=logs)
 
     @app.post('/admin/clubs/{club_id}/trial')

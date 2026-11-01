@@ -14,8 +14,8 @@ from app.storage import sanitize_image,put_image,get_image,delete_image
 
 
 def can_finance(db,host,club):
-    return club.owner_id==host.id or bool(db.scalar(select(ClubAccess.id).where(
-        ClubAccess.club_id==club.id,ClubAccess.host_id==host.id,ClubAccess.role=='finance')))
+    from app.permissions import can
+    return can(db,host,club,'manage_finance')
 
 
 def store_asset(db,upload,club_id,kind):
@@ -104,7 +104,7 @@ def register_routes():
 
     @app.get('/clubs/{club_id}/qr')
     def host_qr(request:Request,club_id:int,db=Depends(db_session)):
-        host,club=owned_club(request,db,club_id)
+        host,club=owned_club(request,db,club_id,permission='finance')
         if not club.qr_key:raise HTTPException(404)
         return image_response(club.qr_key)
 

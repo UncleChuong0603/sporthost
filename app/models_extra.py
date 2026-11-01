@@ -39,6 +39,7 @@ class ClubAccess(Base):
     club_id: Mapped[int] = mapped_column(ForeignKey('clubs.id'), index=True)
     host_id: Mapped[int] = mapped_column(ForeignKey('hosts.id'), index=True)
     role: Mapped[str]  # manager or finance; owner remains clubs.owner_id
+    permissions: Mapped[str | None]
 
 
 class AuditLog(Base):

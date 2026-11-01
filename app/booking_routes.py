@@ -40,7 +40,7 @@ def register_routes():
 
     @app.post('/games/{game_id}/bookings/{booking_id}/private-link/rotate')
     def rotate_link(request: Request, game_id: int, booking_id: int, csrf: str=Form(), db=Depends(db_session)):
-        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True)
+        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True, permission="manage_bookings")
         booking = db.get(Booking, booking_id)
         if not booking or booking.session_id != game.id:
             raise HTTPException(404)
@@ -53,7 +53,7 @@ def register_routes():
 
     @app.post('/games/{game_id}/bookings/{booking_id}/private-link/revoke')
     def revoke_link(request: Request, game_id: int, booking_id: int, csrf: str=Form(), db=Depends(db_session)):
-        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True)
+        ensure_csrf(request, csrf); game, club = owned_session(request, db, game_id, lock=True, permission="manage_bookings")
         booking = db.get(Booking, booking_id)
         if not booking or booking.session_id != game.id:
             raise HTTPException(404)

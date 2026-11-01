@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-01 — Action plan Sprint 5
+
+- Chốt sổ khi còn nợ, thu/hoàn sau chốt, điều chỉnh cộng/trừ có lý do/version và giữ charge gốc.
+- Quyền co-host riêng cho buổi/booking/điểm danh/thu chi/settings; chặn đọc contact/finance
+  và CSV khi thiếu quyền, admin platform không mặc nhiên đọc audit hoặc sửa tiền CLB.
+- Sổ thu chi riêng của SportHost: lọc tháng, lịch sử chỉnh sửa và billing config nội bộ.
+- Migration additive `0009_close_permissions_platform`, PostgreSQL close/adjustment races.
+
 ## 2026-11-01 — Action plan Sprint 4
 
 - Engine FIXED_PRICE/COST_SHARING, làm tròn chính xác tới 1 VND, policy phí tháng/no-show

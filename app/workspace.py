@@ -53,7 +53,7 @@ def game_rows(data):
         rows.append({'game':game,'club':data['club_map'][game.club_id],'confirmed':confirmed,
                      'pending':pending,'slots':max(0,game.capacity-confirmed),
                      'open_for_guests':guest_open(game),
-                     'registration_label':('Đã hủy' if game.is_cancelled else 'Đã đóng đăng ký' if not game.is_open
+                     'registration_label':('Đã chốt sổ' if game.lifecycle_status=='SETTLED' else 'Kết thúc đánh' if game.lifecycle_status=='PLAY_FINISHED' else 'Đang đánh' if game.lifecycle_status=='IN_PROGRESS' else 'Đã hủy' if game.is_cancelled else 'Đã đóng đăng ký' if not game.is_open
                          else 'Đã qua hạn đăng ký' if not registration_open(game) else 'Ưu tiên thành viên' if not guest_open(game) else 'Đang nhận vãng lai'),
                      'day':game.starts_at[8:10],'month':game.starts_at[5:7]})
     return rows
@@ -110,7 +110,10 @@ def render_dashboard(request,db,host):
     pending=[b for b in data['bookings'] if b.status=='pending']
     members={m.id:m for m in data['members']};games={g.id:g for g in data['games']}
     requests=[{'booking':b,'member':members[b.member_id],'game':games[b.session_id]} for b in pending[:5]]
-    month=now[:7];financial=totals([r for r in ledger(db,data) if r['period']==month])
+    from app.permissions import can
+    finance_ids={c.id for c in data['clubs'] if can(db,host,c,'finance')}
+    requests=[r for r in requests if can(db,host,data['club_map'][r['game'].club_id],'manage_bookings')]
+    month=now[:7];financial=totals([r for r in ledger(db,data) if r['period']==month and r['club_id'] in finance_ids])
     return page(request,'dashboard.html',host=host,**data,upcoming=upcoming[:5],upcoming_count=len(upcoming),
                 pending_count=len(pending),requests=requests,financial=financial,today=now_local().strftime('%d/%m/%Y'),month=month)
 
@@ -162,7 +165,7 @@ def quotas(form,capacity):
 def register_routes():
     @app.post('/games/{game_id}/invite-fixed')
     def invite_fixed(request:Request,game_id:int,csrf:str=Form(),db=Depends(db_session)):
-        ensure_csrf(request,csrf);game,club=owned_session(request,db,game_id,lock=True)
+        ensure_csrf(request,csrf);game,club=owned_session(request,db,game_id,lock=True,permission="manage_bookings")
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
         from app.attendance import mutable_attendance
         mutable_attendance(game)
@@ -299,6 +302,9 @@ def register_routes():
     @app.get('/members')
     def members_page(request:Request,club_id:str|None=None,q:str='',kind:str='',gender:str='',db=Depends(db_session)):
         host=require_host(request,db);data=context(db,host,club_id);rows=data['members']
+        from app.permissions import can
+        if data['selected_club']:owned_club(request,db,data['selected_club'].id,permission='contacts')
+        rows=[m for m in rows if can(db,host,data['club_map'][m.club_id],'contacts')]
         if q:rows=[m for m in rows if q.casefold() in (m.name+' '+m.phone).casefold()]
         if kind:rows=[m for m in rows if m.kind==kind]
         if gender:rows=[m for m in rows if m.gender==gender]
@@ -310,7 +316,7 @@ def register_routes():
         form=await request.form();ensure_csrf(request,form.get('csrf',''))
         try:club_id=int(form.get('club_id',0))
         except (TypeError,ValueError):raise HTTPException(400,'CLB không hợp lệ')
-        host,club=owned_club(request,db,club_id);name=str(form.get('name','')).strip();kind=form.get('kind','fixed')
+        host,club=owned_club(request,db,club_id,permission="manage_bookings");name=str(form.get('name','')).strip();kind=form.get('kind','fixed')
         if not name or len(name)>100 or kind not in ('fixed','guest'):raise HTTPException(400,'Thông tin thành viên chưa hợp lệ')
         phone=digits_phone(form.get('phone',''));gender=validated_gender(form.get('gender','unspecified'))
         if member_by_phone(db,club_id,phone):return redirect(f'/members?club_id={club_id}&message=phone_exists')
@@ -322,7 +328,8 @@ def register_routes():
         host=require_host(request,db)
         data=context(db,host,club_id)
         if data['club_id']:owned_club(request,db,data['club_id'],permission='finance')
-        allowed=[c.id for c in data['clubs'] if c.owner_id==host.id or db.scalar(select(ClubAccess.id).where(ClubAccess.club_id==c.id,ClubAccess.host_id==host.id,ClubAccess.role=='finance'))]
+        from app.permissions import can
+        allowed=[c.id for c in data['clubs'] if can(db,host,c,'finance')]
         rows=[r for r in ledger(db,data) if r['club_id'] in allowed]
         if period:rows=[r for r in rows if r['period']==period]
         summary=totals(rows)
@@ -361,20 +368,31 @@ def register_routes():
         host,club=owned_club(request,db,club_id)
         from app.payments import can_finance
         cohosts=db.execute(select(ClubAccess,Host).join(Host,Host.id==ClubAccess.host_id).where(ClubAccess.club_id==club_id)).all()
-        logs=db.scalars(select(AuditLog).where(AuditLog.club_id==club_id).order_by(AuditLog.id.desc()).limit(50)).all()
-        return page(request,'settings.html',host=host,club=club,cohosts=cohosts,logs=logs,owner=host.id==club.owner_id,can_finance_club=can_finance(db,host,club))
+        from app.permissions import can,capabilities
+        logs=db.scalars(select(AuditLog).where(AuditLog.club_id==club_id).order_by(AuditLog.id.desc()).limit(50)).all() if can(db,host,club,'owner') else []
+        access_rights={access.id:capabilities(access) for access,person in cohosts}
+        return page(request,'settings.html',host=host,club=club,cohosts=cohosts if host.id==club.owner_id else [],access_rights=access_rights,logs=logs,owner=host.id==club.owner_id,can_finance_club=can_finance(db,host,club))
 
     @app.post('/clubs/{club_id}/cohosts')
-    def add_cohost(request:Request,club_id:int,email:str=Form(),role:str=Form(),csrf:str=Form(),db=Depends(db_session)):
+    async def add_cohost(request:Request,club_id:int,email:str=Form(),role:str=Form(),csrf:str=Form(),db=Depends(db_session)):
         ensure_csrf(request,csrf);host,club=owned_club(request,db,club_id,permission='owner')
-        if role not in ('manager','finance'):raise HTTPException(400,'Vai trò không hợp lệ')
+        if role not in ('manager','finance','custom'):raise HTTPException(400,'Vai trò không hợp lệ')
+        from app.permissions import PERMISSIONS,capabilities
+        form=await request.form();selected=form.getlist('permissions')
+        if role=='custom' and (not selected or any(p not in PERMISSIONS for p in selected)):
+            raise HTTPException(400,'Chọn ít nhất một quyền hợp lệ')
         other=db.scalar(select(Host).where(Host.email==email.strip().lower()))
         if not other:raise HTTPException(400,'Người đồng quản lý cần đăng ký tài khoản SportHost trước')
         if other.id==club.owner_id:raise HTTPException(400,'Chủ CLB đã có toàn quyền')
         access=db.scalar(select(ClubAccess).where(ClubAccess.club_id==club_id,ClubAccess.host_id==other.id))
-        if access:access.role=role
-        else:db.add(ClubAccess(club_id=club_id,host_id=other.id,role=role))
-        audit(db,club_id,host.id,'Cấp quyền đồng quản lý',f'{email}: {role}');db.commit()
+        from app.attendance import log_change
+        before={'role':access.role,'permissions':sorted(capabilities(access))} if access else None
+        if not access:
+            access=ClubAccess(club_id=club_id,host_id=other.id,role=role);db.add(access)
+        access.role=role;access.permissions=json.dumps(sorted(set(selected))) if role=='custom' else None
+        log_change(db,club_id,host.id,'Cấp quyền đồng quản lý',before,
+            {'host_id':other.id,'role':role,'permissions':sorted(capabilities(access))})
+        db.commit()
         return redirect(f'/clubs/{club_id}/settings#access')
 
     @app.post('/clubs/{club_id}/cohosts/{access_id}/remove')

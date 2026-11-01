@@ -148,6 +148,28 @@ def worker():
                 result=balances(db,db.get(GameSession,money_game))[0]
                 assert result['net']==60000 and result['outstanding']==10000
             print('Three PostgreSQL billing scenarios passed: concurrent issue, duplicate receipt retry, distinct partial receipts')
+            if hasattr(ChargeBatch,'closed_at'):
+                from app.main import Charge,ChargeAdjustment
+                with SessionLocal() as db:
+                    batch=db.scalar(select(ChargeBatch).where(ChargeBatch.session_id==money_game))
+                    charge=db.scalar(select(Charge).where(Charge.batch_id==batch.id))
+                def close(index):
+                    with TestClient(app) as finance:
+                        finance.cookies.set('clubhost',cookie)
+                        return submit(finance,path+'/billing/close',{},path+'/billing').status_code
+                with ThreadPoolExecutor(max_workers=2) as pool:outcomes=list(pool.map(close,(0,1)))
+                assert outcomes==[200,200],outcomes
+                def adjust(amount):
+                    with TestClient(app) as finance:
+                        finance.cookies.set('clubhost',cookie)
+                        return submit(finance,path+'/billing/adjustments',{'charge_id':charge.id,'version':1,
+                            'amount':amount,'reason':'Concurrent adjustment','request_key':f'adjustment-race-{amount}'},path+'/billing').status_code
+                with ThreadPoolExecutor(max_workers=2) as pool:outcomes=list(pool.map(adjust,(-1000,-2000)))
+                assert sorted(outcomes)==[200,409],outcomes
+                with SessionLocal() as db:
+                    assert len(db.scalars(select(ChargeAdjustment).where(ChargeAdjustment.batch_id==batch.id)).all())==1
+                    assert db.get(GameSession,money_game).lifecycle_status=='SETTLED'
+                print('Two PostgreSQL closing scenarios passed: idempotent concurrent close and conflicting versioned adjustments')
 
 
 def main():

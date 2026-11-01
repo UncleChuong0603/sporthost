@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.main import (app, db_session, owned_session, ensure_csrf, require_host, page, redirect,
                       Booking, BookingParticipant, money)
 from app.finance_service import (require_draft, draft, fingerprint, issue, batch_for, balances,
-                                 summary, record_money)
+                                 summary, record_money,close_session,adjust_charge)
 from app.attendance import log_change
 
 
@@ -39,6 +39,19 @@ def set_payer_mode(db, game, booking, mode, host_id):
 
 
 def register_routes():
+    @app.post('/games/{game_id}/billing/close')
+    def close(request:Request,game_id:int,csrf:str=Form(),db=Depends(db_session)):
+        ensure_csrf(request,csrf);game,_=owned_session(request,db,game_id,lock=True,permission='finance')
+        close_session(db,game,require_host(request,db).id);db.commit()
+        return redirect(f'/games/{game_id}/billing')
+
+    @app.post('/games/{game_id}/billing/adjustments')
+    def adjust(request:Request,game_id:int,charge_id:int=Form(),amount:int=Form(),version:int=Form(),
+               reason:str=Form(),request_key:str=Form(),csrf:str=Form(),db=Depends(db_session)):
+        ensure_csrf(request,csrf);game,_=owned_session(request,db,game_id,lock=True,permission='finance')
+        adjust_charge(db,game,require_host(request,db).id,charge_id,amount,version,reason,request_key)
+        db.commit();return redirect(f'/games/{game_id}/billing')
+
     @app.get('/games/{game_id}/billing')
     def billing(request: Request, game_id: int, db=Depends(db_session)):
         game, club = owned_session(request, db, game_id, permission='finance')

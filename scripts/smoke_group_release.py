@@ -23,7 +23,9 @@ def main():
     parser.add_argument('--run', action='store_true')
     parser.add_argument('--attendance', action='store_true')
     parser.add_argument('--billing', action='store_true')
+    parser.add_argument('--closing', action='store_true')
     args = parser.parse_args()
+    if args.closing:args.billing=True
     if args.billing:args.attendance=True
     if not args.run:
         raise SystemExit('No requests made; --run requires release authorization')
@@ -149,6 +151,9 @@ def main():
                 draft_hash=re.search(r'name="draft_hash" value="([^"]+)"',bill.text).group(1)
                 assert post(host,path+'/billing/issue',{'draft_hash':draft_hash},path+'/billing').status_code==200
                 assert post(host,path+'/billing/issue',{'draft_hash':draft_hash},path+'/billing').status_code==200
+                if args.closing:
+                    assert post(host,path+'/billing/close',{},path+'/billing').status_code==200
+                    assert post(host,path+'/billing/close',{},path+'/billing').status_code==200
                 with engine.connect() as con:
                     total=con.scalar(text('SELECT sum(c.amount) FROM clubhost.charges c JOIN clubhost.charge_batches cb ON cb.id=c.batch_id WHERE cb.session_id=:game'),{'game':game_id})
                     due=con.scalar(text('SELECT sum(c.amount) FROM clubhost.charges c JOIN clubhost.charge_batches cb ON cb.id=c.batch_id WHERE cb.session_id=:game AND c.booking_id=:booking'),{'game':game_id,'booking':booking['id']})
@@ -169,6 +174,17 @@ def main():
                     assert con.scalar(text('SELECT count(*) FROM clubhost.charge_batches WHERE session_id=:game'),params)==1
                 assert 'Đã thu đủ' in guest.get(link).text
                 print('Sprint 4 production billing passed: exact AA, issue retry, partial bank + cash, overpayment/refund, locked basis and outstanding walk-in',flush=True)
+                if args.closing:
+                    with engine.connect() as con:
+                        charge_id=con.scalar(text('SELECT c.id FROM clubhost.charges c JOIN clubhost.charge_batches cb ON cb.id=c.batch_id WHERE cb.session_id=:game AND c.booking_id=:booking ORDER BY c.id LIMIT 1'),{'game':game_id,'booking':booking['id']})
+                    change={'charge_id':charge_id,'version':1,'amount':-1000,'reason':'QA adjustment after close','request_key':marker+'-adjustment'}
+                    assert post(host,path+'/billing/adjustments',change,path+'/billing').status_code==200
+                    assert post(host,path+'/billing/adjustments',change,path+'/billing').status_code==200
+                    assert post(host,path+'/billing/adjustments',{**change,'amount':-2000,'request_key':marker+'-stale'},path+'/billing').status_code==409
+                    with engine.connect() as con:
+                        assert con.scalar(text('SELECT lifecycle_status FROM clubhost.game_sessions WHERE id=:game'),{'game':game_id})=='SETTLED'
+                    assert outsider.get(path+'/billing').status_code==404
+                    print('Sprint 5 production closing passed: closed while unpaid, collected after close, versioned adjustment/retry/stale denial and isolation',flush=True)
         print('Production smoke checks passed', flush=True)
     finally:
         for client in clients:
@@ -186,6 +202,8 @@ def main():
                     game_ids = 'SELECT id FROM clubhost.game_sessions WHERE club_id=:club'
                     booking_ids = f'SELECT id FROM clubhost.bookings WHERE session_id IN ({game_ids})'
                     if con.scalar(text("SELECT to_regclass('clubhost.money_movements') IS NOT NULL")):
+                        if con.scalar(text("SELECT to_regclass('clubhost.charge_adjustments') IS NOT NULL")):
+                            con.execute(text(f'DELETE FROM clubhost.charge_adjustments WHERE batch_id IN (SELECT id FROM clubhost.charge_batches WHERE session_id IN ({game_ids}))'),params)
                         con.execute(text(f'DELETE FROM clubhost.money_movements WHERE session_id IN ({game_ids})'), params)
                         con.execute(text(f'DELETE FROM clubhost.charges WHERE booking_id IN ({booking_ids})'), params)
                         con.execute(text(f'DELETE FROM clubhost.charge_batches WHERE session_id IN ({game_ids})'), params)
