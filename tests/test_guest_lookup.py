@@ -37,16 +37,16 @@ def lookup(client, public, phone):
     return submit(client, public + '/lookup', {'phone': phone}, public)
 
 
-def test_phone_first_lookup_autofills_without_registering(setup_lookup):
+def test_phone_first_lookup_preserves_privacy_then_autofills_only_own_booking(setup_lookup):
     host, guest, club_id, game_id, public = setup_lookup
     first = guest.get(public)
     assert 'data-phone-lookup' in first.text
     assert 'name="phone"' in first.text and 'name="name"' not in first.text
     response = lookup(guest, public, '090 123 4567')
     assert response.status_code == 200
-    assert 'value="Known guest"' in response.text
-    assert 'value="female" selected' in response.text
-    assert 'value="TB khá"' in response.text
+    assert 'value="Known guest"' not in response.text
+    assert 'value="female" selected' not in response.text
+    assert 'value="TB khá"' not in response.text
     assert '60.000đ' in response.text and 'data-confirm-join' in response.text
     assert 'private' in response.headers['cache-control'] and 'no-store' in response.headers['cache-control']
     with SessionLocal() as db:
@@ -57,12 +57,14 @@ def test_phone_first_lookup_autofills_without_registering(setup_lookup):
     with SessionLocal() as db:
         booking = db.scalar(select(Booking).where(Booking.session_id == game_id))
         assert booking.status == 'pending' and booking.fee_amount == 60000
+    own=lookup(guest,public,'0901234567')
+    assert 'value="Known guest"' in own.text and 'value="female" selected' in own.text
 
 
 def test_unknown_number_is_blank_until_user_confirms(setup_lookup):
     host, guest, club_id, game_id, public = setup_lookup
     result = lookup(guest, public, '0902345678')
-    assert 'Bạn chưa có hồ sơ' in result.text and 'name="name" value=""' in result.text
+    assert 'không tiết lộ hồ sơ' in result.text and 'name="name" value=""' in result.text
     assert 'value="Known guest"' not in result.text
     with SessionLocal() as db:
         assert db.scalar(select(Member).where(Member.club_id == club_id, Member.phone == '0902345678')) is None
@@ -79,7 +81,7 @@ def test_lookup_does_not_read_another_club_profile(setup_lookup):
                                              'kind': 'guest'}, f'/clubs/{other_id}')
     response = lookup(guest, public, '0903456789')
     assert 'Private other-club name' not in response.text
-    assert 'Bạn chưa có hồ sơ' in response.text
+    assert 'không tiết lộ hồ sơ' in response.text
 
 
 def test_lookup_token_cannot_confirm_a_different_phone(setup_lookup):
@@ -101,7 +103,7 @@ def test_changed_profile_requires_a_fresh_confirmation(setup_lookup):
     result = guest.post(public, data={'phone': record.phone, 'name': record.name, 'gender': record.gender,
                    'csrf': token(review), 'lookup_token': token(review, 'lookup_token')})
     assert result.status_code == 200 and 'Thông tin vừa được cập nhật' in result.text
-    assert 'value="Updated by host"' in result.text
+    assert 'value="Updated by host"' not in result.text
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(Booking).where(Booking.session_id == game_id)) == 0
 
@@ -126,7 +128,9 @@ def test_lookup_handles_invalid_phones_closed_sessions_and_limits(setup_lookup):
 def test_vietnam_phone_formats_find_the_same_guest(setup_lookup, phone):
     host, guest, club_id, game_id, public = setup_lookup
     assert digits_phone(phone) == '0901234567'
-    assert 'value="Known guest"' in lookup(guest, public, phone).text
+    review=lookup(guest, public, phone)
+    assert 'value="Known guest"' not in review.text
+    assert 'value="0901234567"' in review.text
 
 
 def test_lookup_finds_legacy_international_phone_without_duplicate_member(setup_lookup):
@@ -134,7 +138,7 @@ def test_lookup_finds_legacy_international_phone_without_duplicate_member(setup_
     with SessionLocal.begin() as db:
         db.add(Member(club_id=club_id, name='Legacy international', phone='+84904567890', kind='guest', gender='male', level='TB'))
     review = lookup(guest, public, '0904567890')
-    assert 'value="Legacy international"' in review.text
+    assert 'value="Legacy international"' not in review.text
     result = guest.post(public, data={'phone': '0904567890', 'name': 'Legacy international', 'gender': 'male',
                 'csrf': token(review), 'lookup_token': token(review, 'lookup_token')}, follow_redirects=True)
     assert 'Đã nhận đăng ký' in result.text

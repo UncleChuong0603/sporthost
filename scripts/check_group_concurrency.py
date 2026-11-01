@@ -85,7 +85,7 @@ def worker():
             path=f'/games/{race_game}'
             with SessionLocal() as db:public='/join/'+db.get(GameSession,race_game).public_id
             with TestClient(app) as player:
-                assert submit(player,public,{'name':'Attendance','phone':'0902345670'},public).status_code==200
+                assert submit(player,public,{'name':'Attendance','phone':'0902345680'},public).status_code==200
             with SessionLocal() as db:
                 person=db.scalar(select(BookingParticipant).join(Booking).where(Booking.session_id==race_game))
             cookie=host.cookies.get('clubhost')

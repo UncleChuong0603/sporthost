@@ -1,5 +1,11 @@
 # SportHost — gap analysis theo action plan 01/11/2026
 
+**Cập nhật triển khai:** phần bảng dưới là baseline trước thay đổi. Sprint 1–5 đã được
+triển khai/kiểm chứng và release theo các `SPORT_HOST_SPRINT_*_REPORT.md`; Sprint 6 bổ sung
+E2E 15 người, privacy lookup, upload/DB-failure hardening, snapshot QR phí tháng và backup ảnh.
+Xem [báo cáo cuối](SPORT_HOST_SPRINT_6_REPORT.md) và [vận hành beta](SPORT_HOST_BETA_OPERATIONS.md)
+để phân biệt trạng thái thực chạy với những thiếu sót tại baseline.
+
 ## Phạm vi và bằng chứng
 
 Đặc tả: `SPORT_HOST_CODEX_ACTION_PLAN.md` v1.0 do người dùng cung cấp. Đây là nâng cấp

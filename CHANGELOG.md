@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-01 — Action plan Sprint 6
+
+- E2E mobile đủ luồng 15 người tới chốt sổ còn nợ, không thu trùng tháng/không coi ảnh là tiền.
+- Privacy phone lookup, autofill chỉ khi có capability; token review không chứa profile.
+- MIME khớp nội dung ảnh, request size guard, DB/constraint errors an toàn và rollback/retry.
+- Snapshot QR/text cả booking chưa phát hành và phí tháng; legacy thiếu phiên bản yêu cầu xác minh.
+- Migration additive `0010_payment_config_snapshot`, backup/restore PostgreSQL + ảnh synthetic,
+  hướng dẫn host/guest, staging/tunnel/rollback và giới hạn pilot. 110 tests pass, 1 opt-in skip.
+
 ## 2026-11-01 — Action plan Sprint 5
 
 - Chốt sổ khi còn nợ, thu/hoàn sau chốt, điều chỉnh cộng/trừ có lý do/version và giữ charge gốc.

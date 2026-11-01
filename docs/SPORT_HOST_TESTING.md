@@ -9,6 +9,7 @@ Các bước dưới chỉ chạy từ máy operator trong phạm vi release đ�
 ```powershell
 python -m scripts.verify_release
 python -m scripts.check_group_concurrency --env-file PRIVATE_ENV_FILE
+python -m scripts.check_backup_restore --env-file PRIVATE_ENV_FILE
 python -m scripts.apply_verified_release --env-file PRIVATE_ENV_FILE --apply
 # Sau khi deployment mới READY:
 # Scrub chỉ dành cho cutover 0006; không chạy lại trên revision 0007.
@@ -22,6 +23,12 @@ Script concurrency dùng schema ngẫu nhiên tách dữ liệu thật. Các sch
 chỉ khi chính lượt chạy đã tạo; không chạm schema ứng dụng khác. Production smoke dùng
 hai tài khoản ngẫu nhiên + một CLB QA, không gửi email/ghi nhận tiền thực, dọn bằng owner/
 marker chính xác sau khi chạy. Không dùng pytest CRUD suite trực tiếp lên schema production.
+
+`test_real_session_browser.py` là F-01 mobile 15 người. `test_hardening.py` kiểm tra lookup
+không tiết lộ profile, MIME/magic bytes/path/size, XSS, snapshot QR/text cho tháng và booking,
+DB lỗi trước kết nối/sau money flush, rollback rồi retry. `check_backup_restore` tạo 2 schema
+test, archive DB/ảnh synthetic rồi restore sang media directory khác; kiểm tra hash, session
+invalidation và serial sequences. Backup production ảnh thật vẫn do operator giữ riêng.
 
 Sprint 4 thêm ba race billing: concurrent issue, retry cùng receipt key và hai receipt khác
 nhau cùng lúc. Smoke `--billing` bao gồm nhóm/attendance và các dòng tiền giả lập chỉ trong

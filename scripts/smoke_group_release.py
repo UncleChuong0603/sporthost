@@ -103,6 +103,9 @@ def main():
             private_page = guest.get(first_link)
             assert private_page.status_code == 200 and private_page.headers['referrer-policy'] == 'no-referrer'
             assert 'no-store' in private_page.headers['cache-control']
+            if args.closing:
+                review=post(outsider,public+'/lookup',{'phone':'0902345678'},public)
+                assert review.status_code==200 and marker+' guest' not in review.text
             assert post(guest, first_link + '/cancel', {}, first_link).status_code == 200
             assert own_booking(game_id, '0902345678')['status'] == 'cancelled'
             if mode == 'AUTO_APPROVE':

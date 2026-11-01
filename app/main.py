@@ -172,6 +172,7 @@ class Booking(Base):
     decision_reason: Mapped[str] = mapped_column(default='', server_default='')
     policy_snapshot: Mapped[str] = mapped_column(default='{}', server_default='{}')
     payer_mode: Mapped[str] = mapped_column(default='GROUP', server_default='GROUP')
+    payment_snapshot: Mapped[str] = mapped_column(default='{}', server_default='{}')
     participants: Mapped[list['BookingParticipant']] = relationship(back_populates='booking', cascade='all, delete-orphan', order_by='BookingParticipant.position', lazy='selectin')
 
     @property
@@ -236,16 +237,29 @@ class MonthlyDue(Base):
     access_key: Mapped[str] = mapped_column(default=lambda: secrets.token_urlsafe(24), server_default='')
     qr_key: Mapped[str | None]
     payment_status: Mapped[str] = mapped_column(default='unpaid',server_default='unpaid')
+    payment_snapshot: Mapped[str] = mapped_column(default='{}',server_default='{}')
 
 from app.models_extra import RecurringRule, ClubAccess, AuditLog, StoredAsset, PaymentProof, EmailToken, SubscriptionRequest
 from app.security import RequestLimit
 from app.finance_models import ChargeBatch, Charge, MoneyMovement, ChargeAdjustment, PlatformLedgerEntry
+from app.payment_config import initialize_snapshots
 
 # Only disposable/local SQLite gets automatic table creation. PostgreSQL is
 # ALWAYS managed by Alembic, including local PostgreSQL and staging.
 if SETTINGS['driver'] == 'sqlite':
     Base.metadata.create_all(engine)
 app = FastAPI(title='SportHost', version='0.1.0')
+
+@app.middleware('http')
+async def request_size_limit(request,call_next):
+    raw=request.headers.get('content-length')
+    if raw:
+        try:too_large=int(raw)>5*1024*1024
+        except ValueError:too_large=True
+        if too_large:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({'detail':'Yêu cầu vượt dung lượng cho phép'},status_code=413,headers={'Cache-Control':'no-store'})
+    return await call_next(request)
 BASE_DIR = os.path.dirname(__file__)
 # Vercel serves public/ from its CDN and omits it from the Python bundle.
 if not SETTINGS['serverless']:
@@ -750,14 +764,24 @@ def add_expense(request:Request,game_id:int,title:str=Form(),amount:int=Form(),c
     log_change(db,club.id,expense.created_by,'Ghi chi phí',None,dict(id=expense.id,amount=expense.amount,title=expense.title,category=category,allocated=allocated,note=expense.note))
     db.commit();return redirect(f'/games/{game_id}#finance')
 
-def guest_review(game: GameSession, phone: str, member: Member | None):
-    profile = {'phone': phone, 'name': member.name if member else '',
+def owns_contact(request,db,game,member):
+    if not member:return False
+    try:
+        saved=signer.loads(request.cookies.get('sporthost_booking_'+game.public_id,''),max_age=60*60*24*30)
+        booking=db.get(Booking,saved['booking'])
+        from app.booking_service import token_valid
+        return bool(booking and booking.session_id==game.id and booking.member_id==member.id and token_valid(booking,saved['key']))
+    except (BadSignature,KeyError):return False
+
+
+def guest_review(game: GameSession, phone: str, member: Member | None, *, reveal=False):
+    actual = {'phone': phone, 'name': member.name if member else '',
                'gender': member.gender if member else 'unspecified',
                'level': member.level if member else '', 'kind': member.kind if member else 'guest',
                'found': member is not None, 'fee': member_fee(game, member) if member else None}
-    token = lookup_signer.dumps({'game': game.public_id, 'phone': phone,
-                                'member': member.id if member else None,
-                                'profile': [profile[k] for k in ('name', 'gender', 'level', 'kind', 'fee')]})
+    version=hmac.new(SECRET_KEY.encode(),repr([member.id if member else None]+[actual[k] for k in ('name','gender','level','kind','fee')]).encode(),hashlib.sha256).hexdigest()
+    profile=actual if reveal else dict(phone=phone,name='',gender='unspecified',level='',kind='guest',found=False,fee=None)
+    token = lookup_signer.dumps({'game': game.public_id, 'phone': phone, 'version':version})
     return {**profile, 'token': token}
 
 
@@ -798,7 +822,7 @@ def lookup_guest(request:Request,public_id:str,phone:str=Form(),csrf:str=Form(),
     except HTTPException:
         return join_view(request, db, game, error='Số điện thoại chưa hợp lệ. Vui lòng kiểm tra lại.', phone=phone[:22])
     member = member_by_phone(db, game.club_id, phone)
-    return join_view(request, db, game, lookup=guest_review(game, phone, member))
+    return join_view(request, db, game, lookup=guest_review(game, phone, member,reveal=owns_contact(request,db,game,member)))
 
 @app.post('/join/{public_id}')
 async def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),lookup_token:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
@@ -820,11 +844,13 @@ async def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),le
                 raise BadSignature('Review belongs to a different phone or session')
         except (BadSignature, SignatureExpired, KeyError):
             raise HTTPException(403, 'Thông tin xác nhận đã hết hạn hoặc không hợp lệ. Vui lòng tra cứu lại số điện thoại')
-        current = guest_review(game, phone, member)
-        profile = [current[k] for k in ('name', 'gender', 'level', 'kind', 'fee')]
-        if reviewed.get('member') != (member.id if member else None) or reviewed.get('profile') != profile:
+        current = guest_review(game, phone, member,reveal=owns_contact(request,db,game,member))
+        current_review=lookup_signer.loads(current['token'])
+        if reviewed.get('version') != current_review['version']:
             return join_view(request, db, game, lookup=current,
                              error='Thông tin vừa được cập nhật. Vui lòng kiểm tra và xác nhận lại.')
+    if member and not owns_contact(request,db,game,member) and not hmac.compare_digest(name.strip().casefold().encode(),member.name.strip().casefold().encode()):
+        raise HTTPException(409,'Thông tin liên hệ cần được host xác minh. Vui lòng nhập đúng họ tên đã đăng ký hoặc liên hệ host.')
     if member and member.kind=='fixed':return redirect(f'/join/{public_id}?message=fixed')
     if not member:
         member=Member(club_id=game.club_id,name=name.strip()[:100],phone=phone,kind='guest',gender=gender,level=level.strip()[:40]);db.add(member);db.flush()
@@ -924,3 +950,17 @@ async def friendly_validation_error(request,exc):
     if 'text/html' not in request.headers.get('accept',''):
         return await request_validation_exception_handler(request,exc)
     return await friendly_http_error(request,HTTPException(400,'Vui lòng điền đủ các trường bắt buộc và kiểm tra định dạng dữ liệu.'))
+
+
+from sqlalchemy.exc import OperationalError, IntegrityError
+
+@app.exception_handler(OperationalError)
+async def database_unavailable(request,exc):
+    return await friendly_http_error(request,HTTPException(503,
+        'Tạm thời chưa kết nối được dữ liệu. Tải lại để kiểm tra trạng thái trước khi thử lại.',
+        headers={'Retry-After':'5','Cache-Control':'no-store'}))
+
+@app.exception_handler(IntegrityError)
+async def concurrent_conflict(request,exc):
+    return await friendly_http_error(request,HTTPException(409,
+        'Thông tin vừa được cập nhật. Tải lại trang để kiểm tra trước khi thử lại.',headers={'Cache-Control':'no-store'}))

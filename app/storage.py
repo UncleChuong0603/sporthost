@@ -10,10 +10,14 @@ from fastapi import HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 LOCAL_ROOT = Path(__file__).resolve().parents[1] / '.vercel' / 'uploads'
+if os.getenv('APP_ENV') in ('test','development') and os.getenv('SPORTHOST_LOCAL_UPLOAD_DIR'):
+    LOCAL_ROOT=Path(os.environ['SPORTHOST_LOCAL_UPLOAD_DIR']).resolve()
 Image.MAX_IMAGE_PIXELS = 16_000_000
 
 
 def sanitize_image(upload: UploadFile, *, limit=2*1024*1024):
+    allowed={'image/png':'PNG','image/jpeg':'JPEG','image/webp':'WEBP'}
+    if upload.content_type not in allowed:raise HTTPException(400,'Chỉ nhận MIME ảnh PNG, JPEG hoặc WebP')
     raw = upload.file.read(limit+1)
     if not raw or len(raw) > limit:
         raise HTTPException(400, 'Ảnh vượt dung lượng cho phép hoặc file rỗng')
@@ -23,6 +27,7 @@ def sanitize_image(upload: UploadFile, *, limit=2*1024*1024):
             with Image.open(io.BytesIO(raw)) as image:
                 if image.format not in ('PNG','JPEG','WEBP'):
                     raise ValueError('Unsupported format')
+                if image.format!=allowed[upload.content_type]:raise ValueError('Image content and MIME differ')
                 image.verify()
             with Image.open(io.BytesIO(raw)) as image:
                 image.load()

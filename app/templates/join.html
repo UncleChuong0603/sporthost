@@ -30,7 +30,7 @@
     {% if game.is_cancelled %}<p class="alert">Buổi đánh đã hủy.</p>{% elif registration_closed and game.is_open %}<p class="alert">Đã qua hạn đăng ký buổi đánh này.</p>{% elif game.is_open and game.rsvp_deadline %}<p class="notice">Ưu tiên thành viên xác nhận trước. Đăng ký vãng lai mở từ {{ game.rsvp_deadline.replace('T',' ') }} (giờ Việt Nam).</p>{% else %}<p class="alert">Hiện host chưa nhận đăng ký vãng lai.</p>{% endif %}
   {% elif lookup %}
     <h2>2. Kiểm tra thông tin và xác nhận</h2>
-    <p class="muted small">{{ 'Đã tìm thấy hồ sơ của bạn trong CLB.' if lookup.found else 'Bạn chưa có hồ sơ tại CLB này. Điền thông tin để tiếp tục.' }}</p>
+    <p class="muted small">{{ 'Đã tìm thấy hồ sơ của bạn trong CLB.' if lookup.found else 'Điền thông tin để host nhận diện. Hệ thống không tiết lộ hồ sơ chỉ từ số điện thoại.' }}</p>
     <form class="stack" method="post" action="/join/{{ game.public_id }}{{ '?source=facebook' if request.query_params.get('source')=='facebook' else '' }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="lookup_token" value="{{ lookup.token }}">
@@ -54,7 +54,7 @@
     </form>
   {% else %}
     <h2>1. Nhập số điện thoại</h2>
-    <p class="muted small">Dùng số đã đăng ký với CLB để tự điền họ tên, giới tính và trình độ. Bạn sẽ kiểm tra lại trước khi gửi yêu cầu.</p>
+    <p class="muted small">Nhập số để host liên hệ, rồi điền họ tên và thông tin tham gia. Hồ sơ cũ chỉ tự điền khi trình duyệt đang có liên kết đăng ký hợp lệ của bạn.</p>
     <form class="stack" method="post" action="/join/{{ game.public_id }}/lookup{{ '?source=facebook' if request.query_params.get('source')=='facebook' else '' }}" data-phone-lookup>
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <label>Số điện thoại<input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="22" value="{{ phone }}" required autofocus placeholder="09xxxxxxxx"></label>

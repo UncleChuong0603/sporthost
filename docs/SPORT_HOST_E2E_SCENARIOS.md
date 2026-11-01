@@ -54,7 +54,7 @@ Xem test commands và bằng chứng thực chạy trong SPORT_HOST_TESTING / SP
 | F-29 | UTC lưu trữ, giờ Việt Nam, tiền VND | Asia/Ho_Chi_Minh, format dễ đọc, integer VND, không sai ngày khi qua nửa đêm | 6 |
 | F-30 | Backup/restore DB + ảnh vào schema test khác | Dữ liệu/số dư/hash ảnh khớp; không ghi đè production hoặc schema khác | 6 |
 
-## Mức bao phủ hiện tại
+## Mức bao phủ tại baseline (giữ lịch sử audit)
 
 - Baseline 46 tests: booking đơn, host CRUD/isolation, RSVP/waitlist/quota, QR/proof manual,
   gender pricing snapshot, monthly dues, auth/reset và deployment config.
@@ -62,3 +62,23 @@ Xem test commands và bằng chứng thực chạy trong SPORT_HOST_TESTING / SP
   `test_club_settings_browser.py`; trạng thái thực chạy ghi trong báo cáo sprint.
 - F-01 đầy đủ và các case nhóm, ledger, chốt sổ vẫn pending theo dependencies; không
   dùng sự tồn tại của test checklist làm bằng chứng feature đã implement.
+
+## Bằng chứng sau Sprint 6
+
+`test_real_session_browser.py` chạy F-01 qua Edge viewport 375×812: QR upload, tạo buổi tối
+thứ Sáu, 8 fixed/10 guest trong đó nhóm 3, duyệt đúng 15, 3 chờ, hủy/nhận waitlist,
+no-show/walk-in/về sớm, hai loại chi phí, miễn 8 người đã đóng tháng, phát hành một lần,
+thu đủ/tiền mặt/thu thiếu/ảnh chưa đối soát, chốt sổ còn nợ. Kết quả đối soát độc lập:
+1.050.000đ phải thu, 500.000đ đã nhận, 550.000đ còn nợ; ảnh chưa duyệt không tạo tiền.
+
+F-02–22 được chia trong các tests group/attendance/billing/closing/roadmap và 10 race
+PostgreSQL schema riêng; F-23 có fault injection trước kết nối và sau flush tiền, xác minh
+rollback và retry đúng một dòng, không ngắt database thật. F-24 có test snapshot QR/text
+cho batch và monthly/unissued booking. F-25 tra phone không lộ PII/token chỉ có HMAC version,
+cookie capability hợp lệ mới autofill. F-26–29 có migration/settings/browser/timezone/money
+tests. F-30 chạy `check_backup_restore` trên PostgreSQL + ảnh synthetic với hash/destination
+riêng, session invalidation và sequence, không restore đè live.
+
+Các bằng chứng này không chứng nhận thiết bị/Safari/Facebook browser thật, HA/tải lớn,
+SMTP thật, lịch backup provider hay đường SSH hiện chưa cấu hình trong runtime URL.
+Chi tiết lệnh/kết quả/release và giới hạn tại báo cáo Sprint 6, không thay bằng checklist.

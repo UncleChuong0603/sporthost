@@ -117,9 +117,10 @@ def register_routes():
         from app.finance_service import batch_for, balances
         import json
         batch=batch_for(db,game)
+        from app.payment_config import target_payment
         response=page(request,'participant.html',booking=booking,game=game,member=member,club=club,
             fee=booking_fee(game,booking,member),proofs=proofs,booking_policy=booked_policy(booking,game),
-            billing_batch=batch,billing_snapshot=json.loads(batch.snapshot) if batch else None,
+            payment_config=target_payment(db,booking,club,game),billing_batch=batch,billing_snapshot=json.loads(batch.snapshot) if batch else None,
             billing_rows=balances(db,game,booking.id) if batch else [],
             deadline_passed=bool(game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline))
         response.headers['Cache-Control']='private, no-store';response.headers['Referrer-Policy']='no-referrer'
@@ -158,11 +159,8 @@ def register_routes():
     @app.get('/attend/{key}/qr')
     def participant_qr(request:Request,key:str,db=Depends(db_session)):
         booking,game,member,club=participant(db,key,request=request)
-        qr=booking.qr_key or club.qr_key
-        from app.finance_service import batch_for
-        import json
-        batch=batch_for(db,game)
-        if batch:qr=json.loads(batch.snapshot)['payment']['qr_key']
+        from app.payment_config import target_payment
+        qr=target_payment(db,booking,club,game)['qr_key']
         if not qr:raise HTTPException(404)
         return image_response(qr)
 
@@ -205,7 +203,8 @@ def register_routes():
         due=db.scalar(select(MonthlyDue).where(MonthlyDue.access_key==key))
         if not due:raise HTTPException(404)
         member=db.get(Member,due.member_id);club=db.get(Club,member.club_id)
-        response=page(request,'due_payment.html',due=due,member=member,club=club)
+        from app.payment_config import target_payment
+        response=page(request,'due_payment.html',due=due,member=member,club=club,payment_config=target_payment(db,due,club))
         response.headers['Cache-Control']='private, no-store';response.headers['Referrer-Policy']='no-referrer'
         return response
 
@@ -215,8 +214,10 @@ def register_routes():
         due=db.scalar(select(MonthlyDue).where(MonthlyDue.access_key==key))
         if not due:raise HTTPException(404)
         club=db.get(Club,db.get(Member,due.member_id).club_id)
-        if not (due.qr_key or club.qr_key):raise HTTPException(404)
-        return image_response(due.qr_key or club.qr_key)
+        from app.payment_config import target_payment
+        key=target_payment(db,due,club)['qr_key']
+        if not key:raise HTTPException(404)
+        return image_response(key)
 
     @app.post('/dues/pay/{key}/proof')
     def due_proof(request:Request,key:str,csrf:str=Form(),proof:UploadFile=File(),db=Depends(db_session)):

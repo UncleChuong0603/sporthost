@@ -37,13 +37,18 @@ thu thiếu/đủ/thừa nhiều lần, hoàn thủ công, tách payer và snaps
 [Báo cáo Sprint 4](docs/SPORT_HOST_SPRINT_4_REPORT.md) ghi phạm vi, tương thích và kiểm chứng.
 Sprint 5 thêm chốt sổ còn nợ, điều chỉnh có version/lý do, quyền co-host chi tiết và
 sổ nền tảng riêng; [báo cáo Sprint 5](docs/SPORT_HOST_SPRINT_5_REPORT.md).
-Kiểm chứng E2E 15 người/hardening và tài liệu beta tiếp tục Sprint 6.
+Sprint 6 bổ sung E2E mobile 15 người, privacy lookup, upload/DB-failure hardening,
+snapshot QR/text cho phí tháng và backup ảnh; [báo cáo Sprint 6](docs/SPORT_HOST_SPRINT_6_REPORT.md).
+Luồng 15 người kiểm chứng: 1.050.000đ phải thu, 500.000đ thực nhận, 550.000đ còn nợ sau chốt.
 Không tự đổi nghĩa vụ tiền cũ; session chưa phát hành vẫn giữ luồng legacy giá cố định.
 
 [Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·
 [Kịch bản nghiệm thu](docs/SPORT_HOST_E2E_SCENARIOS.md) ·
 [Báo cáo sprint](docs/SPORT_HOST_SPRINT_REPORT.md) ·
 [Test/migration](docs/SPORT_HOST_TESTING.md)
+
+[Hướng dẫn host/khách](docs/SPORT_HOST_USER_GUIDE.md) ·
+[Vận hành beta, staging/tunnel và giới hạn](docs/SPORT_HOST_BETA_OPERATIONS.md)
 
 Giữ nguyên PostgreSQL/schema `clubhost` đã cấu hình của ứng dụng. Trong phiên tiếp tục,
 cấu hình thực tế từ Vercel là endpoint PostgreSQL trực tiếp; không tạo/chuyển dịch vụ DB
