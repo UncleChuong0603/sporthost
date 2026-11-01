@@ -2,6 +2,7 @@
 import csv
 import io
 import secrets
+import json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -41,13 +42,18 @@ def context(db,host,club_id=None):
 
 
 def game_rows(data):
+    from app.main import guest_open
+    from app.booking_service import registration_open
     rows=[]
     for game in data['games']:
         bookings=[b for b in data['bookings'] if b.session_id==game.id]
-        confirmed=sum(b.status=='confirmed' for b in bookings)
-        pending=sum(b.status in ('pending','waitlist') for b in bookings)
+        confirmed=sum(b.party_size for b in bookings if b.status=='confirmed')
+        pending=sum(b.party_size for b in bookings if b.status in ('pending','waitlist'))
         rows.append({'game':game,'club':data['club_map'][game.club_id],'confirmed':confirmed,
                      'pending':pending,'slots':max(0,game.capacity-confirmed),
+                     'open_for_guests':guest_open(game),
+                     'registration_label':('Đã hủy' if game.is_cancelled else 'Đã đóng đăng ký' if not game.is_open
+                         else 'Đã qua hạn đăng ký' if not registration_open(game) else 'Ưu tiên thành viên' if not guest_open(game) else 'Đang nhận vãng lai'),
                      'day':game.starts_at[8:10],'month':game.starts_at[5:7]})
     return rows
 
@@ -105,6 +111,8 @@ def generate_rule(db,rule):
     existing=set(db.scalars(select(GameSession.starts_at).where(GameSession.recurring_rule_id==rule.id)))
     fixed=db.scalars(select(Member).where(Member.club_id==rule.club_id,Member.kind=='fixed')).all()
     club=db.get(Club,rule.club_id);created=0
+    from app.booking_service import session_policy
+    policy=json.loads(rule.policy_json or '{}') or session_policy(club)
     for week in range(rule.weeks):
         start=datetime.strptime(rule.first_start,'%Y-%m-%dT%H:%M')+timedelta(weeks=week)
         starts_at=start.strftime('%Y-%m-%dT%H:%M')
@@ -114,6 +122,10 @@ def generate_rule(db,rule):
             rsvp_deadline=(start-timedelta(hours=rule.rsvp_hours)).strftime('%Y-%m-%dT%H:%M'),
             capacity_male=rule.capacity_male,capacity_female=rule.capacity_female,
             **{name:getattr(rule,name) for name in ('fixed_fee','guest_fee','fixed_fee_male','fixed_fee_female','guest_fee_male','guest_fee_female')})
+        for name,value in policy.items():
+            if name in ('registration_deadline','cancellation_deadline') and value:
+                value=(datetime.fromisoformat(value)+timedelta(weeks=week)).strftime('%Y-%m-%dT%H:%M')
+            setattr(game,name,value)
         db.add(game);db.flush()
         for member in fixed:db.add(Booking(session_id=game.id,member_id=member.id,status='invited',fee_amount=member_fee(game,member),qr_key=club.qr_key,gender_at_booking=member.gender))
         created+=1
@@ -148,23 +160,44 @@ def register_routes():
     async def edit_game(request:Request,game_id:int,db=Depends(db_session)):
         form=await request.form();ensure_csrf(request,form.get('csrf',''));game,club=owned_session(request,db,game_id,lock=True)
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
+        tracked=('title','venue','starts_at','capacity','approval_mode','skill_guidance','venue_instructions',
+                 'cancellation_policy','participation_conditions','maps_url','registration_deadline','cancellation_deadline')
+        before={name:getattr(game,name) for name in tracked}
         try:
             capacity=int(form.get('capacity',0));starts_at=datetime.strptime(form.get('starts_at',''),'%Y-%m-%dT%H:%M')
         except (TypeError,ValueError):raise HTTPException(400,'Thông tin buổi đánh chưa hợp lệ')
-        count=db.scalar(select(func.count()).select_from(Booking).where(Booking.session_id==game.id,Booking.status=='confirmed'))
+        from app.main import BookingParticipant,confirm_count
+        from app.booking_service import session_policy
+        count=confirm_count(db,game.id)
         if not max(1,count)<=capacity<=200:raise HTTPException(400,'Sức chứa không được thấp hơn số người đã xác nhận')
         limits=quotas(form,capacity)
         for gender in ('male','female'):
-            count_gender=db.scalar(select(func.count()).select_from(Booking).where(Booking.session_id==game.id,
-                Booking.status=='confirmed',Booking.gender_at_booking==gender))
+            count_gender=db.scalar(select(func.count()).select_from(BookingParticipant).join(Booking).where(Booking.session_id==game.id,
+                Booking.status=='confirmed',BookingParticipant.gender==gender))
             if limits['capacity_'+gender] is not None and limits['capacity_'+gender]<count_gender:
                 raise HTTPException(400,'Giới hạn nam/nữ không được thấp hơn số người đã xác nhận')
         for name,value in limits.items():setattr(game,name,value)
         title=str(form.get('title','')).strip()
         if not title or len(title)>150:raise HTTPException(400,'Tên buổi đánh chưa hợp lệ')
         game.title=title;game.venue=str(form.get('venue','')).strip()[:180];game.starts_at=starts_at.strftime('%Y-%m-%dT%H:%M');game.capacity=capacity
-        audit(db,club.id,require_host(request,db).id,'Sửa thông tin buổi đánh',game.title);db.commit()
-        return redirect(f'/games/{game_id}')
+        # Publish policy changes explicitly; club edits never change existing sessions.
+        policy_fields=('approval_mode','skill_guidance','venue_instructions','cancellation_policy','participation_conditions','maps_url','registration_deadline','cancellation_deadline')
+        changed=session_policy(club,form)
+        for name in policy_fields:
+            if name in form:setattr(game,name,changed[name])
+        policy_changed=any(before[name]!=getattr(game,name) for name in policy_fields)
+        reason=str(form.get('change_reason','')).strip()
+        if len(reason)>500:raise HTTPException(400,'Lý do thay đổi không được quá 500 ký tự')
+        if policy_changed and db.scalar(select(Booking.id).where(Booking.session_id==game.id).limit(1)) and not reason:
+            raise HTTPException(409,'Buổi đã có người đăng ký. Vui lòng ghi lý do khi thay đổi chính sách.')
+        labels={'title':'Tên buổi','venue':'Sân','starts_at':'Giờ bắt đầu','capacity':'Giới hạn người',
+                'approval_mode':'Cách duyệt','skill_guidance':'Trình độ','venue_instructions':'Hướng dẫn sân',
+                'cancellation_policy':'Chính sách hủy','participation_conditions':'Điều kiện tham gia',
+                'maps_url':'Bản đồ','registration_deadline':'Hạn đăng ký','cancellation_deadline':'Hạn tự sửa/hủy'}
+        details='\n'.join(f'{labels[name]}: {before[name] or "Chưa cài đặt"} → {getattr(game,name) or "Chưa cài đặt"}'
+                           for name in tracked if before[name]!=getattr(game,name))
+        db.add(AuditLog(club_id=club.id,host_id=require_host(request,db).id,action='Sửa thông tin buổi đánh',details=f'Lý do: {reason or "Cập nhật thông tin"}\n{details}'))
+        db.commit();return redirect(f'/games/{game_id}?updated=1')
 
     @app.post('/rules/{rule_id}/stop')
     def stop_rule(request:Request,rule_id:int,csrf:str=Form(),db=Depends(db_session)):
@@ -215,14 +248,16 @@ def register_routes():
         title=str(form.get('title','')).strip();venue=str(form.get('venue','')).strip()
         if not title or len(title)>150:raise HTTPException(400,'Tên buổi đánh không hợp lệ')
         values={**prices(form),**quotas(form,capacity)}
+        from app.booking_service import session_policy
+        policy=session_policy(club,form)
         if weeks>1:
             rule=RecurringRule(club_id=club_id,title=title,venue=venue[:180],first_start=start.strftime('%Y-%m-%dT%H:%M'),
-                weeks=weeks,capacity=capacity,rsvp_hours=rsvp_hours,**values)
+                weeks=weeks,capacity=capacity,rsvp_hours=rsvp_hours,policy_json=json.dumps(policy,ensure_ascii=False),**values)
             db.add(rule);db.flush();count=generate_rule(db,rule)
             audit(db,club_id,host.id,'Tạo lịch lặp',f'{title}: {count} buổi')
             db.commit();return redirect(f'/schedule?club_id={club_id}')
         game=GameSession(club_id=club_id,title=title,venue=venue[:180],starts_at=start.strftime('%Y-%m-%dT%H:%M'),
-                         public_id=secrets.token_urlsafe(18),capacity=capacity,**values)
+                         public_id=secrets.token_urlsafe(18),capacity=capacity,**values,**policy)
         db.add(game);audit(db,club_id,host.id,'Tạo buổi đánh',title);db.commit()
         return redirect(f'/games/{game.id}')
 

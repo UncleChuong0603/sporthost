@@ -161,7 +161,8 @@ def test_sport_labels_and_legacy_financial_data_remain_independent(host_club):
     assert 'Chưa điểm danh' in game_page and 'member cố định' not in game_page and 'Chờ slot' not in game_page
     with TestClient(app) as guest:
         page = guest.get('/join/' + public_id)
-        assert 'Bóng đá' in page.text and '0901234567' not in page.text
+        # Session sport is now snapshotted; changing the club cannot rewrite a published session.
+        assert 'Cầu lông' in page.text and '0901234567' not in page.text
     with SessionLocal() as db:
         game = db.get(GameSession, game_id); booking = db.get(Booking, booking_id); due = db.get(MonthlyDue, due_id)
         assert game.capacity == 8 and game.guest_fee == 70000

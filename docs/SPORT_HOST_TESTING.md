@@ -1,5 +1,35 @@
 # Test và migration của action plan
 
+## Phiên tiếp tục được phép release production
+
+Người dùng cho phép push/deploy/test production ngày 01/11/2026. Giữ nguyên PostgreSQL
+Vercel đã cấu hình; không chuyển DB hoặc sửa SSH. Default pytest vẫn dùng SQLite tạm.
+Các bước dưới chỉ chạy từ máy operator trong phạm vi release đã được cho phép:
+
+```powershell
+python -m scripts.verify_release
+python -m scripts.check_group_concurrency --env-file PRIVATE_ENV_FILE
+python -m scripts.apply_verified_release --env-file PRIVATE_ENV_FILE --apply
+# Sau khi deployment mới READY:
+python -m scripts.scrub_booking_tokens --env-file PRIVATE_ENV_FILE --apply
+python -m scripts.smoke_group_release --env-file PRIVATE_ENV_FILE --run
+```
+
+`verify_release` đọc file môi trường riêng tại `.vercel/action-plan-production.env`,
+backup chỉ schema `clubhost`, restore vào schema ngẫu nhiên rồi migrate/đối chiếu cột
+cũ; script apply xác minh hash backup, hash migration và đúng target trước khi áp dụng.
+Script concurrency dùng schema ngẫu nhiên tách dữ liệu thật. Các schema thử được dọn
+chỉ khi chính lượt chạy đã tạo; không chạm schema ứng dụng khác. Production smoke dùng
+hai tài khoản ngẫu nhiên + một CLB QA, không gửi email/ghi nhận tiền thực, dọn bằng owner/
+marker chính xác sau khi chạy. Không dùng pytest CRUD suite trực tiếp lên schema production.
+
+0006 là expand → deploy → scrub capability: không scrub plaintext khi app cũ còn chạy.
+Sau scrub, old links xác thực bằng hash; rollback sang app cần plaintext phải có kế hoạch
+phục hồi được duyệt. Backup private không commit; scripts không in URL/credential/PII.
+
+Phần hướng dẫn dưới giữ lại quy trình staging độc lập; không có biến nào tự động lấy
+production làm target cho suite PostgreSQL opt-in theo hậu tố `_test`/`_staging`.
+
 ## Local regression — không dùng DB thật
 
 ```powershell

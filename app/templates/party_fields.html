@@ -1,0 +1,14 @@
+{% macro party_fields(participants=none) -%}
+<details class="party-fields"{% if participants %} open{% endif %}>
+<summary>Đăng ký hộ người đi cùng (tùy chọn)</summary>
+<p class="small muted">Mỗi người chiếm một chỗ. Cả nhóm được xét cùng nhau; không tự tách nhóm. Người liên hệ chính nhận link quản lý và thanh toán cho nhóm.</p>
+<div data-party-list>
+{% for person in (participants if participants else [none,none]) %}
+<fieldset class="party-person"><legend>Người đi cùng {{ loop.index }}</legend>
+<label>Họ tên người đi cùng<input name="companion_name" value="{{ person.name if person else '' }}" maxlength="100" autocomplete="off"></label>
+<div class="two"><label>Giới tính (không bắt buộc)<select name="companion_gender" aria-label="Giới tính người đi cùng">{% for code,label in gender_labels.items() %}<option value="{{ code }}"{% if code==(person.gender if person else 'unspecified') %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><label>Trình độ người đi cùng<input name="companion_level" maxlength="40" value="{{ person.level if person else '' }}"></label></div>
+<button class="mini" type="button" data-remove-companion>Bỏ người này</button>
+</fieldset>{% endfor %}
+</div><button type="button" data-add-companion>Thêm người đi cùng</button><p class="small muted" data-party-count role="status" aria-live="polite">Mỗi lượt đăng ký tối đa 20 người.</p>
+</details>
+{%- endmacro %}

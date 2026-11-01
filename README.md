@@ -10,6 +10,8 @@ FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 - Lịch tuần, RSVP riêng, ưu tiên member, duyệt vãng lai, danh sách chờ và điểm danh.
 - Nam/nữ, phí riêng theo giới tính/loại thành viên; giới hạn tổng và chỗ nam/nữ tùy chọn.
 - Vãng lai nhập điện thoại trước, tự điền hồ sơ trong CLB, kiểm tra rồi xác nhận.
+- Đăng ký hộ nhiều người, duyệt cả nhóm, tự động nhận hoặc host duyệt; danh sách chờ tính theo số người.
+- Link quản lý khách có hash, hạn dùng và thu hồi/cấp lại; sửa/hủy theo chính sách đã nhận.
 - Upload QR, biên nhận riêng tư và đối soát thủ công; phí tháng, chi phí, CSV.
 - Đồng quản lý, quyền điều hành/thu chi, audit, tài khoản và quản trị Pro trial miễn phí.
 
@@ -21,24 +23,27 @@ Upload biên nhận không tự xác nhận đã thu. Chưa thu phí phần mề
 
 ## Action plan 01/11/2026 — trạng thái nhánh này
 
-Đã audit và triển khai code Sprint 1: danh mục môn, cài đặt CLB, phân quyền sửa,
-audit trước/sau, nhãn tiếng Việt và giới hạn người mặc định trên form tạo buổi.
-Migration `0005_club_settings` chỉ thêm cột/constraints trong schema riêng `clubhost`;
-**chưa chạy migration trên database triển khai hoặc deploy các thay đổi này**.
+Sprint 1 đã lên production (`7a8ae26`, migration `0005_club_settings`) sau khi backup,
+phục hồi/migrate thử vào schema riêng và smoke test bằng CLB thử.
+Sprint 2 bổ sung đăng ký nhóm, policy snapshot, hạn đăng ký/sửa/hủy, duyệt/waitlist
+atomic theo số người và link riêng có bảo vệ; migration `0006_group_bookings` mở rộng
+bảng cũ và map mỗi booking cũ đúng một participant. Trạng thái release/test mới nhất
+được ghi tại báo cáo sprint bên dưới.
 
-Approval/fee mode và chính sách hủy mới được lưu cấu hình ở CLB. Tự động duyệt,
-thực thi hạn hủy, đăng ký hộ, engine chia đều và ledger/chốt sổ thuộc Sprint 2–5,
-chưa được triển khai trong đợt Sprint 0/1 này. Các buổi cũ giữ cách duyệt và mức phí cũ.
+Engine chia đều, điểm danh riêng từng người, partial payments, ledger/chốt sổ và
+granular co-host thuộc Sprint 3–5, chưa hoàn tất. COST_SHARING mới lưu cấu hình;
+không tự đổi nghĩa vụ tiền cũ. Nhóm hiện dùng một người liên hệ/thanh toán cho cả nhóm.
 
 [Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·
 [Kịch bản nghiệm thu](docs/SPORT_HOST_E2E_SCENARIOS.md) ·
 [Báo cáo sprint](docs/SPORT_HOST_SPRINT_REPORT.md) ·
 [Test/migration](docs/SPORT_HOST_TESTING.md)
 
-Tiếp tục dùng PostgreSQL hiện có qua SSH tunnel do operator cấu hình, trong schema
-riêng đã được cấp. Không tạo/chuyển dịch vụ DB theo ví dụ deploy cũ. Kiểm thử migration
-trên PostgreSQL non-production và backup/restore là điều kiện trước migration production;
-production luôn cần phê duyệt riêng.
+Giữ nguyên PostgreSQL/schema `clubhost` đã cấu hình của ứng dụng. Trong phiên tiếp tục,
+cấu hình thực tế từ Vercel là endpoint PostgreSQL trực tiếp; không tạo/chuyển dịch vụ DB
+hoặc thay SSH. Người dùng đã cho phép push/deploy và test production ngày 01/11/2026.
+Migration vẫn được backup/restore và kiểm chứng trong schema thử riêng trước khi áp dụng;
+test production chỉ dùng tenant được tạo riêng rồi dọn chính dữ liệu thử đó.
 
 ## Chạy local
 

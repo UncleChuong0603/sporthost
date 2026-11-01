@@ -33,24 +33,40 @@ def image_response(key):
             'X-Content-Type-Options':'nosniff','Content-Disposition':'inline; filename="image.png"'})
 
 
-def participant(db,key,*,lock=False):
-    if len(key)<24:raise HTTPException(404)
-    query=select(Booking).where(Booking.access_key==key)
+def participant(db,key,*,lock=False,request=None):
+    from app.booking_service import digest, token_valid
+    from sqlalchemy import or_
+    if request:
+        from app.security import rate_limit
+        rate_limit(request,'guest-token',limit=120,seconds=60)
+    if not 24<=len(key)<=256:raise HTTPException(404)
+    # Compatibility for requests still completing on the previous deployment at cutover.
+    query=select(Booking).where(or_(Booking.token_digest==digest(key),Booking.legacy_token_digest==digest(key),Booking._legacy_access_key==key))
     booking=db.scalar(query)
     if not booking:raise HTTPException(404)
     query=select(GameSession).where(GameSession.id==booking.session_id)
-    if lock:query=query.with_for_update()
+    if lock or not booking.token_nonce or booking._legacy_access_key:query=query.with_for_update()
     game=db.scalar(query)
-    if lock:db.refresh(booking)
+    if lock or not booking.token_nonce or booking._legacy_access_key:
+        db.refresh(booking)
+    if booking._legacy_access_key:
+        from app.booking_service import ensure_token
+        booking.legacy_token_digest=digest(booking._legacy_access_key)
+        booking._legacy_access_key=''
+        ensure_token(booking,game)
+    if not token_valid(booking,key):raise HTTPException(404)
     member=db.get(Member,booking.member_id);club=db.get(Club,game.club_id)
     return booking,game,member,club
 
 
 def promote_waitlist(db,game,exclude_id=None):
+    from app.booking_service import registration_open
+    if not registration_open(game):return
     if game.is_cancelled or confirm_count(db,game.id)>=game.capacity:return
     for next_booking in db.scalars(select(Booking).where(Booking.session_id==game.id,Booking.status=='waitlist').order_by(Booking.id).with_for_update()):
         if next_booking.id==exclude_id:continue
-        if has_space(db,game,next_booking.gender_at_booking):
+        if game.approval_mode=='MANUAL_APPROVE' and db.get(Member,next_booking.member_id).kind=='guest':continue
+        if has_space(db,game,next_booking.gender_at_booking,booking=next_booking):
             next_booking.status='confirmed';break
 
 
@@ -94,39 +110,48 @@ def register_routes():
 
     @app.get('/attend/{key}')
     def participant_page(request:Request,key:str,db=Depends(db_session)):
-        booking,game,member,club=participant(db,key)
+        booking,game,member,club=participant(db,key,request=request)
+        from app.booking_service import ensure_token,booked_policy
+        ensure_token(booking,game);db.commit()
         proofs=db.scalars(select(PaymentProof).where(PaymentProof.booking_id==booking.id).order_by(PaymentProof.id.desc())).all()
         response=page(request,'participant.html',booking=booking,game=game,member=member,club=club,
-            fee=booking_fee(game,booking,member),proofs=proofs,deadline_passed=bool(game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline))
+            fee=booking_fee(game,booking,member),proofs=proofs,booking_policy=booked_policy(booking,game),deadline_passed=bool(game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline))
         response.headers['Cache-Control']='private, no-store';response.headers['Referrer-Policy']='no-referrer'
         return response
 
     @app.post('/attend/{key}/rsvp')
     def rsvp(request:Request,key:str,action:str=Form(),csrf:str=Form(),db=Depends(db_session)):
-        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True)
+        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True,request=request)
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
         if member.kind!='fixed':raise HTTPException(403)
         if action not in ('yes','no'):raise HTTPException(400)
         if action=='yes':
             if booking.status=='confirmed':return redirect(f'/attend/{key}')
+            from app.booking_service import registration_open
+            if not registration_open(game):raise HTTPException(400,'Đã đóng đăng ký hoặc qua giờ nhận người')
             if game.rsvp_deadline and now_local().strftime('%Y-%m-%dT%H:%M')>game.rsvp_deadline:
                 raise HTTPException(400,'Đã qua hạn RSVP; vui lòng liên hệ host')
-            booking.status='confirmed' if has_space(db,game,booking.gender_at_booking) else 'waitlist'
+            booking.status='confirmed' if has_space(db,game,booking.gender_at_booking,booking=booking) else 'waitlist'
         else:
-            booking.status='cancelled';promote_waitlist(db,game)
+            from app.booking_service import allow_guest_change
+            allow_guest_change(db,booking,game,editing=False)
+            booking.status='cancelled';db.flush();promote_waitlist(db,game)
         audit(db,club.id,None,'Member xác nhận lịch',f'Booking #{booking.id}: {booking.status}')
         db.commit();return redirect(f'/attend/{key}')
 
     @app.post('/attend/{key}/cancel')
     def cancel_participant(request:Request,key:str,csrf:str=Form(),db=Depends(db_session)):
-        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True)
-        booking.status='cancelled';promote_waitlist(db,game)
+        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True,request=request)
+        from app.booking_service import allow_guest_change
+        if booking.status=='cancelled':return redirect(f'/attend/{key}')
+        allow_guest_change(db,booking,game,editing=False)
+        booking.status='cancelled';db.flush();promote_waitlist(db,game)
         audit(db,club.id,None,'Người chơi hủy tham gia',f'Booking #{booking.id}');db.commit()
         return redirect(f'/attend/{key}')
 
     @app.get('/attend/{key}/qr')
     def participant_qr(request:Request,key:str,db=Depends(db_session)):
-        booking,game,member,club=participant(db,key)
+        booking,game,member,club=participant(db,key,request=request)
         qr=booking.qr_key or club.qr_key
         if not qr:raise HTTPException(404)
         return image_response(qr)
@@ -135,7 +160,7 @@ def register_routes():
     def upload_proof(request:Request,key:str,csrf:str=Form(),proof:UploadFile=File(),db=Depends(db_session)):
         from app.security import rate_limit
         rate_limit(request,'proof-upload',limit=15,seconds=300)
-        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True)
+        ensure_csrf(request,csrf);booking,game,member,club=participant(db,key,lock=True,request=request)
         if game.is_cancelled or booking.status!='confirmed' or booking.paid or booking.payment_status=='refunded':
             raise HTTPException(400,'Chỉ gửi biên nhận cho booking đã xác nhận và chưa thanh toán')
         if db.scalar(select(PaymentProof.id).where(PaymentProof.booking_id==booking.id,PaymentProof.status=='reported')):

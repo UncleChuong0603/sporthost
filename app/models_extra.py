@@ -29,6 +29,7 @@ class RecurringRule(Base):
     guest_fee_female: Mapped[int | None]
     rsvp_hours: Mapped[int]
     active: Mapped[bool] = mapped_column(default=True)
+    policy_json: Mapped[str] = mapped_column(default='{}', server_default='{}')
 
 
 class ClubAccess(Base):

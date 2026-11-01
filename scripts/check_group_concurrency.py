@@ -1,0 +1,146 @@
+"""Run real PostgreSQL group races in a generated SportHost-only schema.
+
+Usage: python -m scripts.check_group_concurrency --env-file PRIVATE_ENV_FILE
+Never changes the deployed SportHost schema; cleans up only its generated schema.
+"""
+import argparse
+import os
+import re
+import secrets
+import subprocess
+import sys
+from pathlib import Path
+
+from dotenv import dotenv_values
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+
+
+def worker():
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import timedelta
+    from fastapi.testclient import TestClient
+    from sqlalchemy import select
+    from app.main import app, SETTINGS, SessionLocal, Booking, GameSession, confirm_count
+    from app.workspace import now_local
+    assert SETTINGS['driver'] == 'postgresql'
+    assert re.fullmatch(r'sporthost_group_check_[0-9a-f]{16}', SETTINGS['schema'])
+    legacy = os.getenv('SPORTHOST_CHECK_LEGACY_TOKEN')
+    if legacy:
+        from app.booking_service import digest
+        with SessionLocal() as db:
+            old = db.scalar(select(Booking).where(Booking.legacy_token_digest == digest(legacy)))
+            assert old and old.party_size == 1 and old.fee_amount == 70000 and old.paid
+            assert old.participants[0].fee_amount == 70000
+        with TestClient(app) as legacy_guest:
+            assert legacy_guest.get('/attend/' + legacy).status_code == 200
+        print('Legacy migration fixture passed: one participant, original fee/paid state, old private link')
+
+    def submit(client, path, data, source):
+        token = re.search(r'name="csrf" value="([^"]+)"', client.get(source).text).group(1)
+        return client.post(path, data={**data, 'csrf': token}, follow_redirects=True)
+
+    with TestClient(app) as host:
+        result = submit(host, '/signup', {'email': 'isolated-race@example.com', 'password': 'isolated-race-password'}, '/signup')
+        assert result.status_code == 200
+        result = submit(host, '/clubs', {'name': 'Isolated PostgreSQL race'}, '/clubs')
+        club_id = int(result.url.path.split('/')[-1])
+        starts = (now_local() + timedelta(days=7)).strftime('%Y-%m-%dT19:00')
+        for mode, capacity, size in [('AUTO_APPROVE', 1, 1), ('AUTO_APPROVE', 3, 2), ('MANUAL_APPROVE', 3, 2)]:
+            result = submit(host, f'/clubs/{club_id}/games', {'title': 'Seat race', 'starts_at': starts,
+                            'capacity': capacity, 'guest_fee': 70000, 'approval_mode': mode}, f'/clubs/{club_id}')
+            assert result.status_code == 200
+            game_id = int(result.url.path.split('/')[-1])
+            with SessionLocal() as db:
+                public = '/join/' + db.get(GameSession, game_id).public_id
+            def join(index):
+                with TestClient(app) as guest:
+                    response = submit(guest, public, {'name': f'Race {index}', 'phone': f'090234567{index}',
+                                      'companion_name': ['Companion'] if size == 2 else []}, public)
+                    assert response.status_code == 200
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                list(pool.map(join, (0, 1)))
+            with SessionLocal() as db:
+                bookings = db.scalars(select(Booking).where(Booking.session_id == game_id).order_by(Booking.id)).all()
+                assert len(bookings) == 2 and all(b.party_size == size for b in bookings)
+            if mode == 'MANUAL_APPROVE':
+                cookie = host.cookies.get('clubhost')
+                def approve(booking_id):
+                    with TestClient(app) as cohost:
+                        cohost.cookies.set('clubhost', cookie)
+                        response = submit(cohost, f'/games/{game_id}/bookings/{booking_id}/approve', {}, f'/games/{game_id}')
+                        assert response.status_code == 200
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    list(pool.map(approve, [b.id for b in bookings]))
+            with SessionLocal() as db:
+                states = list(db.scalars(select(Booking.status).where(Booking.session_id == game_id)))
+                assert sorted(states) == ['confirmed', 'waitlist'], states
+                assert confirm_count(db, game_id) == size <= capacity
+        print('Three PostgreSQL concurrency scenarios passed: single-slot race, whole-group auto race, manual approval race')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--env-file')
+    parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    if args.worker:
+        worker(); return
+    if not args.env_file:
+        parser.error('--env-file is required; no production configuration is selected implicitly')
+    values = dotenv_values(args.env_file)
+    raw = values.get('DATABASE_URL_UNPOOLED') or values.get('DATABASE_URL')
+    if not raw or '[SENSITIVE]' in raw:
+        raise SystemExit('A usable PostgreSQL URL is required in the private environment file')
+    url = make_url(raw).set(drivername='postgresql+psycopg')
+    schema = 'sporthost_group_check_' + secrets.token_hex(8)
+    engine = create_engine(url, connect_args={'connect_timeout': 15})
+    env = dict(os.environ, APP_ENV='test', DB_SCHEMA=schema, DATABASE_URL=url.render_as_string(hide_password=False),
+               SECRET_KEY='isolated-postgres-group-race-secret', COOKIE_SECURE='false')
+    env.pop('VERCEL', None)
+    created = False
+    try:
+        with engine.begin() as con:
+            con.execute(text(f'CREATE SCHEMA "{schema}"'))
+        created = True
+        migration = subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', '0005_club_settings'], env=env, capture_output=True, timeout=120)
+        if migration.returncode:
+            raise RuntimeError('Test-schema migration failed; inspect privately before release')
+        legacy = secrets.token_urlsafe(24)
+        with engine.begin() as con:
+            host = con.scalar(text(f'''INSERT INTO "{schema}".hosts (email,password_hash)
+                VALUES ('legacy-fixture@example.com','test-only') RETURNING id'''))
+            club = con.scalar(text(f'''INSERT INTO "{schema}".clubs (owner_id,name,location)
+                VALUES (:host,'Legacy badminton','Q8') RETURNING id'''), {'host': host})
+            member = con.scalar(text(f'''INSERT INTO "{schema}".members (club_id,name,phone,kind,level)
+                VALUES (:club,'Legacy player','0901111111','guest','TB') RETURNING id'''), {'club': club})
+            game = con.scalar(text(f'''INSERT INTO "{schema}".game_sessions
+                (club_id,public_id,title,venue,starts_at,capacity,fixed_fee,guest_fee,is_open)
+                VALUES (:club,'legacy-fixture','Legacy','Q8','2027-01-08T19:00',15,0,70000,true) RETURNING id'''), {'club': club})
+            con.execute(text(f'''INSERT INTO "{schema}".bookings
+                (session_id,member_id,status,paid,attended,fee_amount,access_key,payment_status)
+                VALUES (:game,:member,'confirmed',true,false,70000,:token,'confirmed')'''),
+                {'game': game, 'member': member, 'token': legacy})
+        migration = subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', 'head'], env=env, capture_output=True, timeout=120)
+        if migration.returncode:
+            raise RuntimeError('Legacy migration failed in generated test schema; inspect privately before release')
+        env['SPORTHOST_CHECK_LEGACY_TOKEN'] = legacy
+        check = subprocess.run([sys.executable, '-m', 'scripts.check_group_concurrency', '--worker'],
+                               env=env, capture_output=True, timeout=180)
+        if check.returncode:
+            # Store debugging locally, not in shared logs (SQLAlchemy errors may contain records).
+            output = Path('.vercel/test-artifacts/postgres-group-error.log')
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(check.stdout + check.stderr)
+            raise RuntimeError('PostgreSQL concurrency check failed; see private test artifact')
+        print(check.stdout.decode('utf-8').strip())
+    finally:
+        if created:
+            assert re.fullmatch(r'sporthost_group_check_[0-9a-f]{16}', schema)
+            with engine.begin() as con:
+                con.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
+        engine.dispose()
+
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,12 @@
 # Báo cáo SportHost — action plan 01/11/2026
 
+**Cập nhật phiên tiếp tục:** người dùng đã cho phép push/deploy/test production.
+Sprint 1 đã push `7a8ae26`, migration 0005 trên production sau backup/restore vào schema
+thử riêng và đối chiếu dữ liệu cũ. Production smoke tạo/sửa CLB, sport/capacity, CSRF,
+private settings pass; chỉ dọn tài khoản/CLB thử vừa tạo. Các ghi chú “chưa deploy” bên
+dưới là bản ghi bàn giao ban đầu. Trạng thái Sprint 2 tại
+[SPORT_HOST_SPRINT_2_REPORT.md](SPORT_HOST_SPRINT_2_REPORT.md).
+
 ## Sprint 0
 
 **Hoàn tất audit/source baseline và test isolation local.** Chưa có target PostgreSQL

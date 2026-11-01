@@ -21,3 +21,24 @@ def isolated_uploads(tmp_path_factory):
     storage.LOCAL_ROOT = tmp_path_factory.mktemp('sporthost-uploads')
     yield
     storage.LOCAL_ROOT = previous
+
+
+@pytest.fixture(scope='session')
+def browser_server():
+    import socket
+    import threading
+    import time
+    import uvicorn
+    from app.main import app
+    sock = socket.socket(); sock.bind(('127.0.0.1', 0))
+    server = uvicorn.Server(uvicorn.Config(app, log_level='error', lifespan='off'))
+    thread = threading.Thread(target=server.run, kwargs={'sockets': [sock]}, daemon=True)
+    thread.start()
+    try:
+        for _ in range(100):
+            if server.started:break
+            time.sleep(0.05)
+        assert server.started
+        yield f'http://127.0.0.1:{sock.getsockname()[1]}'
+    finally:
+        server.should_exit = True; thread.join(timeout=10); sock.close()

@@ -24,7 +24,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import create_engine, ForeignKey, UniqueConstraint, CheckConstraint, select, func, MetaData, false, or_
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session, sessionmaker, relationship
 from sqlalchemy.pool import NullPool
 from app.settings import load_settings
 
@@ -111,7 +111,8 @@ class Member(Base):
 
 class GameSession(Base):
     __tablename__ = 'game_sessions'
-    __table_args__ = (UniqueConstraint('recurring_rule_id', 'starts_at', name='uq_rule_occurrence'),)
+    __table_args__ = (UniqueConstraint('recurring_rule_id', 'starts_at', name='uq_rule_occurrence'),
+                      CheckConstraint("approval_mode IN ('AUTO_APPROVE','MANUAL_APPROVE')", name='ck_session_approval_mode'))
     id: Mapped[int] = mapped_column(primary_key=True)
     club_id: Mapped[int] = mapped_column(ForeignKey('clubs.id'), index=True)
     public_id: Mapped[str] = mapped_column(unique=True, index=True)
@@ -131,6 +132,15 @@ class GameSession(Base):
     recurring_rule_id: Mapped[int | None] = mapped_column(ForeignKey('recurring_rules.id'))
     rsvp_deadline: Mapped[str | None]
     is_cancelled: Mapped[bool] = mapped_column(default=False, server_default=false())
+    approval_mode: Mapped[str] = mapped_column(default='MANUAL_APPROVE', server_default='MANUAL_APPROVE')
+    sport_snapshot: Mapped[str] = mapped_column(default='badminton', server_default='badminton')
+    skill_guidance: Mapped[str] = mapped_column(default='', server_default='')
+    venue_instructions: Mapped[str] = mapped_column(default='', server_default='')
+    cancellation_policy: Mapped[str] = mapped_column(default='', server_default='')
+    participation_conditions: Mapped[str] = mapped_column(default='', server_default='')
+    maps_url: Mapped[str] = mapped_column(default='', server_default='')
+    registration_deadline: Mapped[str | None]
+    cancellation_deadline: Mapped[str | None]
 
 class Booking(Base):
     __tablename__ = 'bookings'
@@ -142,10 +152,45 @@ class Booking(Base):
     paid: Mapped[bool] = mapped_column(default=False)
     attended: Mapped[bool] = mapped_column(default=False)
     fee_amount: Mapped[int | None]
-    access_key: Mapped[str] = mapped_column(default=lambda: secrets.token_urlsafe(24), server_default='')
+    _legacy_access_key: Mapped[str] = mapped_column('access_key', default='', server_default='')
+    token_nonce: Mapped[str] = mapped_column(default='', server_default='')
+    token_digest: Mapped[str] = mapped_column(default='', server_default='', index=True)
+    legacy_token_digest: Mapped[str | None] = mapped_column(index=True)
+    token_expires_at: Mapped[str | None]
+    token_revoked: Mapped[bool] = mapped_column(default=False, server_default=false())
+    channel: Mapped[str] = mapped_column(default='direct', server_default='direct')
+    decision_reason: Mapped[str] = mapped_column(default='', server_default='')
+    policy_snapshot: Mapped[str] = mapped_column(default='{}', server_default='{}')
+    participants: Mapped[list['BookingParticipant']] = relationship(back_populates='booking', cascade='all, delete-orphan', order_by='BookingParticipant.position', lazy='selectin')
+
+    @property
+    def access_key(self):
+        from app.booking_service import ensure_token, raw_token
+        ensure_token(self)
+        return raw_token(self.token_nonce)
+
+    @property
+    def party_size(self):
+        return len(self.participants) or 1
     qr_key: Mapped[str | None]
     payment_status: Mapped[str] = mapped_column(default='unpaid', server_default='unpaid')
     gender_at_booking: Mapped[str] = mapped_column(default='unspecified',server_default='unspecified')
+
+
+class BookingParticipant(Base):
+    __tablename__ = 'booking_participants'
+    __table_args__ = (UniqueConstraint('booking_id', 'position', name='uq_booking_participant_position'),
+                      CheckConstraint("gender IN ('male','female','unspecified')", name='ck_participant_gender'),
+                      CheckConstraint('fee_amount >= 0', name='ck_participant_fee'))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey('bookings.id'), index=True)
+    member_id: Mapped[int | None] = mapped_column(ForeignKey('members.id'))
+    position: Mapped[int]
+    name: Mapped[str]
+    gender: Mapped[str] = mapped_column(default='unspecified', server_default='unspecified')
+    level: Mapped[str] = mapped_column(default='', server_default='')
+    fee_amount: Mapped[int] = mapped_column(default=0, server_default='0')
+    booking: Mapped['Booking'] = relationship(back_populates='participants')
 
 class Expense(Base):
     __tablename__ = 'expenses'
@@ -377,17 +422,13 @@ def booking_fee(game: GameSession, booking: Booking, member: Member):
 
 
 def confirm_count(db: Session, game_id: int):
-    return db.scalar(select(func.count()).select_from(Booking).where(Booking.session_id==game_id, Booking.status=='confirmed')) or 0
+    return db.scalar(select(func.count()).select_from(Booking).outerjoin(BookingParticipant).where(Booking.session_id==game_id, Booking.status=='confirmed')) or 0
 
 
-def has_space(db,game,gender):
-    if confirm_count(db,game.id)>=game.capacity:return False
-    if gender=='unspecified' and (game.capacity_male is not None or game.capacity_female is not None):return False
-    quota=getattr(game,'capacity_'+gender,None) if gender in ('male','female') else None
-    if quota is None:return True
-    count=db.scalar(select(func.count()).select_from(Booking).where(Booking.session_id==game.id,
-        Booking.status=='confirmed',Booking.gender_at_booking==gender)) or 0
-    return count<quota
+def has_space(db,game,gender,booking=None):
+    from app.booking_service import can_fit
+    genders=([p.gender for p in booking.participants] or [booking.gender_at_booking]) if booking else [gender]
+    return can_fit(db,game,genders,exclude_id=booking.id if booking and booking.status=='confirmed' else None)
 
 
 @app.get('/', response_class=HTMLResponse)
@@ -484,6 +525,8 @@ def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phon
         member.gender = validated_gender(gender)
         for booking in db.scalars(select(Booking).where(Booking.member_id==member.id,Booking.status!='confirmed')):
             booking.gender_at_booking=member.gender
+            for person in booking.participants:
+                if person.position==0:person.gender=member.gender
     phone=digits_phone(phone)
     conflict=db.scalar(select(Member).where(Member.club_id==club_id,Member.phone.in_(phone_aliases(phone)),Member.id!=member_id))
     if conflict:return redirect(f'/clubs/{club_id}?message=phone_exists')
@@ -502,12 +545,15 @@ def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind
     return redirect(f'/clubs/{club_id}')
 
 @app.post('/clubs/{club_id}/games')
-def create_game(request:Request,club_id:int,title:str=Form(),venue:str=Form(''),starts_at:str=Form(),capacity:int=Form(),fixed_fee:int=Form(0),guest_fee:int=Form(0),fixed_fee_male:str=Form(''),fixed_fee_female:str=Form(''),guest_fee_male:str=Form(''),guest_fee_female:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
-    owned_club(request,db,club_id);ensure_csrf(request,csrf)
+async def create_game(request:Request,club_id:int,title:str=Form(),venue:str=Form(''),starts_at:str=Form(),capacity:int=Form(),fixed_fee:int=Form(0),guest_fee:int=Form(0),fixed_fee_male:str=Form(''),fixed_fee_female:str=Form(''),guest_fee_male:str=Form(''),guest_fee_female:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
+    _,club=owned_club(request,db,club_id);ensure_csrf(request,csrf)
+    from app.booking_service import session_policy
+    policy=session_policy(club,await request.form())
     try: datetime.strptime(starts_at,'%Y-%m-%dT%H:%M')
     except ValueError: raise HTTPException(400,'Ngày giờ bắt đầu không hợp lệ')
     if not 1<=capacity<=200 or not title.strip(): raise HTTPException(400,'Thông tin buổi đánh không hợp lệ')
     game=GameSession(club_id=club_id,public_id=secrets.token_urlsafe(18),title=title.strip()[:150],venue=venue.strip()[:180],starts_at=starts_at,capacity=capacity,fixed_fee=money(fixed_fee),guest_fee=money(guest_fee),fixed_fee_male=optional_money(fixed_fee_male),fixed_fee_female=optional_money(fixed_fee_female),guest_fee_male=optional_money(guest_fee_male),guest_fee_female=optional_money(guest_fee_female))
+    for key,value in policy.items():setattr(game,key,value)
     db.add(game);db.commit();return redirect(f'/games/{game.id}')
 
 @app.post('/clubs/{club_id}/dues')
@@ -546,10 +592,11 @@ def game_page(request:Request,game_id:int,db:Session=Depends(db_session)):
     total_collected=sum(r['fee'] for r in rows if r['booking'].status=='confirmed' and r['booking'].paid)
     total_due=sum(r['fee'] for r in rows if r['booking'].status=='confirmed' and not r['booking'].paid)
     total_expenses=sum(e.amount for e in expenses)
-    gender_counts = {key: sum(r['booking'].status == 'confirmed' and r['member'].gender == key for r in rows) for key in GENDER_LABELS}
+    gender_counts = {key: sum(p.gender == key for r in rows if r['booking'].status == 'confirmed' for p in r['booking'].participants) for key in GENDER_LABELS}
     from app.payments import can_finance
     for booking in bookings:
-        if not booking.access_key:booking.access_key=secrets.token_urlsafe(24)
+        from app.booking_service import ensure_token
+        ensure_token(booking,game)
     db.commit()
     return page(request,'game.html',host=host,game=game,club=club,rows=rows,members=members,expenses=expenses,confirmed=confirm_count(db,game.id),gender_counts=gender_counts,collected=total_collected,receivable=total_due,outgoing=total_expenses,can_finance_club=can_finance(db,host,club),join_url=str(request.base_url).rstrip('/')+f'/join/{game.public_id}')
 
@@ -564,23 +611,32 @@ def add_fixed_to_game(request:Request,game_id:int,member_id:int=Form(),csrf:str=
         if not has_space(db,game,member.gender):return redirect(f'/games/{game_id}?message=full')
         db.add(Booking(session_id=game_id,member_id=member_id,status='confirmed',fee_amount=member_fee(game,member),qr_key=club.qr_key,gender_at_booking=member.gender))
     elif booking.status != 'confirmed':
-        if not has_space(db,game,booking.gender_at_booking):return redirect(f'/games/{game_id}?message=full')
+        if not has_space(db,game,booking.gender_at_booking,booking=booking):return redirect(f'/games/{game_id}?message=full')
         booking.status='confirmed'
     db.commit();return redirect(f'/games/{game_id}')
 
 @app.post('/games/{game_id}/bookings/{booking_id}/{action}')
-def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:str=Form(),db:Session=Depends(db_session)):
+def change_booking(request:Request,game_id:int,booking_id:int,action:str,csrf:str=Form(),reason:str=Form(''),db:Session=Depends(db_session)):
     permission='finance' if action in ('paid','unpaid','refund') else 'manage'
     game,club=owned_session(request,db,game_id,lock=True,permission=permission);ensure_csrf(request,csrf)
     booking=db.get(Booking,booking_id)
     if not booking or booking.session_id!=game_id:raise HTTPException(404)
     previous_status=booking.status
+    if action in ('approve','waitlist','cancel','reject'):
+        booking.decision_reason=reason.strip()[:500]
     if action=='approve':
         if game.is_cancelled:raise HTTPException(400,'Buổi đánh đã hủy')
-        if booking.status!='confirmed' and not has_space(db,game,booking.gender_at_booking):return redirect(f'/games/{game_id}?message=full')
+        from app.booking_service import registration_open
+        if not registration_open(game):raise HTTPException(400,'Đã đóng đăng ký hoặc qua hạn nhận người')
+        if booking.status!='confirmed' and not has_space(db,game,booking.gender_at_booking,booking=booking):
+            booking.status='waitlist'
+            from app.workspace import audit
+            audit(db,club.id,require_host(request,db).id,'Cả nhóm vào danh sách chờ',f'Đăng ký #{booking.id}: không đủ chỗ')
+            db.commit();return redirect(f'/games/{game_id}?message=full')
         booking.status='confirmed'
     elif action=='waitlist':booking.status='waitlist'
     elif action=='cancel':booking.status='cancelled'
+    elif action=='reject':booking.status='rejected'
     elif action=='paid':booking.paid=True;booking.payment_status='confirmed'
     elif action=='unpaid':booking.paid=False;booking.payment_status='unpaid'
     elif action=='refund':booking.paid=False;booking.payment_status='refunded'
@@ -622,15 +678,17 @@ def guest_review(game: GameSession, phone: str, member: Member | None):
 
 
 def join_view(request: Request, db: Session, game: GameSession, *, lookup=None, error=None, phone=''):
+    from app.booking_service import registration_open
     club=db.get(Club,game.club_id)
     own_link=None
     try:
         payload=signer.loads(request.cookies.get('sporthost_booking_'+game.public_id,''),max_age=60*60*24*30)
         booking=db.get(Booking,payload['booking'])
-        if booking and booking.session_id==game.id and secrets.compare_digest(booking.access_key,payload['key']):own_link='/attend/'+booking.access_key
+        from app.booking_service import token_valid
+        if booking and booking.session_id==game.id and token_valid(booking,payload['key']):own_link='/attend/'+payload['key']
     except (BadSignature,KeyError,TypeError):pass
     response = page(request,'join.html',game=game,club=club,confirmed=confirm_count(db,game.id),
-                    message=request.query_params.get('message'),lookup=lookup,lookup_error=error,phone=phone,guest_open=guest_open(game),own_link=own_link)
+                    message=request.query_params.get('message'),lookup=lookup,lookup_error=error,phone=phone,guest_open=guest_open(game),registration_closed=not registration_open(game),own_link=own_link,own_status=booking.status if own_link else None)
     response.headers['Cache-Control'] = 'private, no-store'
     return response
 
@@ -659,7 +717,7 @@ def lookup_guest(request:Request,public_id:str,phone:str=Form(),csrf:str=Form(),
     return join_view(request, db, game, lookup=guest_review(game, phone, member))
 
 @app.post('/join/{public_id}')
-def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),lookup_token:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
+async def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:str=Form(''),gender:str=Form('unspecified'),lookup_token:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
     ensure_csrf(request,csrf)
     from app.security import rate_limit
     rate_limit(request,'join:'+public_id,limit=30,seconds=300)
@@ -688,10 +746,23 @@ def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:st
         member=Member(club_id=game.club_id,name=name.strip()[:100],phone=phone,kind='guest',gender=gender,level=level.strip()[:40]);db.add(member);db.flush()
     existing=db.scalar(select(Booking).where(Booking.session_id==game.id,Booking.member_id==member.id))
     if existing and existing.status not in ('cancelled',):return redirect(f'/join/{public_id}?message=already')
+    from app.booking_service import parse_party, can_fit, set_party, token_valid
+    form=await request.form()
+    party=parse_party(form,game,member)
+    fits=can_fit(db,game,[person['gender'] for person in party])
+    status=('confirmed' if game.approval_mode=='AUTO_APPROVE' else 'pending') if fits else 'waitlist'
     if existing:
-        existing.status='pending'
-        if not existing.paid:existing.fee_amount=member_fee(game,member)
-    else: db.add(Booking(session_id=game.id,member_id=member.id,status='pending',fee_amount=member_fee(game,member),qr_key=db.get(Club,game.club_id).qr_key,gender_at_booking=member.gender))
+        try:
+            saved=signer.loads(request.cookies.get('sporthost_booking_'+public_id,''),max_age=60*60*24*30)
+            if saved['booking']!=existing.id or not token_valid(existing,saved['key']):raise BadSignature('not owner')
+        except (BadSignature,KeyError):return redirect(f'/join/{public_id}?message=already')
+        from app.booking_service import allow_guest_change
+        allow_guest_change(db,existing,game)
+        existing.status=status;set_party(db,existing,party)
+    else:
+        channel='facebook_link' if request.query_params.get('source')=='facebook' else str(form.get('channel','direct'))
+        if channel not in ('facebook_link','direct'):raise HTTPException(400,'Nguồn đăng ký không hợp lệ')
+        db.add(Booking(session_id=game.id,member_id=member.id,status=status,fee_amount=sum(p['fee_amount'] for p in party),qr_key=db.get(Club,game.club_id).qr_key,gender_at_booking=member.gender,channel=channel,participants=[BookingParticipant(**p) for p in party]))
     db.flush()
     booking=existing or db.scalar(select(Booking).where(Booking.session_id==game.id,Booking.member_id==member.id))
     db.commit()
@@ -703,10 +774,11 @@ def join(request:Request,public_id:str,name:str=Form(),phone:str=Form(),level:st
 def export_game(request:Request,game_id:int,db:Session=Depends(db_session)):
     game,_=owned_session(request,db,game_id)
     bookings=db.scalars(select(Booking).where(Booking.session_id==game_id)).all()
-    buf=io.StringIO();w=csv.writer(buf);w.writerow(['Họ tên','Số điện thoại','Giới tính','Loại','Trình độ','Trạng thái','Phí buổi (VND)','Đã thu','Đã điểm danh'])
+    buf=io.StringIO();w=csv.writer(buf);w.writerow(['Họ tên','Số điện thoại','Giới tính','Loại','Trình độ','Trạng thái','Phí buổi (VND)','Đã thu','Đã điểm danh','Số người','Người đi cùng'])
     for b in bookings:
         m=db.get(Member,b.member_id)
-        w.writerow([m.name,m.phone,GENDER_LABELS[m.gender],m.kind,m.level,b.status,booking_fee(game,b,m),'Có' if b.paid else 'Không','Có' if b.attended else 'Không'])
+        cells=[m.name,m.phone,GENDER_LABELS[m.gender],m.kind,m.level,b.status,str(booking_fee(game,b,m)),'Có' if b.paid else 'Không','Có' if b.attended else 'Không',str(b.party_size),'; '.join(p.name for p in b.participants if p.position>0)]
+        w.writerow(["'"+cell if cell.startswith(('=','+','-','@')) else cell for cell in cells])
     return StreamingResponse(iter([buf.getvalue().encode('utf-8-sig')]),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':f'attachment; filename="sporthost-game-{game_id}.csv"'})
 
 @app.get('/health')
@@ -727,15 +799,17 @@ def readiness(db: Session=Depends(db_session)):
 
 
 def guest_open(game):
-    if not game.is_open or game.is_cancelled:return False
+    from app.booking_service import registration_open
+    if not registration_open(game):return False
     now=datetime.now(ZoneInfo('Asia/Ho_Chi_Minh')).strftime('%Y-%m-%dT%H:%M')
     return not game.recurring_rule_id or not game.rsvp_deadline or now>=game.rsvp_deadline
 
 
-from app import workspace, payments, accounts
+from app import booking_service, workspace, payments, accounts, booking_routes
 workspace.register_routes()
 payments.register_routes()
 accounts.register_routes()
+booking_routes.register_routes()
 
 
 @app.exception_handler(StarletteHTTPException)

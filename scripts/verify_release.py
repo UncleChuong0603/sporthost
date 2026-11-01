@@ -83,6 +83,8 @@ def main():
         report = {'source_revision': version, 'verified_revision': head, 'tables': len(rows),
                   'backup_file': str(backup), 'backup_sha256': hashlib.sha256(payload).hexdigest(),
                   'restore_verified': True, 'migration_preserved_existing_columns': True}
+        report['migration_sha256'] = hashlib.sha256(b''.join(path.read_bytes() for path in sorted(Path('alembic/versions').glob('*.py')))).hexdigest()
+        report['target_sha256'] = hashlib.sha256(f'{url.host}|{url.port}|{url.database}|{schema}'.encode()).hexdigest()
         (artifact_dir / 'latest.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
         print('Cloned-schema migration verified:', head, '; legacy records unchanged')
     finally:

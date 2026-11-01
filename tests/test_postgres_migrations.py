@@ -58,8 +58,8 @@ def test_club_settings_postgres_upgrade_preserves_legacy_data_and_other_schema()
             con.execute(text(f"INSERT INTO \"{schema}\".expenses (id,session_id,title,amount) VALUES (1,1,'Court',50000)"))
             legacy = {table: list(con.execute(text(f'SELECT * FROM "{schema}".{table}')).mappings())
                       for table in ('hosts', 'members', 'game_sessions', 'bookings', 'monthly_dues', 'expenses')}
-        migrate('head')
-        migrate('head')  # Already-applied migration must be idempotent through Alembic.
+        migrate('0005_club_settings')
+        migrate('0005_club_settings')  # Already-applied migration must be idempotent through Alembic.
         with engine.connect() as con:
             club = con.execute(text(f'SELECT * FROM "{schema}".clubs WHERE id=1')).mappings().one()
             assert club['sport_type'] == 'badminton' and club['default_capacity'] == 20
