@@ -77,6 +77,9 @@ def test_manual_whole_group_capacity_and_payment_total(context):
     post(host, f'{path}/bookings/{second.id}/approve', {}, path)
     assert booking(game_id, '0902345679').status == 'waitlist'
     assert 'Bạn 0' in host.get(path).text
+    rendered = host.get(path).text
+    assert re.search(r'<title>(.*?)</title>', rendered, re.S).group(1) == 'Buổi đánh nhóm · SportHost Beta'
+    assert rendered.count('Quản lý liên kết riêng của người chơi') == 1
     public_page = TestClient(app).get(public).text
     assert '0902345678' not in public_page and 'Bạn 0' not in public_page and first.access_key not in public_page
 

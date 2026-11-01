@@ -75,8 +75,17 @@ Migration 0006:
   nằm ngoài Git trong `.vercel/release-checks`; không in bản ghi hoặc credentials vào chat.
 - Compileall và `git diff --check` pass.
 
-Kết quả apply/deploy/smoke production sẽ bổ sung sau khi hoàn tất, không coi checklist
-là bằng chứng đã chạy. Test SQLite mặc định vẫn không trỏ tới production. Một pytest
+**Release production đã hoàn tất:** migration 0006 sau backup/restore và kiểm tra hash,
+push commit `b88f166` lên `main`, Vercel deployment `dpl_C8S3DJUrQRs5Fb1nXuTog5x68QPe`
+READY và alias `https://sporthost.vercel.app`.
+`scrub_booking_tokens --apply` xác minh 0 plaintext legacy còn lại tại cutover.
+`smoke_group_release --run` pass hai luồng MANUAL/AUTO: nhóm, capacity, sửa/hủy,
+waitlist, hash link, rotate, CSRF và cross-tenant denial. Chỉ dữ liệu QA của lượt chạy
+được dọn. `/health`, `/ready`, `booking.js` trả 200.
+Rà soát sau release phát hiện menu quản lý link lặp trong `<title>`; đã sửa template
+và thêm assertion tiêu đề/không lặp (không cần migration).
+
+Test SQLite mặc định vẫn không trỏ tới production. Một pytest
 PostgreSQL opt-in theo naming policy cũ có thể skip, nhưng các kiểm chứng PostgreSQL
 thực tế bên trên được chạy bằng script schema riêng, không thay bằng SQLite.
 
