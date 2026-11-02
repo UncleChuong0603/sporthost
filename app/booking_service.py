@@ -118,7 +118,7 @@ def session_policy(club, form=None):
                   cancellation_policy=club.cancellation_policy)
     choices = {'fee_mode': (('FIXED_PRICE', 'COST_SHARING'), club.default_fee_mode),
                'no_show_policy': (('FREE', 'FULL'), 'FREE'),
-               'monthly_policy': (('EXEMPT_PAID', 'SESSION_FEE'), 'EXEMPT_PAID')}
+               'monthly_policy': (('EXEMPT_PAID', 'SESSION_FEE'), 'SESSION_FEE')}
     for name, (allowed, default) in choices.items():
         value = str(form.get(name, '') or default)
         if value not in allowed:raise HTTPException(400, 'Chính sách tính phí không hợp lệ')

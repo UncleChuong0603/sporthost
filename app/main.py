@@ -89,6 +89,9 @@ class Club(Base):
     account_number: Mapped[str] = mapped_column(default='', server_default='')
     payment_note: Mapped[str] = mapped_column(default='', server_default='')
     qr_key: Mapped[str | None]
+    fixed_fee: Mapped[int] = mapped_column(default=50000, server_default='50000')
+    fixed_fee_male: Mapped[int | None]
+    fixed_fee_female: Mapped[int | None]
     monthly_fee: Mapped[int] = mapped_column(default=300000, server_default='300000')
     monthly_fee_male: Mapped[int | None]
     monthly_fee_female: Mapped[int | None]
@@ -149,7 +152,7 @@ class GameSession(Base):
     attendance_locked: Mapped[bool] = mapped_column(default=False, server_default=false())
     fee_mode: Mapped[str] = mapped_column(default='FIXED_PRICE', server_default='FIXED_PRICE')
     no_show_policy: Mapped[str] = mapped_column(default='FREE', server_default='FREE')
-    monthly_policy: Mapped[str] = mapped_column(default='EXEMPT_PAID', server_default='EXEMPT_PAID')
+    monthly_policy: Mapped[str] = mapped_column(default='SESSION_FEE', server_default='SESSION_FEE')
 
 class Booking(Base):
     __tablename__ = 'bookings'
@@ -577,6 +580,17 @@ async def update_club(request:Request,club_id:int,db:Session=Depends(db_session)
     record_settings_audit(db,club,host.id,before)
     db.commit();return redirect(f'/clubs/{club_id}/settings?saved=1#general')
 
+@app.post('/clubs/{club_id}/delete')
+def delete_club(request:Request,club_id:int,confirmation_name:str=Form(''),csrf:str=Form(''),db:Session=Depends(db_session)):
+    host,club=owned_club(request,db,club_id,permission='owner')
+    ensure_csrf(request,csrf)
+    db.refresh(club,with_for_update=True)
+    if confirmation_name.strip()!=club.name:
+        raise HTTPException(400,'Vui lòng nhập chính xác tên CLB để xác nhận xóa')
+    from app.club_deletion import delete_club_data
+    delete_club_data(db,club,host.id)
+    return redirect('/clubs?deleted=1')
+
 @app.post('/clubs/{club_id}/members/{member_id}/edit')
 def update_member(request:Request,club_id:int,member_id:int,name:str=Form(),phone:str=Form(),kind:str=Form(),level:str=Form(''),gender:str|None=Form(None),csrf:str=Form(),db:Session=Depends(db_session)):
     owned_club(request,db,club_id,permission="manage_bookings");ensure_csrf(request,csrf)
@@ -610,11 +624,13 @@ def add_member(request:Request,club_id:int,name:str=Form(),phone:str=Form(),kind
 async def create_game(request:Request,club_id:int,title:str=Form(),venue:str=Form(''),starts_at:str=Form(),capacity:int=Form(),fixed_fee:int=Form(0),guest_fee:int=Form(0),fixed_fee_male:str=Form(''),fixed_fee_female:str=Form(''),guest_fee_male:str=Form(''),guest_fee_female:str=Form(''),csrf:str=Form(),db:Session=Depends(db_session)):
     _,club=owned_club(request,db,club_id);ensure_csrf(request,csrf)
     from app.booking_service import session_policy
-    policy=session_policy(club,await request.form())
+    from app.workspace import prices
+    form=await request.form()
+    policy=session_policy(club,form)
     try: datetime.strptime(starts_at,'%Y-%m-%dT%H:%M')
     except ValueError: raise HTTPException(400,'Ngày giờ bắt đầu không hợp lệ')
     if not 1<=capacity<=200 or not title.strip(): raise HTTPException(400,'Thông tin buổi đánh không hợp lệ')
-    game=GameSession(club_id=club_id,public_id=secrets.token_urlsafe(18),title=title.strip()[:150],venue=venue.strip()[:180],starts_at=starts_at,capacity=capacity,fixed_fee=money(fixed_fee),guest_fee=money(guest_fee),fixed_fee_male=optional_money(fixed_fee_male),fixed_fee_female=optional_money(fixed_fee_female),guest_fee_male=optional_money(guest_fee_male),guest_fee_female=optional_money(guest_fee_female))
+    game=GameSession(club_id=club_id,public_id=secrets.token_urlsafe(18),title=title.strip()[:150],venue=venue.strip()[:180],starts_at=starts_at,capacity=capacity,**prices(form,club))
     for key,value in policy.items():setattr(game,key,value)
     db.add(game);db.commit();return redirect(f'/games/{game.id}')
 

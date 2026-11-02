@@ -12,8 +12,9 @@ FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 - Vãng lai nhập điện thoại trước, tự điền hồ sơ trong CLB, kiểm tra rồi xác nhận.
 - Đăng ký hộ nhiều người, duyệt cả nhóm, tự động nhận hoặc host duyệt; danh sách chờ tính theo số người.
 - Link quản lý khách có hash, hạn dùng và thu hồi/cấp lại; sửa/hủy theo chính sách đã nhận.
-- Upload QR, biên nhận riêng tư và đối soát thủ công; phí tháng, chi phí, CSV.
+- Upload QR, biên nhận riêng tư và đối soát thủ công; phí thành viên cố định / buổi và phí vãng lai, chi phí, CSV.
 - Đồng quản lý, quyền điều hành/thu chi, audit, tài khoản và quản trị Pro trial miễn phí.
+- Chủ CLB có thể xóa vĩnh viễn CLB trong Cài đặt sau khi nhập lại tên và xác nhận; xóa dữ liệu liên quan, giữ nhật ký thao tác.
 
 [Chi tiết tính năng](FULL_ROADMAP.md) · [Triển khai](DEPLOY_VERCEL.md) · [Vận hành](OPERATIONS.md)
 

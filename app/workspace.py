@@ -86,7 +86,7 @@ def ledger(db,data):
     dues=db.scalars(select(MonthlyDue).where(MonthlyDue.member_id.in_(members))).all()
     for due in dues:
         member=members[due.member_id]
-        rows.append({'type':'due','id':due.id,'club_id':member.club_id,'title':member.name,'description':'Phí tháng '+due.period,
+        rows.append({'type':'due','id':due.id,'club_id':member.club_id,'title':member.name,'description':'Khoản thu theo kỳ '+due.period,
           'period':due.period,'date':due.period,'amount':due.amount,'paid':due.paid,'status':due.payment_status,
           'cancelled':False,'direction':'income'})
     expenses=db.scalars(select(Expense).where(Expense.session_id.in_(games))).all()
@@ -118,9 +118,12 @@ def render_dashboard(request,db,host):
                 pending_count=len(pending),requests=requests,financial=financial,today=now_local().strftime('%d/%m/%Y'),month=month)
 
 
-def prices(form):
+def prices(form, club=None):
     values={name:money(form.get(name,0)) for name in ('fixed_fee','guest_fee')}
     values.update({name:optional_money(str(form.get(name,'') or '')) for name in ('fixed_fee_male','fixed_fee_female','guest_fee_male','guest_fee_female')})
+    if club:
+        for name in ('fixed_fee','fixed_fee_male','fixed_fee_female'):
+            if name not in form:values[name]=getattr(club,name)
     return values
 
 
@@ -276,7 +279,7 @@ def register_routes():
         if not 1<=capacity<=200 or not 1<=weeks<=12 or not 0<=rsvp_hours<=168:raise HTTPException(400,'Giới hạn: 200 chỗ, 12 tuần, hạn RSVP tối đa 168 giờ')
         title=str(form.get('title','')).strip();venue=str(form.get('venue','')).strip()
         if not title or len(title)>150:raise HTTPException(400,'Tên buổi đánh không hợp lệ')
-        values={**prices(form),**quotas(form,capacity)}
+        values={**prices(form,club),**quotas(form,capacity)}
         from app.booking_service import session_policy
         policy=session_policy(club,form)
         if weeks>1:

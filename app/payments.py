@@ -93,6 +93,18 @@ def register_routes():
         club.qr_key=None;audit(db,club_id,host.id,'Gỡ QR cho đăng ký mới');db.commit()
         return redirect(f'/clubs/{club_id}/settings#payment')
 
+    @app.post('/clubs/{club_id}/fixed-prices')
+    def fixed_prices(request:Request,club_id:int,fixed_fee:int=Form(),fixed_fee_male:str=Form(''),
+                     fixed_fee_female:str=Form(''),csrf:str=Form(),db=Depends(db_session)):
+        from app.main import money,optional_money
+        ensure_csrf(request,csrf);host,club=owned_club(request,db,club_id,permission='finance')
+        values=dict(fixed_fee=money(fixed_fee),fixed_fee_male=optional_money(fixed_fee_male),
+                    fixed_fee_female=optional_money(fixed_fee_female))
+        for name,value in values.items():setattr(club,name,value)
+        audit(db,club_id,host.id,'Cập nhật phí thành viên cố định',f"Mức chung / buổi: {values['fixed_fee']} VND")
+        db.commit()
+        return redirect(f'/clubs/{club_id}/settings?fees_saved=1#member-fees')
+
     @app.post('/clubs/{club_id}/monthly-prices')
     def monthly_prices(request:Request,club_id:int,monthly_fee:int=Form(),monthly_fee_male:str=Form(''),
                        monthly_fee_female:str=Form(''),csrf:str=Form(),db=Depends(db_session)):
@@ -252,7 +264,7 @@ def register_routes():
                 target=db.get(Booking,proof.booking_id);game=db.get(GameSession,target.session_id);member=db.get(Member,target.member_id)
                 amount=booking_fee(game,target,member,db);title=game.title
             else:
-                target=db.get(MonthlyDue,proof.due_id);member=db.get(Member,target.member_id);amount=target.amount;title='Phí tháng '+target.period
+                target=db.get(MonthlyDue,proof.due_id);member=db.get(Member,target.member_id);amount=target.amount;title='Khoản thu theo kỳ '+target.period
             from app.finance_service import batch_for
             rows.append({'proof':proof,'member':member,'title':title,'amount':amount,
                          'issued':bool(proof.booking_id and batch_for(db,game))})

@@ -112,7 +112,7 @@ def test_split_group_separate_obligations_and_payer_isolation(context):
 
 
 def test_no_show_paid_monthly_late_exit_waiver_and_loss(context):
-    host,guest,club=context;game_id,record=finished(context,size=3,fee_mode='COST_SHARING')
+    host,guest,club=context;game_id,record=finished(context,size=3,fee_mode='COST_SHARING',monthly_policy='EXEMPT_PAID')
     with SessionLocal.begin() as db:
         member=db.get(Member,record.member_id);member.kind='fixed'
         db.add(MonthlyDue(member_id=member.id,period=db.get(GameSession,game_id).starts_at[:7],amount=300000,paid=True))

@@ -38,6 +38,10 @@ Không chạy migration trong build/startup Vercel. Database dùng chung cần b
 schema/role riêng trước. Nếu tách role runtime, cấp quyền theo
 [scripts/provision_schema.example.sql](scripts/provision_schema.example.sql).
 
+Thay đổi phí thành viên cố định cần migration `0011_fixed_member_fees` trước khi chạy
+bản ứng dụng mới (`python -m scripts.migrate`). Migration thêm phí theo buổi, giữ nguyên
+các khoản thu theo kỳ và chính sách của những buổi đã tạo.
+
 ## 3. Import repository vào Vercel
 
 1. Đẩy source lên repository Git của bạn.

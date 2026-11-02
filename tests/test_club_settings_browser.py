@@ -81,6 +81,12 @@ def test_club_settings_mobile_and_desktop(local_server, width, height):
             page.get_by_role('button', name='Lưu cài đặt CLB', exact=True).click()
             expect(page.get_by_role('status')).to_contain_text('Đã lưu cài đặt CLB.')
             expect(page.get_by_label('Môn thể thao', exact=True)).to_have_value('tennis')
+            fee_form = page.locator('form[action$="/fixed-prices"]')
+            fee_form.locator('[name="fixed_fee"]').fill('40000')
+            fee_form.locator('[name="fixed_fee_female"]').fill('0')
+            fee_form.get_by_role('button', name='Lưu mức phí', exact=True).click()
+            expect(page.get_by_role('status')).to_contain_text('Đã lưu phí thành viên cố định.')
+            expect(page.locator('[name="monthly_fee"]')).to_have_count(0)
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Settings page overflows viewport'
             assert page.get_by_label('Môn thể thao', exact=True).bounding_box()['height'] >= 44
             artifact_dir = Path('.vercel/test-artifacts')
@@ -90,6 +96,8 @@ def test_club_settings_mobile_and_desktop(local_server, width, height):
             page.goto(local_server + f'/schedule?club_id={club_id}&create=1')
             game_form = page.locator('[data-game-create]')
             expect(game_form.locator('[name="capacity"]')).to_have_value('12')
+            expect(game_form.locator('[name="fixed_fee"]')).to_have_value('40000')
+            expect(game_form.locator('[name="fixed_fee_female"]')).to_have_value('0')
             # Unmodified defaults follow the selected club; explicit input is kept.
             page.goto(local_server + '/clubs?create=1')
             new_form = page.locator('form[action="/clubs"]')
@@ -102,9 +110,14 @@ def test_club_settings_mobile_and_desktop(local_server, width, height):
             game_form = page.locator('[data-game-create]')
             game_form.locator('[name="club_id"]').select_option(other_id)
             expect(game_form.locator('[name="capacity"]')).to_have_value('18')
+            expect(game_form.locator('[name="fixed_fee"]')).to_have_value('50000')
+            expect(game_form.locator('[name="fixed_fee_female"]')).to_have_value('')
             game_form.locator('[name="capacity"]').fill('14')
+            game_form.locator('[name="fixed_fee"]').fill('35000')
             game_form.locator('[name="club_id"]').select_option(club_id)
             expect(game_form.locator('[name="capacity"]')).to_have_value('14')
+            expect(game_form.locator('[name="fixed_fee"]')).to_have_value('35000')
+            expect(game_form.locator('[name="fixed_fee_female"]')).to_have_value('0')
             assert not errors
         finally:
             context.close()

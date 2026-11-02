@@ -25,12 +25,8 @@ def test_facebook_to_closed_session_15_players_mobile(context,browser_server):
     start=(now_local()+timedelta(days=14))
     start+=timedelta(days=(4-start.weekday())%7)
     starts=start.strftime('%Y-%m-%dT19:00')
-    post(host,club_path+'/dues/bulk',{'period':starts[:7]},'/finance')
-    from app.main import MonthlyDue
     with SessionLocal() as db:
         fixed=db.scalars(select(Member).where(Member.club_id==club,Member.kind=='fixed').order_by(Member.id)).all()
-        dues=db.scalars(select(MonthlyDue).where(MonthlyDue.member_id.in_([m.id for m in fixed]))).all()
-    for due in dues:post(host,f'/dues/{due.id}/toggle',{},club_path)
     with sync_playwright() as pw:
         browser=pw.chromium.launch(channel='msedge',headless=True)
         hc=browser.new_context(viewport={'width':375,'height':812},reduced_motion='reduce')
@@ -53,7 +49,8 @@ def test_facebook_to_closed_session_15_players_mobile(context,browser_server):
             form.get_by_label('Số chỗ tối đa',exact=True).fill('15')
             form.locator('input[name="fixed_fee"]').fill('70000')
             form.get_by_text('Thông tin công khai & chính sách đăng ký',exact=True).click()
-            form.locator('select[name="fee_mode"]').select_option('COST_SHARING')
+            form.locator('select[name="fee_mode"]').select_option('FIXED_PRICE')
+            form.locator('input[name="guest_fee"]').fill('150000')
             form.locator('select[name="approval_mode"]').select_option('MANUAL_APPROVE')
             form.get_by_role('button',name='Tạo lịch đánh',exact=True).click()
             gid=int(hp.url.split('/games/')[1].split('#')[0]);path=f'/games/{gid}'
@@ -114,11 +111,11 @@ def test_facebook_to_closed_session_15_players_mobile(context,browser_server):
             hp.get_by_role('link',name='Bản nháp chốt tiền & phát hành',exact=True).click()
             expect(hp.locator('.billing-person')).to_have_count(16)
             hp.get_by_role('button',name='Phát hành tiền cần đóng',exact=True).click()
-            # 8 fixed members covered by monthly dues; 7 guests pay exactly 150k each.
+            # 8 fixed members pay 70k each; 7 guests pay 150k each.
             with SessionLocal() as db:
                 batch=db.scalar(select(ChargeBatch).where(ChargeBatch.session_id==gid))
-                assert sum(db.scalars(select(Charge.amount).where(Charge.batch_id==batch.id)))==1050000
-                assert sum(db.scalars(select(Charge.amount).join(Booking).where(Charge.batch_id==batch.id,Booking.member_id.in_([m.id for m in fixed]))))==0
+                assert sum(db.scalars(select(Charge.amount).where(Charge.batch_id==batch.id)))==1610000
+                assert sum(db.scalars(select(Charge.amount).join(Booking).where(Charge.batch_id==batch.id,Booking.member_id.in_([m.id for m in fixed]))))==560000
             gp.goto(group_link)
             expect(gp.get_by_text('Còn thiếu 300.000đ',exact=False)).to_be_visible()
             gp.get_by_label('Số tiền đã báo chuyển (VND)',exact=True).fill('300000')
@@ -144,7 +141,7 @@ def test_facebook_to_closed_session_15_players_mobile(context,browser_server):
             expect(hp.get_by_text('Đã chốt sổ lúc',exact=False)).to_be_visible()
             with SessionLocal() as db:
                 final=summary(balances(db,db.get(GameSession,gid)))
-                assert final['amount']==1050000 and final['net']==500000 and final['outstanding']==550000
+                assert final['amount']==1610000 and final['net']==500000 and final['outstanding']==1110000
                 assert not db.get(Booking,unpaid.id).paid
                 assert db.scalar(select(PaymentProof.status).where(PaymentProof.booking_id==unpaid.id))=='reported'
                 assert db.get(GameSession,gid).lifecycle_status=='SETTLED'

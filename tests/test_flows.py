@@ -95,12 +95,16 @@ def test_password_validation_and_public_close():
         assert 'chưa nhận đăng ký' in r.text
 
 
-def test_monthly_dues_duplicates_and_host_login():
+def test_legacy_monthly_dues_duplicates_and_host_login():
     with TestClient(app) as c:
         sign_up(c,'host4@example.com')
         club=create_club(c,'CLB tháng')
         add_member(c,club,'Member Tháng','0909998887')
-        member_id=re.search(r'<option value="(\d+)">Member Tháng</option>',c.get(f'/clubs/{club}').text).group(1)
+        from sqlalchemy import select
+        from app.main import SessionLocal, Member
+        # Historical dues remain manageable without exposing a new monthly-fee form.
+        with SessionLocal() as db:
+            member_id=db.scalar(select(Member.id).where(Member.club_id==int(club),Member.phone=='0909998887'))
         r=do_post(c,f'/clubs/{club}/dues',{'member_id':member_id,'period':'2026-11','amount':'300000'},f'/clubs/{club}')
         assert '300.000đ' in r.text
         r=do_post(c,f'/clubs/{club}/dues',{'member_id':member_id,'period':'2026-11','amount':'320000'},f'/clubs/{club}')

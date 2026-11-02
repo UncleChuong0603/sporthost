@@ -3,7 +3,7 @@
 {% from 'club_settings_fields.html' import club_settings_fields %}
 {% from 'session_policy_fields.html' import session_policy_fields %}
 {% macro club_picker(clubs, selected_id=none) -%}
-<label>CLB<select name="club_id" required>{% for c in clubs %}<option value="{{ c.id }}" data-default-capacity="{{ c.default_capacity }}"{% if c.id==selected_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+<label>CLB<select name="club_id" required>{% for c in clubs %}<option value="{{ c.id }}" data-default-capacity="{{ c.default_capacity }}" data-fixed-fee="{{ c.fixed_fee }}" data-fixed-fee-male="{{ c.fixed_fee_male if c.fixed_fee_male is not none else '' }}" data-fixed-fee-female="{{ c.fixed_fee_female if c.fixed_fee_female is not none else '' }}"{% if c.id==selected_id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
 {%- endmacro %}
 
 {% macro game_form(clubs, csrf, selected_id=none) -%}
@@ -13,8 +13,8 @@
 {{ club_picker(clubs, selected_id) }}
 <div class="two"><label>Tên buổi đánh<input name="title" maxlength="150" required placeholder="Buổi giao lưu tối thứ 5"></label><label>Sân / địa điểm<input name="venue" maxlength="180" placeholder="Tên sân, địa chỉ"></label></div>
 <div class="two"><label>Ngày và giờ bắt đầu<input name="starts_at" type="datetime-local" required></label><label>Số chỗ tối đa<input name="capacity" type="number" min="1" max="200" value="{{ initial_club.default_capacity if initial_club else 20 }}" required></label></div>
-<div class="two"><label>Phí thành viên cố định / buổi (VND)<input name="fixed_fee" type="number" min="0" max="100000000" value="0" required><span class="form-note">Nhập 0 nếu thành viên đã đóng phí tháng.</span></label><label>Phí vãng lai chung (VND)<input name="guest_fee" type="number" min="0" max="100000000" value="70000" required></label></div>
-{{ fee_overrides() }}
+<div class="two"><label>Phí thành viên cố định / buổi (VND)<input name="fixed_fee" type="number" min="0" max="100000000" value="{{ initial_club.fixed_fee if initial_club else 50000 }}" required><span class="form-note">Dành cho thành viên đăng ký cố định, thường thấp hơn phí vãng lai. Nhập 0 nếu miễn phí.</span></label><label>Phí vãng lai / buổi (VND)<input name="guest_fee" type="number" min="0" max="100000000" value="70000" required></label></div>
+{{ fee_overrides(initial_club) }}
 {{ session_policy_fields() }}
 <details><summary>Giới hạn chỗ nam / nữ (tùy chọn)</summary><p class="small muted">Để trống nếu chỉ cần giới hạn tổng. Nhập 0 để không nhận nhóm đó. Giới hạn áp dụng cho cả thành viên cố định và vãng lai.</p><div class="two"><label>Số chỗ nam tối đa<input name="capacity_male" type="number" min="0" max="200" placeholder="Không giới hạn riêng"></label><label>Số chỗ nữ tối đa<input name="capacity_female" type="number" min="0" max="200" placeholder="Không giới hạn riêng"></label></div></details>
 <details><summary>Lặp hằng tuần và xác nhận member</summary><p class="small muted">Mỗi buổi có link xác nhận tham gia riêng cho thành viên cố định. Link vãng lai mở sau hạn xác nhận tham gia, theo số chỗ còn lại.</p><div class="two"><label>Số tuần<input name="weeks" type="number" min="1" max="12" value="1"><span class="form-note">1 = buổi đơn lẻ. Chọn 4 để tạo lịch 4 tuần.</span></label><label>Hạn xác nhận tham gia trước giờ đánh<input name="rsvp_hours" type="number" min="0" max="168" value="24"><span class="form-note">Áp dụng cho lịch lặp, tính theo giờ.</span></label></div></details>

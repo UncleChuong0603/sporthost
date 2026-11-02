@@ -47,8 +47,16 @@
     // Only replace an untouched default; keep a host's explicitly chosen limit.
     let edited = false;
     capacity.addEventListener('input', () => { edited = true; });
+    const feeFields = ['fixed_fee', 'fixed_fee_male', 'fixed_fee_female'];
+    const editedFees = new Set();
+    feeFields.forEach((name) => form.elements[name].addEventListener('input', () => editedFees.add(name)));
     picker.addEventListener('change', () => {
       if (!edited) capacity.value = picker.selectedOptions[0]?.dataset.defaultCapacity || '20';
+      const option = picker.selectedOptions[0];
+      const defaults = [option?.dataset.fixedFee ?? '50000', option?.dataset.fixedFeeMale ?? '', option?.dataset.fixedFeeFemale ?? ''];
+      feeFields.forEach((name, index) => {
+        if (!editedFees.has(name)) form.elements[name].value = defaults[index];
+      });
     });
   });
   document.querySelectorAll('[data-copy]').forEach((button) => button.addEventListener('click', async () => {
