@@ -1,0 +1,60 @@
+{
+  "name": "sporthost-v2",
+  "version": "2.0.0-dev.1",
+  "private": true,
+  "type": "module",
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.28.2"
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build && node scripts/check-standalone.mjs",
+    "start": "next start --hostname 0.0.0.0",
+    "start:standalone": "node scripts/start-standalone.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "db:pull": "drizzle-kit pull"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "7.0.1",
+    "@radix-ui/react-slot": "1.5.0",
+    "@tanstack/react-query": "5.105.3",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "drizzle-orm": "0.45.4",
+    "lucide-react": "1.67.0",
+    "next": "16.4.4",
+    "nodemailer": "10.3.1",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-hook-form": "7.91.0",
+    "server-only": "0.0.1",
+    "sharp": "0.35.5",
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.4",
+    "@types/node": "26.6.6",
+    "@types/nodemailer": "8.0.2",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "dotenv": "18.0.9",
+    "drizzle-kit": "0.31.11",
+    "tailwindcss": "4.3.4",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

@@ -1,0 +1,18 @@
+# Only explicitly needed source enters the build context; never send local secrets.
+*
+!requirements.txt
+!requirements.lock
+!app/
+!app/**
+!public/
+!public/**
+!alembic/
+!alembic/**
+!alembic.ini
+!scripts/
+!scripts/**
+!Dockerfile
+**/__pycache__/
+**/*.py[cod]
+**/.env*
+**/*.db

@@ -4,13 +4,16 @@ import io
 import os
 import secrets
 import warnings
+import tempfile
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 LOCAL_ROOT = Path(__file__).resolve().parents[1] / '.vercel' / 'uploads'
-if os.getenv('APP_ENV') in ('test','development') and os.getenv('SPORTHOST_LOCAL_UPLOAD_DIR'):
+if os.getenv('STORAGE_ROOT'):
+    LOCAL_ROOT = Path(os.environ['STORAGE_ROOT']).resolve()
+elif os.getenv('APP_ENV') in ('test','development') and os.getenv('SPORTHOST_LOCAL_UPLOAD_DIR'):
     LOCAL_ROOT=Path(os.environ['SPORTHOST_LOCAL_UPLOAD_DIR']).resolve()
 Image.MAX_IMAGE_PIXELS = 16_000_000
 
@@ -49,7 +52,20 @@ def local_path(key):
 
 
 def use_blob():
-    return bool(os.getenv('BLOB_READ_WRITE_TOKEN') or os.getenv('BLOB_STORE_ID'))
+    backend = os.getenv('STORAGE_BACKEND', 'auto').lower()
+    if backend not in ('auto', 'blob', 'local'):
+        raise RuntimeError('STORAGE_BACKEND must be auto, blob or local')
+    return backend == 'blob' or (backend == 'auto' and bool(os.getenv('BLOB_READ_WRITE_TOKEN') or os.getenv('BLOB_STORE_ID')))
+
+
+def require_local_storage():
+    if os.getenv('VERCEL') == '1':
+        raise HTTPException(503, 'Persistent storage unavailable')
+    if os.getenv('APP_ENV') in ('production', 'staging'):
+        root = os.getenv('STORAGE_ROOT', '')
+        if (os.getenv('STORAGE_BACKEND') != 'local' or not root or not Path(root).is_absolute()
+                or not LOCAL_ROOT.is_dir() or not os.access(LOCAL_ROOT, os.W_OK | os.R_OK)):
+            raise HTTPException(503, 'Persistent storage unavailable')
 
 
 def put_image(data:bytes,club_id:int,kind:str):
@@ -58,10 +74,18 @@ def put_image(data:bytes,club_id:int,kind:str):
     if use_blob():
         from vercel.blob import sync as blob
         blob.put_blob(key,data,access='private',content_type='image/png',add_random_suffix=False)
-    elif os.getenv('VERCEL')=='1' or os.getenv('APP_ENV') in ('production','staging'):
-        raise HTTPException(503,'Tạm thời chưa thể lưu ảnh. Vui lòng thử lại sau.')
     else:
-        path=local_path(key);path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
+        require_local_storage()
+        path=local_path(key);path.parent.mkdir(parents=True,exist_ok=True)
+        # Same-filesystem replacement prevents partially written images after restart.
+        temp = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+                temp = Path(handle.name)
+                handle.write(data);handle.flush();os.fsync(handle.fileno())
+            os.replace(temp, path)
+        finally:
+            if temp is not None:temp.unlink(missing_ok=True)
     return key,hashlib.sha256(data).hexdigest()
 
 
@@ -69,6 +93,7 @@ def get_image(key):
     if use_blob():
         from vercel.blob import sync as blob
         return blob.get_blob(key,access='private').body
+    require_local_storage()
     return local_path(key).read_bytes()
 
 
@@ -76,4 +101,6 @@ def delete_image(key):
     if use_blob():
         from vercel.blob import sync as blob
         blob.delete_blob(key)
-    else:local_path(key).unlink(missing_ok=True)
+    else:
+        require_local_storage()
+        local_path(key).unlink(missing_ok=True)

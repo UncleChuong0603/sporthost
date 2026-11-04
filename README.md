@@ -18,9 +18,22 @@ FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
 
 [Chi tiết tính năng](FULL_ROADMAP.md) · [Triển khai](DEPLOY_VERCEL.md) · [Vận hành](OPERATIONS.md)
 
-**Email thật cần cấu hình SMTP.** Hiện đổi mật khẩu trong phiên đăng nhập hoạt động;
+**Email thật cần cấu hình Resend hoặc SMTP.** Hiện đổi mật khẩu trong phiên đăng nhập hoạt động;
 quên mật khẩu/xác minh email chỉ gửi được khi dịch vụ email được cấu hình.
 Upload biên nhận không tự xác nhận đã thu. Chưa thu phí phần mềm trong beta.
+
+## Chuẩn bị chuyển sang Dokploy
+
+[Audit](docs/deployment/DOKPLOY_AUDIT.md) · [Runbook](docs/deployment/DOKPLOY_RUNBOOK.md) ·
+[Báo cáo migration](docs/deployment/MIGRATION_REPORT.md) · [DNS/rollback](docs/deployment/DNS_CUTOVER.md) ·
+[Resend](docs/deployment/RESEND_SETUP.md).
+Dockerfile dùng Python 3.12, user riêng, port nội bộ 8000 và healthcheck; không tự migrate.
+App Dokploy đã deploy và healthy ở chế độ chỉ đọc; Vercel vẫn phục vụ, chưa chuyển DNS.
+Quy trình hiện tại chỉ cần một app `sporthost-production`, không yêu cầu staging riêng.
+Preview dùng `APP_READ_ONLY=true`; backup native/restore đã pass, migration 0011 đã được duyệt và áp dụng, dữ liệu cũ giữ nguyên.
+Các bước còn cần chủ sở hữu thực hiện: [Manual actions](docs/deployment/MANUAL_ACTIONS.md).
+Giữ private Blob hiện có khi cutover. Backend local chỉ dùng với cấu hình storage rõ ràng
+và volume bền vững; không tự chuyển dữ liệu ảnh. Resend mặc định tắt đến khi có key/domain đã xác minh.
 
 ## Action plan 01/11/2026 — trạng thái nhánh này
 
@@ -67,7 +80,8 @@ Copy-Item .env.example .env
 ```
 
 Mở http://127.0.0.1:8000/signup. SQLite và ảnh local chỉ dùng development/test.
-Staging/production yêu cầu PostgreSQL, HTTPS cookie, khóa bí mật và private Blob.
+Staging/production yêu cầu PostgreSQL, HTTPS cookie, khóa bí mật và storage bền vững riêng tư.
+Dokploy cần APP_URL HTTPS, ALLOWED_HOSTS rõ ràng và cấu hình proxy tin cậy theo runbook.
 Migration chạy riêng, không chạy khi app khởi động hoặc Vercel build.
 
 ## Kiểm thử

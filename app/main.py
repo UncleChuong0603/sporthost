@@ -37,6 +37,10 @@ COOKIE_SECURE = SETTINGS['cookie_secure']
 engine_options = {}
 if SETTINGS['driver'] == 'postgresql':
     engine_options['connect_args'] = {'connect_timeout': 10, 'prepare_threshold': None}
+    if SETTINGS['read_only']:
+        # Pre-cutover preview shares production data: protect even legacy GET
+        # handlers that may flush tokens or generate recurring sessions.
+        engine_options['connect_args']['options'] = '-c default_transaction_read_only=on'
     if SETTINGS['serverless']:
         # The provider's pooled URL owns the pool; functions retain no idle sockets.
         engine_options['poolclass'] = NullPool
@@ -252,6 +256,30 @@ from app.payment_config import initialize_snapshots
 if SETTINGS['driver'] == 'sqlite':
     Base.metadata.create_all(engine)
 app = FastAPI(title='SportHost', version='0.1.0')
+if SETTINGS['allowed_hosts']:
+    from starlette.middleware.trustedhost import TrustedHostMiddleware
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=SETTINGS['allowed_hosts'], www_redirect=False)
+
+
+@app.middleware('http')
+async def deployment_headers(request, call_next):
+    # Preserve the headers previously supplied by Vercel on self-hosted responses.
+    # Canonicalize only the explicitly configured www alias, never arbitrary hosts.
+    origin = urlsplit(SETTINGS['app_url'])
+    if SETTINGS['read_only'] and request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        from fastapi.responses import JSONResponse
+        response = JSONResponse({'detail': 'Read-only deployment verification; changes are disabled'},
+                                status_code=503, headers={'Cache-Control':'no-store'})
+    elif (not SETTINGS['serverless'] and request.url.hostname == 'www.' + (origin.hostname or '')
+            and request.url.hostname in SETTINGS['allowed_hosts']):
+        response = RedirectResponse(SETTINGS['app_url'] + request.url.path +
+                                    ('?' + request.url.query if request.url.query else ''), status_code=308)
+    else:
+        response = await call_next(request)
+    response.headers.setdefault('X-Robots-Tag', 'noindex, nofollow')
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    return response
 
 @app.middleware('http')
 async def request_size_limit(request,call_next):
@@ -918,6 +946,9 @@ def readiness(db: Session=Depends(db_session)):
     try:
         # Also detect missing migrations and missing runtime table permissions.
         db.execute(select(Host).limit(1))
+        # The inspected snapshot is on 0010; current Club fields require 0011.
+        # A zero-row SELECT validates the columns/permissions without reading club data.
+        db.execute(select(Club).limit(0))
     except Exception:
         raise HTTPException(503, 'Database not ready')
     return {'ok': True}

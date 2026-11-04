@@ -1,0 +1,10 @@
+"use client";
+import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { FormState } from "@/features/clubs/settings-form";
+
+export function AccountForm({ action, csrf, mode, token = "", disabled = false }: { action: (state: FormState, form: FormData) => Promise<FormState>; csrf: string; mode: "password" | "reset" | "forgot" | "verify"; token?: string; disabled?: boolean }) {
+  const [state, dispatch, pending] = useActionState(action, {});
+  return <form action={dispatch} className="space-y-5"><input type="hidden" name="csrf" value={csrf} /><input type="hidden" name="token" value={token} />{state.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-destructive">{state.error}</p>}{state.success && <p role="status" className="rounded-lg bg-teal-50 p-3 text-primary">{state.success}</p>}{mode === "password" && <label className="block space-y-2 text-sm font-semibold"><span className="block">Mật khẩu hiện tại</span><Input name="current_password" type="password" autoComplete="current-password" required /></label>}{mode === "forgot" && <label className="block space-y-2 text-sm font-semibold"><span className="block">Email</span><Input name="email" type="email" autoComplete="email" required /></label>}{(mode === "password" || mode === "reset") && <><label className="block space-y-2 text-sm font-semibold"><span className="block">Mật khẩu mới</span><Input name="password" type="password" autoComplete="new-password" required /></label><label className="block space-y-2 text-sm font-semibold"><span className="block">Xác nhận mật khẩu mới</span><Input name="confirm_password" type="password" autoComplete="new-password" required /></label><p className="text-sm text-muted-foreground">Từ 10 đến 256 ký tự. Các phiên đăng nhập cũ sẽ được thu hồi.</p></>}<Button disabled={pending || disabled}>{pending ? "Đang xử lý…" : mode === "forgot" ? "Gửi liên kết khôi phục" : mode === "verify" ? "Xác minh email" : "Lưu mật khẩu mới"}</Button></form>;
+}

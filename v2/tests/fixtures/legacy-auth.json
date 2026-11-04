@@ -1,0 +1,85 @@
+{
+  "secret": "synthetic-offline-compatibility-secret-never-production",
+  "now": 1793714400,
+  "nonce": "synthetic-nonce",
+  "passwords": [
+    {
+      "label": "ascii",
+      "password": "legacy-password-123",
+      "hash": "000102030405060708090a0b0c0d0e0f:d0cfb7cb7ac74f6d55cefcad3c8936f89e3c05c8bc95f004de0365cf71e53ba5"
+    },
+    {
+      "label": "vietnamese",
+      "password": "Mật khẩu cầu lông 🏸",
+      "hash": "000102030405060708090a0b0c0d0e0f:03179648786773263324c82215ab7d8a1faeeb4f2f985d1da0ffddf4b61de826"
+    },
+    {
+      "label": "combining",
+      "password": "éééééééééé",
+      "hash": "000102030405060708090a0b0c0d0e0f:83f248a4701b21cc7dcde79af9b3355e7b3f8d3f40d0f0a0c3046b329ad1a051"
+    },
+    {
+      "label": "max-ascii",
+      "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "hash": "000102030405060708090a0b0c0d0e0f:95836f1311ad33210f3ea04fc5a4e5dd965ad60d077c4e5514f80324ebabc1d5"
+    },
+    {
+      "label": "astral",
+      "password": "🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉🦉",
+      "hash": "000102030405060708090a0b0c0d0e0f:223bd3887285f8b64ef81d23f7eadb79f3602e94a192e6f486cb3350eb988242"
+    }
+  ],
+  "tokens": [
+    {
+      "label": "clubhost-session-v1",
+      "salt": "clubhost-session-v1",
+      "payload": {
+        "id": 42,
+        "v": 3
+      },
+      "maxAge": 1209600,
+      "token": "eyJpZCI6NDIsInYiOjN9.auno4A.Sgw74Xfo18Fes9FRx9kTdDb8Zso"
+    },
+    {
+      "label": "clubhost-session-v1",
+      "salt": "clubhost-session-v1",
+      "payload": {
+        "id": 42
+      },
+      "maxAge": 1209600,
+      "token": "eyJpZCI6NDJ9.auno4A.t4OQ4JVWLSa3HxIpSXw8Em7ZZY0"
+    },
+    {
+      "label": "clubhost-session-v1",
+      "salt": "clubhost-session-v1",
+      "payload": {
+        "booking": 84,
+        "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "maxAge": 2592000,
+      "token": ".eJyrVkrKz8_OzEtXsrIw0VHKTq1UslJKpBAo1QIAOJQfQw.auno4A.JJ1zO1MXJ_K36VMk-5Z-wrBGJhw"
+    },
+    {
+      "label": "clubhost-csrf-v1",
+      "salt": "clubhost-csrf-v1",
+      "payload": {
+        "session": "synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-synthetic-cookie-"
+      },
+      "maxAge": 21600,
+      "token": ".eJyrVipOLS7OzM9TslIqrswryUgtyUzWTc7Pz85M1R0VGJwCSrUAq6Wr1g.auno4A.ZZhngBOTQ-n71SlbAWaQ0Ru4LVs"
+    },
+    {
+      "label": "sporthost-guest-review-v1",
+      "salt": "sporthost-guest-review-v1",
+      "payload": {
+        "game": "synthetic-game",
+        "phone": "0901234567",
+        "version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "maxAge": 900,
+      "token": ".eJyrVkpPzE1VslIqrswryUgtyUzWBQvoKBVk5OeBJAwsDQyNjE1MzcyBgmWpRcWZ-XlA4SQKgVItANybKng.auno4A.qDDxxdY2ATb7xE3AZtdf5wEfzF0"
+    }
+  ],
+  "guestToken": "96ca816cafddb37ae3c792e20605a2f4973ce21196c2395bae41098977f767fe",
+  "guestDigest": "5a2cb655cf36f0aa4cf3f32a62a91383f71d7df400940b40fa179b7b7b14ff4f"
+}

@@ -2,10 +2,7 @@
 import hashlib
 import os
 import secrets
-import smtplib
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
-from pathlib import Path
 
 from fastapi import Depends, Form, HTTPException, Request
 from sqlalchemy import select
@@ -15,24 +12,13 @@ from app.main import (app, Host, Club, EmailToken, AuditLog, db_session, require
 
 
 def delivery_ready():
-    return bool(os.getenv('SMTP_HOST') and os.getenv('MAIL_FROM'))
+    from app.mail import delivery_ready as ready
+    return ready()
 
 
 def send_account_mail(recipient,subject,content):
-    if not delivery_ready():
-        if SETTINGS['env'] in ('test','development'):
-            outbox=Path('.vercel/mail-outbox');outbox.mkdir(parents=True,exist_ok=True)
-            (outbox/(secrets.token_hex(12)+'.txt')).write_text(subject+'\n'+recipient+'\n'+content,encoding='utf-8')
-            return
-        raise HTTPException(503,'Email đang được cấu hình. Bạn vẫn có thể đổi mật khẩu trong tài khoản đã đăng nhập.')
-    message=EmailMessage();message['From']=os.environ['MAIL_FROM'];message['To']=recipient;message['Subject']=subject
-    message.set_content(content)
-    host=os.environ['SMTP_HOST'];port=int(os.getenv('SMTP_PORT','587'))
-    factory=smtplib.SMTP_SSL if port==465 else smtplib.SMTP
-    with factory(host,port,timeout=15) as smtp:
-        if port!=465:smtp.starttls()
-        if os.getenv('SMTP_USER'):smtp.login(os.environ['SMTP_USER'],os.environ['SMTP_PASSWORD'])
-        smtp.send_message(message)
+    from app.mail import send_account_mail as send
+    return send(recipient, subject, content, environment=SETTINGS['env'])
 
 
 def new_token(db,host,purpose):
@@ -85,7 +71,7 @@ def register_routes():
         rate_limit(request,'verify-email',limit=5,seconds=3600)
         ensure_csrf(request,csrf);host=require_host(request,db)
         if host.email_verified:return redirect('/account')
-        raw=new_token(db,host,'verify');base=os.getenv('PUBLIC_BASE_URL','https://sporthost.vercel.app').rstrip('/')
+        raw=new_token(db,host,'verify');base=SETTINGS['app_url']
         send_account_mail(host.email,'Xác minh tài khoản SportHost',f'Xác minh email của bạn (hết hạn sau 30 phút):\n{base}/verify-email?token={raw}')
         db.commit();return redirect('/account?message=verification-sent')
 
@@ -105,7 +91,10 @@ def register_routes():
         db.commit();return redirect('/login?message=verified')
 
     @app.get('/forgot-password')
-    def forgot(request:Request):return page(request,'email_action.html',mode='forgot',sent=False)
+    def forgot(request:Request):
+        if not delivery_ready() and SETTINGS['env'] not in ('test','development'):
+            raise HTTPException(503,'Email khôi phục đang được cấu hình; liên hệ quản trị để được hỗ trợ')
+        return page(request,'email_action.html',mode='forgot',sent=False)
 
     @app.post('/forgot-password')
     def request_reset(request:Request,email:str=Form(),csrf:str=Form(),db=Depends(db_session)):
@@ -116,7 +105,7 @@ def register_routes():
             raise HTTPException(503,'Email khôi phục đang được cấu hình; liên hệ quản trị để được hỗ trợ')
         host=db.scalar(select(Host).where(Host.email==email.strip().lower()))
         if host:
-            raw=new_token(db,host,'reset');base=os.getenv('PUBLIC_BASE_URL','https://sporthost.vercel.app').rstrip('/')
+            raw=new_token(db,host,'reset');base=SETTINGS['app_url']
             send_account_mail(host.email,'Đặt lại mật khẩu SportHost',f'Đặt lại mật khẩu của bạn (hết hạn sau 30 phút):\n{base}/reset-password?token={raw}')
             db.commit()
         return page(request,'email_action.html',mode='forgot',sent=True)

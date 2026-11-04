@@ -1,0 +1,90 @@
+method,legacy_path,legacy_source,target_contract,acceptance_ids,status
+GET,/,app/main.py:527,Same URL: Next page/GET Route Handler,A03,pending
+GET,/account,app/accounts.py:55,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/account/password,app/accounts.py:60,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+POST,/account/verify-email,app/accounts.py:69,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+GET,/admin,app/accounts.py:126,Same URL: Next page/GET Route Handler,A03 A14,pending
+POST,/admin/clubs/{club_id}/trial,app/accounts.py:134,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A14,pending
+GET,/admin/platform-ledger,app/platform_ledger.py:28,Same URL: Next page/GET Route Handler,A03 A14,pending
+POST,/admin/platform-ledger,app/platform_ledger.py:46,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A14,pending
+POST,/admin/platform-ledger/{entry_id}/edit,app/platform_ledger.py:63,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A14,pending
+GET,/attend/{key},app/payments.py:124,Same URL: Next page/GET Route Handler,A06 A07 A08 A09,pending
+POST,/attend/{key}/cancel,app/payments.py:162,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08 A09,pending
+POST,/attend/{key}/edit,app/booking_routes.py:10,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08 A09,pending
+POST,/attend/{key}/payer,app/finance_routes.py:87,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08 A09,pending
+POST,/attend/{key}/proof,app/payments.py:180,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A08 A13 A15,pending
+GET,/attend/{key}/qr,app/payments.py:172,Same URL: Next page/GET Route Handler,A08 A13 A15,pending
+POST,/attend/{key}/rsvp,app/payments.py:142,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08 A09,pending
+GET,/clubs,app/workspace.py:253,Same URL: Next page/GET Route Handler,A03,pending
+POST,/clubs,app/main.py:577,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03,pending
+GET,/clubs/{club_id},app/main.py:587,Same URL: Next page/GET Route Handler,A03,pending
+POST,/clubs/{club_id}/cohosts,app/workspace.py:380,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03,pending
+POST,/clubs/{club_id}/cohosts/{access_id}/remove,app/workspace.py:402,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03,pending
+POST,/clubs/{club_id}/delete,app/main.py:612,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A16,pending
+POST,/clubs/{club_id}/dues,app/main.py:666,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A15,pending
+POST,/clubs/{club_id}/dues/bulk,app/workspace.py:356,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A15,pending
+POST,/clubs/{club_id}/fixed-prices,app/payments.py:97,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A15,pending
+POST,/clubs/{club_id}/games,app/main.py:652,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+POST,/clubs/{club_id}/members,app/main.py:641,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A04,pending
+POST,/clubs/{club_id}/members/{member_id}/edit,app/main.py:623,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A04,pending
+POST,/clubs/{club_id}/monthly-prices,app/payments.py:109,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A15,pending
+POST,/clubs/{club_id}/payment-settings,app/payments.py:75,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A08 A13 A15,pending
+POST,/clubs/{club_id}/payment-settings/remove-qr,app/payments.py:91,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A08 A13 A15,pending
+GET,/clubs/{club_id}/qr,app/payments.py:118,Same URL: Next page/GET Route Handler,A08 A13 A15,pending
+GET,/clubs/{club_id}/settings,app/workspace.py:370,Same URL: Next page/GET Route Handler,A03,pending
+POST,/clubs/{club_id}/settings,app/main.py:602,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03,pending
+GET,/dashboard,app/main.py:571,Same URL: Next page/GET Route Handler,A03,pending
+GET,/dues/pay/{key},app/payments.py:213,Same URL: Next page/GET Route Handler,A10 A15,pending
+POST,/dues/pay/{key}/proof,app/payments.py:235,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A08 A13 A15,pending
+GET,/dues/pay/{key}/qr,app/payments.py:224,Same URL: Next page/GET Route Handler,A08 A13 A15,pending
+POST,/dues/{due_id}/toggle,app/main.py:679,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A15,pending
+GET,/finance,app/workspace.py:330,Same URL: Next page/GET Route Handler,A03 A15,pending
+GET,/finance/export.csv,app/workspace.py:346,Same URL: Next page/GET Route Handler,A03 A15,pending
+GET,/forgot-password,app/accounts.py:94,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/forgot-password,app/accounts.py:100,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+GET,/games/{game_id},app/main.py:690,Same URL: Next page/GET Route Handler,A03 A05 A09 A10,pending
+GET,/games/{game_id}/billing,app/finance_routes.py:56,Same URL: Next page/GET Route Handler,A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/adjustments,app/finance_routes.py:49,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/bookings/{booking_id}/money,app/finance_routes.py:95,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/bookings/{booking_id}/payer,app/finance_routes.py:81,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/close,app/finance_routes.py:43,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/issue,app/finance_routes.py:61,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/billing/participants/{person_id},app/finance_routes.py:67,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A10 A11 A12 A14,pending
+POST,/games/{game_id}/bookings/{booking_id}/private-link/revoke,app/booking_routes.py:55,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08,pending
+POST,/games/{game_id}/bookings/{booking_id}/private-link/rotate,app/booking_routes.py:42,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08,pending
+POST,/games/{game_id}/bookings/{booking_id}/{action},app/main.py:739,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08,pending
+POST,/games/{game_id}/cancel,app/workspace.py:409,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A05 A09 A10,pending
+POST,/games/{game_id}/expenses,app/main.py:797,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A05 A09 A10,pending
+GET,/games/{game_id}/export.csv,app/main.py:928,Same URL: Next page/GET Route Handler,A03 A15,pending
+POST,/games/{game_id}/fixed,app/main.py:721,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A06 A07 A08,pending
+POST,/games/{game_id}/invite-fixed,app/workspace.py:170,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+POST,/games/{game_id}/lifecycle/{action},app/attendance.py:66,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A07 A09,pending
+POST,/games/{game_id}/participants/{person_id}/attendance,app/attendance.py:86,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A07 A09,pending
+POST,/games/{game_id}/participants/{person_id}/replace,app/attendance.py:97,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A07 A09,pending
+POST,/games/{game_id}/settings,app/workspace.py:184,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A05 A09 A10,pending
+POST,/games/{game_id}/toggle-open,app/main.py:790,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A05 A09 A10,pending
+POST,/games/{game_id}/walk-ins,app/attendance.py:122,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A07 A09,pending
+GET,/health,app/main.py:939,Same URL: Next page/GET Route Handler,A19 A20,pending
+GET,/join/{public_id},app/main.py:849,Same URL: Next page/GET Route Handler,A04 A06 A07 A08,pending
+POST,/join/{public_id},app/main.py:872,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A04 A06 A07 A08,pending
+POST,/join/{public_id}/lookup,app/main.py:856,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A04 A06 A07 A08,pending
+GET,/login,app/main.py:550,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/login,app/main.py:553,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+POST,/logout,app/main.py:566,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+GET,/members,app/workspace.py:306,Same URL: Next page/GET Route Handler,A03 A04,pending
+GET,/payments/review,app/payments.py:252,Same URL: Next page/GET Route Handler,A08 A13 A15,pending
+GET,/proofs/{proof_id}/image,app/payments.py:274,Same URL: Next page/GET Route Handler,A08 A13 A15,pending
+POST,/proofs/{proof_id}/review,app/payments.py:282,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A08 A13 A15,pending
+GET,/ready,app/main.py:944,Same URL: Next page/GET Route Handler,A19 A20,pending
+GET,/reset-password,app/accounts.py:114,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/reset-password,app/accounts.py:119,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+POST,/rules/{rule_id}/extend,app/workspace.py:243,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+POST,/rules/{rule_id}/generate,app/workspace.py:297,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+POST,/rules/{rule_id}/stop,app/workspace.py:235,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+GET,/schedule,app/workspace.py:258,Same URL: Next page/GET Route Handler,A03,pending
+GET,/signup,app/main.py:532,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/signup,app/main.py:535,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+GET,/verify-email,app/accounts.py:79,Same URL: Next page/GET Route Handler,A01 A02 A21,pending
+POST,/verify-email,app/accounts.py:86,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A01 A02 A21,pending
+POST,/workspace/games,app/workspace.py:270,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A05 A07,pending
+POST,/workspace/members,app/workspace.py:317,"Same URL: thin Next POST Route Handler, rewrite where page shares URL",A03 A04,pending

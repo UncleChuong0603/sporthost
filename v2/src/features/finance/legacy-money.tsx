@@ -1,0 +1,6 @@
+import { ActionForm } from "@/features/shared/action-form";
+import { gameCommand } from "@/app/(workspace)/schedule/actions";
+import { moneyText } from "@/domain/catalog";
+export function LegacyMoney({ gameId, bookingId, csrf, amount, paid, status }: { gameId: number; bookingId: number; csrf: string; amount: number | null; paid: boolean | null; status: string | null }) {
+  return <details className="mt-4 border-t pt-3"><summary className="flex min-h-11 items-center text-sm font-semibold text-primary">Thu trước khi phát hành · {moneyText(amount ?? 0)}</summary><p className="my-3 text-sm text-muted-foreground">{paid ? "Host đã ghi nhận thu." : status === "reported" ? "Biên nhận đang chờ đối soát." : "Chưa ghi nhận thu."} Chỉ xác nhận sau khi kiểm tra tiền thực tế. Khoản này được chuyển thành số dư đầu khi phát hành.</p><div className="flex flex-wrap gap-3">{paid ? <><ActionForm action={gameCommand.bind(null, gameId, "unpaid", bookingId)} csrf={csrf} label="Hoàn tác ghi nhận đã thu" /><ActionForm action={gameCommand.bind(null, gameId, "refund", bookingId)} csrf={csrf} label="Host đã hoàn khoản thu trước" /></> : <ActionForm action={gameCommand.bind(null, gameId, "paid", bookingId)} csrf={csrf} label="Host xác nhận đã thu trước" />}</div></details>;
+}

@@ -1,0 +1,3777 @@
+{
+  "columns": [
+    {
+      "table_name": "alembic_version",
+      "column_name": "version_num",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.audit_logs_id_seq'::regclass)"
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "host_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "action",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "details",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "audit_logs",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.booking_participants_id_seq'::regclass)"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "booking_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "member_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "position",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "gender",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'unspecified'::character varying"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "fee_amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "attendance_status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'NOT_MARKED'::character varying"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "arrived_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "left_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "attendance_actor_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "attendance_version",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "charge_exempt",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "fee_discount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "booking_participants",
+      "column_name": "adjustment_reason",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.bookings_id_seq'::regclass)"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "session_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "member_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "paid",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "attended",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "fee_amount",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "access_key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "qr_key",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "payment_status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'unpaid'::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "gender_at_booking",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'unspecified'::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "token_nonce",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "token_digest",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "channel",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'direct'::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "decision_reason",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "policy_snapshot",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'{}'::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "legacy_token_digest",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "token_expires_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "token_revoked",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "payer_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'GROUP'::character varying"
+    },
+    {
+      "table_name": "bookings",
+      "column_name": "payment_snapshot",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'{}'::character varying"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.charge_adjustments_id_seq'::regclass)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "batch_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "charge_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "version",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "reason",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "created_by",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_adjustments",
+      "column_name": "request_key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.charge_batches_id_seq'::regclass)"
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "session_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "version",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "snapshot",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "issued_by",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "issued_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charge_batches",
+      "column_name": "closed_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.charges_id_seq'::regclass)"
+    },
+    {
+      "table_name": "charges",
+      "column_name": "batch_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "booking_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "participant_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "payer_participant_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "charges",
+      "column_name": "detail",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "club_access",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.club_access_id_seq'::regclass)"
+    },
+    {
+      "table_name": "club_access",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "club_access",
+      "column_name": "host_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "club_access",
+      "column_name": "role",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "club_access",
+      "column_name": "permissions",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.clubs_id_seq'::regclass)"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "owner_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "location",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "bank_name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "account_holder",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "account_number",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "payment_note",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "monthly_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "300000"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "monthly_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "monthly_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "qr_key",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "trial_ends_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "pro_ends_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "sport_type",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'badminton'::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "skill_guidance",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "default_approval_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'MANUAL_APPROVE'::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "cancellation_policy",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "default_fee_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'FIXED_PRICE'::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "venue_instructions",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "default_capacity",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "20"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "fixed_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "50000"
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "fixed_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "clubs",
+      "column_name": "fixed_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.email_tokens_id_seq'::regclass)"
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "host_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "purpose",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "digest",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "expires_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "email_tokens",
+      "column_name": "used",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.expenses_id_seq'::regclass)"
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "session_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "title",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "category",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'OTHER'::character varying"
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "note",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "created_by",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "expenses",
+      "column_name": "allocated",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.game_sessions_id_seq'::regclass)"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "public_id",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "title",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "venue",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "starts_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "capacity",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "fixed_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "guest_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "is_open",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "fixed_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "fixed_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "guest_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "guest_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "recurring_rule_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "rsvp_deadline",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "is_cancelled",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "capacity_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "capacity_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "approval_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'MANUAL_APPROVE'::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "sport_snapshot",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'badminton'::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "skill_guidance",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "venue_instructions",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "cancellation_policy",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "participation_conditions",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "maps_url",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "registration_deadline",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "cancellation_deadline",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "lifecycle_status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'OPEN'::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "attendance_locked",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "fee_mode",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'FIXED_PRICE'::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "no_show_policy",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'FREE'::character varying"
+    },
+    {
+      "table_name": "game_sessions",
+      "column_name": "monthly_policy",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'SESSION_FEE'::character varying"
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.hosts_id_seq'::regclass)"
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "email",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "password_hash",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "email_verified",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "is_platform_admin",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_name": "hosts",
+      "column_name": "session_version",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "members",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.members_id_seq'::regclass)"
+    },
+    {
+      "table_name": "members",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "members",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "members",
+      "column_name": "phone",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "members",
+      "column_name": "kind",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "members",
+      "column_name": "level",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "members",
+      "column_name": "gender",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'unspecified'::character varying"
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.money_movements_id_seq'::regclass)"
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "session_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "booking_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "payer_participant_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "kind",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "source",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "reference",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "reason",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "confirmed_by",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "occurred_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "request_key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "proof_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "money_movements",
+      "column_name": "reverses_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.monthly_dues_id_seq'::regclass)"
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "member_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "period",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "paid",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "access_key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "''::character varying"
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "qr_key",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "payment_status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'unpaid'::character varying"
+    },
+    {
+      "table_name": "monthly_dues",
+      "column_name": "payment_snapshot",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'{}'::character varying"
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.payment_proofs_id_seq'::regclass)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "booking_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "due_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "asset_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "reviewed_by",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "reviewed_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "note",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "reported_amount",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "payment_proofs",
+      "column_name": "payer_participant_id",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.platform_ledger_entries_id_seq'::regclass)"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "entry_date",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "direction",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "category",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "note",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "created_by",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "updated_by",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "updated_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "version",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "column_name": "request_key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.recurring_rules_id_seq'::regclass)"
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "title",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "venue",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "first_start",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "weeks",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "capacity",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "fixed_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "guest_fee",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "fixed_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "fixed_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "guest_fee_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "guest_fee_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "capacity_male",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "capacity_female",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "rsvp_hours",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "active",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "recurring_rules",
+      "column_name": "policy_json",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": "'{}'::character varying"
+    },
+    {
+      "table_name": "request_limits",
+      "column_name": "id",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "request_limits",
+      "column_name": "bucket",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "request_limits",
+      "column_name": "hits",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.stored_assets_id_seq'::regclass)"
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "key",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "kind",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "sha256",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "size",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "stored_assets",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('clubhost.subscription_requests_id_seq'::regclass)"
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "club_id",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "months",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "amount",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "status",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "reference",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "created_at",
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "reviewed_at",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "subscription_requests",
+      "column_name": "reviewed_by",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "alembic_version",
+      "name": "alembic_version_pkc",
+      "type": "p",
+      "definition": "PRIMARY KEY (version_num)"
+    },
+    {
+      "table_name": "alembic_version",
+      "name": "alembic_version_version_num_not_null",
+      "type": "n",
+      "definition": "NOT NULL version_num"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_action_not_null",
+      "type": "n",
+      "definition": "NOT NULL action"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_details_not_null",
+      "type": "n",
+      "definition": "NOT NULL details"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_host_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (host_id) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "audit_logs",
+      "name": "audit_logs_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_adjustment_reason_not_null",
+      "type": "n",
+      "definition": "NOT NULL adjustment_reason"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_attendance_actor_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (attendance_actor_id) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_attendance_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL attendance_status"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_attendance_version_not_null",
+      "type": "n",
+      "definition": "NOT NULL attendance_version"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_booking_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (booking_id) REFERENCES clubhost.bookings(id)"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_booking_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL booking_id"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_charge_exempt_not_null",
+      "type": "n",
+      "definition": "NOT NULL charge_exempt"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_fee_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL fee_amount"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_fee_discount_not_null",
+      "type": "n",
+      "definition": "NOT NULL fee_discount"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_gender_not_null",
+      "type": "n",
+      "definition": "NOT NULL gender"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_level_not_null",
+      "type": "n",
+      "definition": "NOT NULL level"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_member_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (member_id) REFERENCES clubhost.members(id)"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_name_not_null",
+      "type": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "booking_participants_position_not_null",
+      "type": "n",
+      "definition": "NOT NULL \"position\""
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "ck_participant_attendance",
+      "type": "c",
+      "definition": "CHECK (((attendance_status)::text = ANY ((ARRAY['NOT_MARKED'::character varying, 'CHECKED_IN'::character varying, 'NO_SHOW'::character varying])::text[])))"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "ck_participant_fee",
+      "type": "c",
+      "definition": "CHECK ((fee_amount >= 0))"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "ck_participant_gender",
+      "type": "c",
+      "definition": "CHECK (((gender)::text = ANY ((ARRAY['male'::character varying, 'female'::character varying, 'unspecified'::character varying])::text[])))"
+    },
+    {
+      "table_name": "booking_participants",
+      "name": "uq_booking_participant_position",
+      "type": "u",
+      "definition": "UNIQUE (booking_id, \"position\")"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_access_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL access_key"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_attended_not_null",
+      "type": "n",
+      "definition": "NOT NULL attended"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_channel_not_null",
+      "type": "n",
+      "definition": "NOT NULL channel"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_decision_reason_not_null",
+      "type": "n",
+      "definition": "NOT NULL decision_reason"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_gender_at_booking_not_null",
+      "type": "n",
+      "definition": "NOT NULL gender_at_booking"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_member_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (member_id) REFERENCES clubhost.members(id)"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_member_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL member_id"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_paid_not_null",
+      "type": "n",
+      "definition": "NOT NULL paid"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_payer_mode_not_null",
+      "type": "n",
+      "definition": "NOT NULL payer_mode"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_payment_snapshot_not_null",
+      "type": "n",
+      "definition": "NOT NULL payment_snapshot"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_payment_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL payment_status"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_policy_snapshot_not_null",
+      "type": "n",
+      "definition": "NOT NULL policy_snapshot"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_session_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (session_id) REFERENCES clubhost.game_sessions(id)"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_session_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL session_id"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL status"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_token_digest_not_null",
+      "type": "n",
+      "definition": "NOT NULL token_digest"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_token_nonce_not_null",
+      "type": "n",
+      "definition": "NOT NULL token_nonce"
+    },
+    {
+      "table_name": "bookings",
+      "name": "bookings_token_revoked_not_null",
+      "type": "n",
+      "definition": "NOT NULL token_revoked"
+    },
+    {
+      "table_name": "bookings",
+      "name": "ck_booking_payer_mode",
+      "type": "c",
+      "definition": "CHECK (((payer_mode)::text = ANY ((ARRAY['GROUP'::character varying, 'SPLIT'::character varying])::text[])))"
+    },
+    {
+      "table_name": "bookings",
+      "name": "uq_booking_member_session",
+      "type": "u",
+      "definition": "UNIQUE (session_id, member_id)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_batch_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (batch_id) REFERENCES clubhost.charge_batches(id)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_batch_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL batch_id"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_charge_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (charge_id) REFERENCES clubhost.charges(id)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_charge_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL charge_id"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_created_by_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_by"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_reason_not_null",
+      "type": "n",
+      "definition": "NOT NULL reason"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_request_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL request_key"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "charge_adjustments_version_not_null",
+      "type": "n",
+      "definition": "NOT NULL version"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "ck_adjustment_nonzero",
+      "type": "c",
+      "definition": "CHECK ((amount <> 0))"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "uq_adjustment_request",
+      "type": "u",
+      "definition": "UNIQUE (batch_id, request_key)"
+    },
+    {
+      "table_name": "charge_adjustments",
+      "name": "uq_adjustment_version",
+      "type": "u",
+      "definition": "UNIQUE (batch_id, version)"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_issued_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL issued_at"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_issued_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (issued_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_issued_by_not_null",
+      "type": "n",
+      "definition": "NOT NULL issued_by"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_session_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (session_id) REFERENCES clubhost.game_sessions(id)"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_session_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL session_id"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_snapshot_not_null",
+      "type": "n",
+      "definition": "NOT NULL snapshot"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "charge_batches_version_not_null",
+      "type": "n",
+      "definition": "NOT NULL version"
+    },
+    {
+      "table_name": "charge_batches",
+      "name": "uq_session_charge_batch",
+      "type": "u",
+      "definition": "UNIQUE (session_id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_batch_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (batch_id) REFERENCES clubhost.charge_batches(id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_batch_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL batch_id"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_booking_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (booking_id) REFERENCES clubhost.bookings(id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_booking_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL booking_id"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_detail_not_null",
+      "type": "n",
+      "definition": "NOT NULL detail"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_participant_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (participant_id) REFERENCES clubhost.booking_participants(id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_participant_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL participant_id"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_payer_participant_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (payer_participant_id) REFERENCES clubhost.booking_participants(id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "charges_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "charges",
+      "name": "ck_charge_nonnegative",
+      "type": "c",
+      "definition": "CHECK ((amount >= 0))"
+    },
+    {
+      "table_name": "charges",
+      "name": "uq_batch_participant",
+      "type": "u",
+      "definition": "UNIQUE (batch_id, participant_id)"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_host_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (host_id) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_host_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL host_id"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "club_access",
+      "name": "club_access_role_not_null",
+      "type": "n",
+      "definition": "NOT NULL role"
+    },
+    {
+      "table_name": "club_access",
+      "name": "uq_club_cohost",
+      "type": "u",
+      "definition": "UNIQUE (club_id, host_id)"
+    },
+    {
+      "table_name": "clubs",
+      "name": "ck_club_approval_mode",
+      "type": "c",
+      "definition": "CHECK (((default_approval_mode)::text = ANY ((ARRAY['MANUAL_APPROVE'::character varying, 'AUTO_APPROVE'::character varying])::text[])))"
+    },
+    {
+      "table_name": "clubs",
+      "name": "ck_club_default_capacity",
+      "type": "c",
+      "definition": "CHECK (((default_capacity >= 1) AND (default_capacity <= 200)))"
+    },
+    {
+      "table_name": "clubs",
+      "name": "ck_club_fee_mode",
+      "type": "c",
+      "definition": "CHECK (((default_fee_mode)::text = ANY ((ARRAY['COST_SHARING'::character varying, 'FIXED_PRICE'::character varying])::text[])))"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_account_holder_not_null",
+      "type": "n",
+      "definition": "NOT NULL account_holder"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_account_number_not_null",
+      "type": "n",
+      "definition": "NOT NULL account_number"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_bank_name_not_null",
+      "type": "n",
+      "definition": "NOT NULL bank_name"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_cancellation_policy_not_null",
+      "type": "n",
+      "definition": "NOT NULL cancellation_policy"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_default_approval_mode_not_null",
+      "type": "n",
+      "definition": "NOT NULL default_approval_mode"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_default_capacity_not_null",
+      "type": "n",
+      "definition": "NOT NULL default_capacity"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_default_fee_mode_not_null",
+      "type": "n",
+      "definition": "NOT NULL default_fee_mode"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_fixed_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL fixed_fee"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_location_not_null",
+      "type": "n",
+      "definition": "NOT NULL location"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_monthly_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL monthly_fee"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_name_not_null",
+      "type": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_owner_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_owner_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL owner_id"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_payment_note_not_null",
+      "type": "n",
+      "definition": "NOT NULL payment_note"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_skill_guidance_not_null",
+      "type": "n",
+      "definition": "NOT NULL skill_guidance"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_sport_type_not_null",
+      "type": "n",
+      "definition": "NOT NULL sport_type"
+    },
+    {
+      "table_name": "clubs",
+      "name": "clubs_venue_instructions_not_null",
+      "type": "n",
+      "definition": "NOT NULL venue_instructions"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_digest_key",
+      "type": "u",
+      "definition": "UNIQUE (digest)"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_digest_not_null",
+      "type": "n",
+      "definition": "NOT NULL digest"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_expires_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL expires_at"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_host_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (host_id) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_host_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL host_id"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_purpose_not_null",
+      "type": "n",
+      "definition": "NOT NULL purpose"
+    },
+    {
+      "table_name": "email_tokens",
+      "name": "email_tokens_used_not_null",
+      "type": "n",
+      "definition": "NOT NULL used"
+    },
+    {
+      "table_name": "expenses",
+      "name": "ck_expense_category",
+      "type": "c",
+      "definition": "CHECK (((category)::text = ANY ((ARRAY['COURT'::character varying, 'EQUIPMENT'::character varying, 'OTHER'::character varying])::text[])))"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_allocated_not_null",
+      "type": "n",
+      "definition": "NOT NULL allocated"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_category_not_null",
+      "type": "n",
+      "definition": "NOT NULL category"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_note_not_null",
+      "type": "n",
+      "definition": "NOT NULL note"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_session_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (session_id) REFERENCES clubhost.game_sessions(id)"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_session_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL session_id"
+    },
+    {
+      "table_name": "expenses",
+      "name": "expenses_title_not_null",
+      "type": "n",
+      "definition": "NOT NULL title"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "ck_session_approval_mode",
+      "type": "c",
+      "definition": "CHECK (((approval_mode)::text = ANY ((ARRAY['AUTO_APPROVE'::character varying, 'MANUAL_APPROVE'::character varying])::text[])))"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "ck_session_fee_mode",
+      "type": "c",
+      "definition": "CHECK (((fee_mode)::text = ANY ((ARRAY['FIXED_PRICE'::character varying, 'COST_SHARING'::character varying])::text[])))"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "ck_session_lifecycle",
+      "type": "c",
+      "definition": "CHECK (((lifecycle_status)::text = ANY ((ARRAY['DRAFT'::character varying, 'OPEN'::character varying, 'IN_PROGRESS'::character varying, 'PLAY_FINISHED'::character varying, 'SETTLED'::character varying, 'CANCELLED'::character varying])::text[])))"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "ck_session_monthly_policy",
+      "type": "c",
+      "definition": "CHECK (((monthly_policy)::text = ANY ((ARRAY['EXEMPT_PAID'::character varying, 'SESSION_FEE'::character varying])::text[])))"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "ck_session_no_show",
+      "type": "c",
+      "definition": "CHECK (((no_show_policy)::text = ANY ((ARRAY['FREE'::character varying, 'FULL'::character varying])::text[])))"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_approval_mode_not_null",
+      "type": "n",
+      "definition": "NOT NULL approval_mode"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_attendance_locked_not_null",
+      "type": "n",
+      "definition": "NOT NULL attendance_locked"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_cancellation_policy_not_null",
+      "type": "n",
+      "definition": "NOT NULL cancellation_policy"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_capacity_not_null",
+      "type": "n",
+      "definition": "NOT NULL capacity"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_fee_mode_not_null",
+      "type": "n",
+      "definition": "NOT NULL fee_mode"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_fixed_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL fixed_fee"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_guest_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL guest_fee"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_is_cancelled_not_null",
+      "type": "n",
+      "definition": "NOT NULL is_cancelled"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_is_open_not_null",
+      "type": "n",
+      "definition": "NOT NULL is_open"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_lifecycle_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL lifecycle_status"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_maps_url_not_null",
+      "type": "n",
+      "definition": "NOT NULL maps_url"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_monthly_policy_not_null",
+      "type": "n",
+      "definition": "NOT NULL monthly_policy"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_no_show_policy_not_null",
+      "type": "n",
+      "definition": "NOT NULL no_show_policy"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_participation_conditions_not_null",
+      "type": "n",
+      "definition": "NOT NULL participation_conditions"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_public_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL public_id"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_recurring_rule_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (recurring_rule_id) REFERENCES clubhost.recurring_rules(id)"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_skill_guidance_not_null",
+      "type": "n",
+      "definition": "NOT NULL skill_guidance"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_sport_snapshot_not_null",
+      "type": "n",
+      "definition": "NOT NULL sport_snapshot"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_starts_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL starts_at"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_title_not_null",
+      "type": "n",
+      "definition": "NOT NULL title"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_venue_instructions_not_null",
+      "type": "n",
+      "definition": "NOT NULL venue_instructions"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "game_sessions_venue_not_null",
+      "type": "n",
+      "definition": "NOT NULL venue"
+    },
+    {
+      "table_name": "game_sessions",
+      "name": "uq_rule_occurrence",
+      "type": "u",
+      "definition": "UNIQUE (recurring_rule_id, starts_at)"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_email_not_null",
+      "type": "n",
+      "definition": "NOT NULL email"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_email_verified_not_null",
+      "type": "n",
+      "definition": "NOT NULL email_verified"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_is_platform_admin_not_null",
+      "type": "n",
+      "definition": "NOT NULL is_platform_admin"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_password_hash_not_null",
+      "type": "n",
+      "definition": "NOT NULL password_hash"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "hosts",
+      "name": "hosts_session_version_not_null",
+      "type": "n",
+      "definition": "NOT NULL session_version"
+    },
+    {
+      "table_name": "members",
+      "name": "ck_member_gender",
+      "type": "c",
+      "definition": "CHECK (((gender)::text = ANY ((ARRAY['male'::character varying, 'female'::character varying, 'unspecified'::character varying])::text[])))"
+    },
+    {
+      "table_name": "members",
+      "name": "members_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "members",
+      "name": "members_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "members",
+      "name": "members_gender_not_null",
+      "type": "n",
+      "definition": "NOT NULL gender"
+    },
+    {
+      "table_name": "members",
+      "name": "members_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "members",
+      "name": "members_kind_not_null",
+      "type": "n",
+      "definition": "NOT NULL kind"
+    },
+    {
+      "table_name": "members",
+      "name": "members_level_not_null",
+      "type": "n",
+      "definition": "NOT NULL level"
+    },
+    {
+      "table_name": "members",
+      "name": "members_name_not_null",
+      "type": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "members",
+      "name": "members_phone_not_null",
+      "type": "n",
+      "definition": "NOT NULL phone"
+    },
+    {
+      "table_name": "members",
+      "name": "members_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "members",
+      "name": "uq_member_phone",
+      "type": "u",
+      "definition": "UNIQUE (club_id, phone)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "ck_money_kind",
+      "type": "c",
+      "definition": "CHECK (((kind)::text = ANY ((ARRAY['RECEIVED'::character varying, 'REFUND_RECORDED'::character varying, 'REVERSAL'::character varying])::text[])))"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "ck_money_nonzero",
+      "type": "c",
+      "definition": "CHECK ((amount <> 0))"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "ck_money_sign",
+      "type": "c",
+      "definition": "CHECK (((((kind)::text = 'RECEIVED'::text) AND (amount > 0)) OR (((kind)::text = 'REFUND_RECORDED'::text) AND (amount < 0)) OR ((kind)::text = 'REVERSAL'::text)))"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "ck_money_source",
+      "type": "c",
+      "definition": "CHECK (((source)::text = ANY ((ARRAY['BANK_TRANSFER'::character varying, 'CASH'::character varying, 'OTHER'::character varying])::text[])))"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_booking_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (booking_id) REFERENCES clubhost.bookings(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_booking_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL booking_id"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_confirmed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (confirmed_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_confirmed_by_not_null",
+      "type": "n",
+      "definition": "NOT NULL confirmed_by"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_kind_not_null",
+      "type": "n",
+      "definition": "NOT NULL kind"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_occurred_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL occurred_at"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_payer_participant_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (payer_participant_id) REFERENCES clubhost.booking_participants(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_proof_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (proof_id) REFERENCES clubhost.payment_proofs(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_reason_not_null",
+      "type": "n",
+      "definition": "NOT NULL reason"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_reference_not_null",
+      "type": "n",
+      "definition": "NOT NULL reference"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_request_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL request_key"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_reverses_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (reverses_id) REFERENCES clubhost.money_movements(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_session_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (session_id) REFERENCES clubhost.game_sessions(id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_session_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL session_id"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "money_movements_source_not_null",
+      "type": "n",
+      "definition": "NOT NULL source"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "uq_money_proof",
+      "type": "u",
+      "definition": "UNIQUE (proof_id)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "uq_money_request",
+      "type": "u",
+      "definition": "UNIQUE (session_id, request_key)"
+    },
+    {
+      "table_name": "money_movements",
+      "name": "uq_money_reversal",
+      "type": "u",
+      "definition": "UNIQUE (reverses_id)"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_access_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL access_key"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_member_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (member_id) REFERENCES clubhost.members(id)"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_member_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL member_id"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_paid_not_null",
+      "type": "n",
+      "definition": "NOT NULL paid"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_payment_snapshot_not_null",
+      "type": "n",
+      "definition": "NOT NULL payment_snapshot"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_payment_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL payment_status"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_period_not_null",
+      "type": "n",
+      "definition": "NOT NULL period"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "monthly_dues_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "monthly_dues",
+      "name": "uq_member_month",
+      "type": "u",
+      "definition": "UNIQUE (member_id, period)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_asset_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (asset_id) REFERENCES clubhost.stored_assets(id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_asset_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL asset_id"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_booking_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (booking_id) REFERENCES clubhost.bookings(id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_due_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (due_id) REFERENCES clubhost.monthly_dues(id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_note_not_null",
+      "type": "n",
+      "definition": "NOT NULL note"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_payer_participant_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (payer_participant_id) REFERENCES clubhost.booking_participants(id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_reviewed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (reviewed_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "payment_proofs",
+      "name": "payment_proofs_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL status"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "ck_platform_amount",
+      "type": "c",
+      "definition": "CHECK ((amount > 0))"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "ck_platform_direction",
+      "type": "c",
+      "definition": "CHECK (((direction)::text = ANY ((ARRAY['INCOME'::character varying, 'EXPENSE'::character varying])::text[])))"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_category_not_null",
+      "type": "n",
+      "definition": "NOT NULL category"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_created_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_created_by_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_by"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_direction_not_null",
+      "type": "n",
+      "definition": "NOT NULL direction"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_entry_date_not_null",
+      "type": "n",
+      "definition": "NOT NULL entry_date"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_note_not_null",
+      "type": "n",
+      "definition": "NOT NULL note"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_request_key_key",
+      "type": "u",
+      "definition": "UNIQUE (request_key)"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_request_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL request_key"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_updated_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (updated_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "platform_ledger_entries",
+      "name": "platform_ledger_entries_version_not_null",
+      "type": "n",
+      "definition": "NOT NULL version"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_active_not_null",
+      "type": "n",
+      "definition": "NOT NULL active"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_capacity_not_null",
+      "type": "n",
+      "definition": "NOT NULL capacity"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_first_start_not_null",
+      "type": "n",
+      "definition": "NOT NULL first_start"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_fixed_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL fixed_fee"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_guest_fee_not_null",
+      "type": "n",
+      "definition": "NOT NULL guest_fee"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_policy_json_not_null",
+      "type": "n",
+      "definition": "NOT NULL policy_json"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_rsvp_hours_not_null",
+      "type": "n",
+      "definition": "NOT NULL rsvp_hours"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_title_not_null",
+      "type": "n",
+      "definition": "NOT NULL title"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_venue_not_null",
+      "type": "n",
+      "definition": "NOT NULL venue"
+    },
+    {
+      "table_name": "recurring_rules",
+      "name": "recurring_rules_weeks_not_null",
+      "type": "n",
+      "definition": "NOT NULL weeks"
+    },
+    {
+      "table_name": "request_limits",
+      "name": "request_limits_bucket_not_null",
+      "type": "n",
+      "definition": "NOT NULL bucket"
+    },
+    {
+      "table_name": "request_limits",
+      "name": "request_limits_hits_not_null",
+      "type": "n",
+      "definition": "NOT NULL hits"
+    },
+    {
+      "table_name": "request_limits",
+      "name": "request_limits_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "request_limits",
+      "name": "request_limits_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_key_key",
+      "type": "u",
+      "definition": "UNIQUE (key)"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_key_not_null",
+      "type": "n",
+      "definition": "NOT NULL key"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_kind_not_null",
+      "type": "n",
+      "definition": "NOT NULL kind"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_sha256_not_null",
+      "type": "n",
+      "definition": "NOT NULL sha256"
+    },
+    {
+      "table_name": "stored_assets",
+      "name": "stored_assets_size_not_null",
+      "type": "n",
+      "definition": "NOT NULL size"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_amount_not_null",
+      "type": "n",
+      "definition": "NOT NULL amount"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_club_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (club_id) REFERENCES clubhost.clubs(id)"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_club_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL club_id"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_created_at_not_null",
+      "type": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_id_not_null",
+      "type": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_months_not_null",
+      "type": "n",
+      "definition": "NOT NULL months"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_reference_not_null",
+      "type": "n",
+      "definition": "NOT NULL reference"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_reviewed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (reviewed_by) REFERENCES clubhost.hosts(id)"
+    },
+    {
+      "table_name": "subscription_requests",
+      "name": "subscription_requests_status_not_null",
+      "type": "n",
+      "definition": "NOT NULL status"
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "alembic_version",
+      "indexname": "alembic_version_pkc",
+      "indexdef": "CREATE UNIQUE INDEX alembic_version_pkc ON clubhost.alembic_version USING btree (version_num)"
+    },
+    {
+      "tablename": "audit_logs",
+      "indexname": "audit_logs_pkey",
+      "indexdef": "CREATE UNIQUE INDEX audit_logs_pkey ON clubhost.audit_logs USING btree (id)"
+    },
+    {
+      "tablename": "audit_logs",
+      "indexname": "ix_audit_logs_club_id",
+      "indexdef": "CREATE INDEX ix_audit_logs_club_id ON clubhost.audit_logs USING btree (club_id)"
+    },
+    {
+      "tablename": "booking_participants",
+      "indexname": "booking_participants_pkey",
+      "indexdef": "CREATE UNIQUE INDEX booking_participants_pkey ON clubhost.booking_participants USING btree (id)"
+    },
+    {
+      "tablename": "booking_participants",
+      "indexname": "ix_booking_participants_booking_id",
+      "indexdef": "CREATE INDEX ix_booking_participants_booking_id ON clubhost.booking_participants USING btree (booking_id)"
+    },
+    {
+      "tablename": "booking_participants",
+      "indexname": "uq_booking_participant_position",
+      "indexdef": "CREATE UNIQUE INDEX uq_booking_participant_position ON clubhost.booking_participants USING btree (booking_id, \"position\")"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "bookings_pkey",
+      "indexdef": "CREATE UNIQUE INDEX bookings_pkey ON clubhost.bookings USING btree (id)"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "ix_bookings_legacy_token_digest",
+      "indexdef": "CREATE INDEX ix_bookings_legacy_token_digest ON clubhost.bookings USING btree (legacy_token_digest)"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "ix_bookings_member_id",
+      "indexdef": "CREATE INDEX ix_bookings_member_id ON clubhost.bookings USING btree (member_id)"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "ix_bookings_session_id",
+      "indexdef": "CREATE INDEX ix_bookings_session_id ON clubhost.bookings USING btree (session_id)"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "ix_bookings_token_digest",
+      "indexdef": "CREATE INDEX ix_bookings_token_digest ON clubhost.bookings USING btree (token_digest)"
+    },
+    {
+      "tablename": "bookings",
+      "indexname": "uq_booking_member_session",
+      "indexdef": "CREATE UNIQUE INDEX uq_booking_member_session ON clubhost.bookings USING btree (session_id, member_id)"
+    },
+    {
+      "tablename": "charge_adjustments",
+      "indexname": "charge_adjustments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX charge_adjustments_pkey ON clubhost.charge_adjustments USING btree (id)"
+    },
+    {
+      "tablename": "charge_adjustments",
+      "indexname": "ix_charge_adjustments_batch_id",
+      "indexdef": "CREATE INDEX ix_charge_adjustments_batch_id ON clubhost.charge_adjustments USING btree (batch_id)"
+    },
+    {
+      "tablename": "charge_adjustments",
+      "indexname": "ix_charge_adjustments_charge_id",
+      "indexdef": "CREATE INDEX ix_charge_adjustments_charge_id ON clubhost.charge_adjustments USING btree (charge_id)"
+    },
+    {
+      "tablename": "charge_adjustments",
+      "indexname": "uq_adjustment_request",
+      "indexdef": "CREATE UNIQUE INDEX uq_adjustment_request ON clubhost.charge_adjustments USING btree (batch_id, request_key)"
+    },
+    {
+      "tablename": "charge_adjustments",
+      "indexname": "uq_adjustment_version",
+      "indexdef": "CREATE UNIQUE INDEX uq_adjustment_version ON clubhost.charge_adjustments USING btree (batch_id, version)"
+    },
+    {
+      "tablename": "charge_batches",
+      "indexname": "charge_batches_pkey",
+      "indexdef": "CREATE UNIQUE INDEX charge_batches_pkey ON clubhost.charge_batches USING btree (id)"
+    },
+    {
+      "tablename": "charge_batches",
+      "indexname": "ix_charge_batches_session_id",
+      "indexdef": "CREATE INDEX ix_charge_batches_session_id ON clubhost.charge_batches USING btree (session_id)"
+    },
+    {
+      "tablename": "charge_batches",
+      "indexname": "uq_session_charge_batch",
+      "indexdef": "CREATE UNIQUE INDEX uq_session_charge_batch ON clubhost.charge_batches USING btree (session_id)"
+    },
+    {
+      "tablename": "charges",
+      "indexname": "charges_pkey",
+      "indexdef": "CREATE UNIQUE INDEX charges_pkey ON clubhost.charges USING btree (id)"
+    },
+    {
+      "tablename": "charges",
+      "indexname": "ix_charges_batch_id",
+      "indexdef": "CREATE INDEX ix_charges_batch_id ON clubhost.charges USING btree (batch_id)"
+    },
+    {
+      "tablename": "charges",
+      "indexname": "ix_charges_booking_id",
+      "indexdef": "CREATE INDEX ix_charges_booking_id ON clubhost.charges USING btree (booking_id)"
+    },
+    {
+      "tablename": "charges",
+      "indexname": "uq_batch_participant",
+      "indexdef": "CREATE UNIQUE INDEX uq_batch_participant ON clubhost.charges USING btree (batch_id, participant_id)"
+    },
+    {
+      "tablename": "club_access",
+      "indexname": "club_access_pkey",
+      "indexdef": "CREATE UNIQUE INDEX club_access_pkey ON clubhost.club_access USING btree (id)"
+    },
+    {
+      "tablename": "club_access",
+      "indexname": "ix_club_access_club_id",
+      "indexdef": "CREATE INDEX ix_club_access_club_id ON clubhost.club_access USING btree (club_id)"
+    },
+    {
+      "tablename": "club_access",
+      "indexname": "ix_club_access_host_id",
+      "indexdef": "CREATE INDEX ix_club_access_host_id ON clubhost.club_access USING btree (host_id)"
+    },
+    {
+      "tablename": "club_access",
+      "indexname": "uq_club_cohost",
+      "indexdef": "CREATE UNIQUE INDEX uq_club_cohost ON clubhost.club_access USING btree (club_id, host_id)"
+    },
+    {
+      "tablename": "clubs",
+      "indexname": "clubs_pkey",
+      "indexdef": "CREATE UNIQUE INDEX clubs_pkey ON clubhost.clubs USING btree (id)"
+    },
+    {
+      "tablename": "clubs",
+      "indexname": "ix_clubs_owner_id",
+      "indexdef": "CREATE INDEX ix_clubs_owner_id ON clubhost.clubs USING btree (owner_id)"
+    },
+    {
+      "tablename": "email_tokens",
+      "indexname": "email_tokens_digest_key",
+      "indexdef": "CREATE UNIQUE INDEX email_tokens_digest_key ON clubhost.email_tokens USING btree (digest)"
+    },
+    {
+      "tablename": "email_tokens",
+      "indexname": "email_tokens_pkey",
+      "indexdef": "CREATE UNIQUE INDEX email_tokens_pkey ON clubhost.email_tokens USING btree (id)"
+    },
+    {
+      "tablename": "email_tokens",
+      "indexname": "ix_email_tokens_host_id",
+      "indexdef": "CREATE INDEX ix_email_tokens_host_id ON clubhost.email_tokens USING btree (host_id)"
+    },
+    {
+      "tablename": "expenses",
+      "indexname": "expenses_pkey",
+      "indexdef": "CREATE UNIQUE INDEX expenses_pkey ON clubhost.expenses USING btree (id)"
+    },
+    {
+      "tablename": "expenses",
+      "indexname": "ix_expenses_session_id",
+      "indexdef": "CREATE INDEX ix_expenses_session_id ON clubhost.expenses USING btree (session_id)"
+    },
+    {
+      "tablename": "game_sessions",
+      "indexname": "game_sessions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX game_sessions_pkey ON clubhost.game_sessions USING btree (id)"
+    },
+    {
+      "tablename": "game_sessions",
+      "indexname": "ix_game_sessions_club_id",
+      "indexdef": "CREATE INDEX ix_game_sessions_club_id ON clubhost.game_sessions USING btree (club_id)"
+    },
+    {
+      "tablename": "game_sessions",
+      "indexname": "ix_game_sessions_public_id",
+      "indexdef": "CREATE UNIQUE INDEX ix_game_sessions_public_id ON clubhost.game_sessions USING btree (public_id)"
+    },
+    {
+      "tablename": "game_sessions",
+      "indexname": "uq_rule_occurrence",
+      "indexdef": "CREATE UNIQUE INDEX uq_rule_occurrence ON clubhost.game_sessions USING btree (recurring_rule_id, starts_at)"
+    },
+    {
+      "tablename": "hosts",
+      "indexname": "hosts_pkey",
+      "indexdef": "CREATE UNIQUE INDEX hosts_pkey ON clubhost.hosts USING btree (id)"
+    },
+    {
+      "tablename": "hosts",
+      "indexname": "ix_hosts_email",
+      "indexdef": "CREATE UNIQUE INDEX ix_hosts_email ON clubhost.hosts USING btree (email)"
+    },
+    {
+      "tablename": "members",
+      "indexname": "ix_members_club_id",
+      "indexdef": "CREATE INDEX ix_members_club_id ON clubhost.members USING btree (club_id)"
+    },
+    {
+      "tablename": "members",
+      "indexname": "members_pkey",
+      "indexdef": "CREATE UNIQUE INDEX members_pkey ON clubhost.members USING btree (id)"
+    },
+    {
+      "tablename": "members",
+      "indexname": "uq_member_phone",
+      "indexdef": "CREATE UNIQUE INDEX uq_member_phone ON clubhost.members USING btree (club_id, phone)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "ix_money_movements_booking_id",
+      "indexdef": "CREATE INDEX ix_money_movements_booking_id ON clubhost.money_movements USING btree (booking_id)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "ix_money_movements_session_id",
+      "indexdef": "CREATE INDEX ix_money_movements_session_id ON clubhost.money_movements USING btree (session_id)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "money_movements_pkey",
+      "indexdef": "CREATE UNIQUE INDEX money_movements_pkey ON clubhost.money_movements USING btree (id)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "uq_money_proof",
+      "indexdef": "CREATE UNIQUE INDEX uq_money_proof ON clubhost.money_movements USING btree (proof_id)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "uq_money_request",
+      "indexdef": "CREATE UNIQUE INDEX uq_money_request ON clubhost.money_movements USING btree (session_id, request_key)"
+    },
+    {
+      "tablename": "money_movements",
+      "indexname": "uq_money_reversal",
+      "indexdef": "CREATE UNIQUE INDEX uq_money_reversal ON clubhost.money_movements USING btree (reverses_id)"
+    },
+    {
+      "tablename": "monthly_dues",
+      "indexname": "ix_monthly_dues_member_id",
+      "indexdef": "CREATE INDEX ix_monthly_dues_member_id ON clubhost.monthly_dues USING btree (member_id)"
+    },
+    {
+      "tablename": "monthly_dues",
+      "indexname": "monthly_dues_pkey",
+      "indexdef": "CREATE UNIQUE INDEX monthly_dues_pkey ON clubhost.monthly_dues USING btree (id)"
+    },
+    {
+      "tablename": "monthly_dues",
+      "indexname": "uq_member_month",
+      "indexdef": "CREATE UNIQUE INDEX uq_member_month ON clubhost.monthly_dues USING btree (member_id, period)"
+    },
+    {
+      "tablename": "payment_proofs",
+      "indexname": "ix_payment_proofs_booking_id",
+      "indexdef": "CREATE INDEX ix_payment_proofs_booking_id ON clubhost.payment_proofs USING btree (booking_id)"
+    },
+    {
+      "tablename": "payment_proofs",
+      "indexname": "ix_payment_proofs_due_id",
+      "indexdef": "CREATE INDEX ix_payment_proofs_due_id ON clubhost.payment_proofs USING btree (due_id)"
+    },
+    {
+      "tablename": "payment_proofs",
+      "indexname": "payment_proofs_pkey",
+      "indexdef": "CREATE UNIQUE INDEX payment_proofs_pkey ON clubhost.payment_proofs USING btree (id)"
+    },
+    {
+      "tablename": "platform_ledger_entries",
+      "indexname": "platform_ledger_entries_pkey",
+      "indexdef": "CREATE UNIQUE INDEX platform_ledger_entries_pkey ON clubhost.platform_ledger_entries USING btree (id)"
+    },
+    {
+      "tablename": "platform_ledger_entries",
+      "indexname": "platform_ledger_entries_request_key_key",
+      "indexdef": "CREATE UNIQUE INDEX platform_ledger_entries_request_key_key ON clubhost.platform_ledger_entries USING btree (request_key)"
+    },
+    {
+      "tablename": "recurring_rules",
+      "indexname": "ix_recurring_rules_club_id",
+      "indexdef": "CREATE INDEX ix_recurring_rules_club_id ON clubhost.recurring_rules USING btree (club_id)"
+    },
+    {
+      "tablename": "recurring_rules",
+      "indexname": "recurring_rules_pkey",
+      "indexdef": "CREATE UNIQUE INDEX recurring_rules_pkey ON clubhost.recurring_rules USING btree (id)"
+    },
+    {
+      "tablename": "request_limits",
+      "indexname": "request_limits_pkey",
+      "indexdef": "CREATE UNIQUE INDEX request_limits_pkey ON clubhost.request_limits USING btree (id)"
+    },
+    {
+      "tablename": "stored_assets",
+      "indexname": "ix_stored_assets_club_id",
+      "indexdef": "CREATE INDEX ix_stored_assets_club_id ON clubhost.stored_assets USING btree (club_id)"
+    },
+    {
+      "tablename": "stored_assets",
+      "indexname": "stored_assets_key_key",
+      "indexdef": "CREATE UNIQUE INDEX stored_assets_key_key ON clubhost.stored_assets USING btree (key)"
+    },
+    {
+      "tablename": "stored_assets",
+      "indexname": "stored_assets_pkey",
+      "indexdef": "CREATE UNIQUE INDEX stored_assets_pkey ON clubhost.stored_assets USING btree (id)"
+    },
+    {
+      "tablename": "subscription_requests",
+      "indexname": "ix_subscription_requests_club_id",
+      "indexdef": "CREATE INDEX ix_subscription_requests_club_id ON clubhost.subscription_requests USING btree (club_id)"
+    },
+    {
+      "tablename": "subscription_requests",
+      "indexname": "subscription_requests_pkey",
+      "indexdef": "CREATE UNIQUE INDEX subscription_requests_pkey ON clubhost.subscription_requests USING btree (id)"
+    }
+  ]
+}

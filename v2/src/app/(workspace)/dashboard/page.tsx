@@ -1,0 +1,12 @@
+import Link from "next/link";
+import { Plus, ArrowUpRight, UsersRound } from "lucide-react";
+import { requireHost } from "@/server/auth/service";
+import { listClubs } from "@/server/modules/clubs/service";
+import { Button } from "@/components/ui/button";
+import { sports } from "@/domain/catalog";
+import { DashboardOverview } from "@/features/clubs/dashboard-overview";
+
+export default async function Dashboard() {
+  const host = await requireHost(); const clubs = await listClubs(host.id);
+  return <><div className="mb-8 flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">SportHost</p><h1 className="text-3xl font-bold tracking-tight">Tổng quan</h1><p className="mt-2 text-muted-foreground">Câu lạc bộ của bạn, sẵn sàng cho buổi chơi tiếp theo.</p></div><Button asChild><Link href="/clubs/new"><Plus aria-hidden="true" />Tạo CLB</Link></Button></div>{clubs.length > 0 && <DashboardOverview hostId={host.id} />}{clubs.length ? <section aria-label="Câu lạc bộ của bạn" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{clubs.map(club => <Link key={club.id} href={`/clubs/${club.id}`} className="group rounded-2xl border bg-white p-6 transition-shadow hover:shadow-md"><div className="mb-5 flex items-center justify-between"><span className="rounded-xl bg-teal-50 p-3 text-primary"><UsersRound className="size-6" aria-hidden="true" /></span><ArrowUpRight className="size-5 text-muted-foreground group-hover:text-primary" aria-hidden="true" /></div><p className="text-xs font-semibold uppercase tracking-wide text-primary">{sports[club.sportType as keyof typeof sports] || "Thể thao"}</p><h2 className="mt-2 text-xl font-bold">{club.name}</h2><p className="mt-2 text-sm text-muted-foreground">{club.location || "Chưa cập nhật khu vực"}</p><p className="mt-5 border-t pt-4 text-xs text-muted-foreground">{club.owner ? "Chủ câu lạc bộ" : "Đồng quản lý"}</p></Link>)}</section> : <section className="rounded-2xl border bg-white px-6 py-16 text-center"><UsersRound className="mx-auto mb-5 size-10 text-primary" aria-hidden="true" /><h2 className="text-xl font-semibold">Bắt đầu với câu lạc bộ đầu tiên</h2><p className="mx-auto mb-6 mt-3 max-w-md text-muted-foreground">Tạo CLB, thêm thành viên và thiết lập cách tổ chức buổi chơi của bạn.</p><Button asChild><Link href="/clubs/new"><Plus aria-hidden="true" />Tạo câu lạc bộ</Link></Button></section>}</>;
+}

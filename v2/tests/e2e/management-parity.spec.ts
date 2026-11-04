@@ -1,0 +1,72 @@
+import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
+import sharp from "sharp";
+import { localNow } from "../../src/domain/session-policy";
+const origin = process.env.SPORTHOST_E2E_ORIGIN || "http://127.0.0.1:3100";
+async function csrf(page: Page, path: string) { expect((await page.goto(path))?.status()).toBe(200); return page.locator('input[name="csrf"]').first().inputValue(); }
+async function post(request: APIRequestContext, path: string, token: string, form: Record<string, string> = {}) {
+  const result = await request.post(path, { form: { ...form, csrf: token }, headers: { Origin: origin }, maxRedirects: 0 });
+  expect(result.status(), `${path}: ${(await result.text()).slice(0, 140)}`).toBe(303); return result;
+}
+test("native member settings, recurring RSVP, monthly proof and typed deletion preserve the other club", async ({ page, browser }, info) => {
+  test.setTimeout(180000);
+  await post(page.request, "/signup", await csrf(page, "/signup"), { email: `v2-manage-${info.project.name}-${Date.now()}@example.com`, password: "management-password-123" });
+  const token = await csrf(page, "/clubs/new");
+  const other = await post(page.request, "/clubs", token, { name: "Keep other club" }); const otherPath = new URL(other.headers().location).pathname;
+  const created = await post(page.request, "/clubs", token, { name: "Manage and delete only this club" }); const clubPath = new URL(created.headers().location).pathname; const club = clubPath.split("/").at(-1)!;
+  await post(page.request, clubPath + "/settings", token, { location: "Quận 8", skill_guidance: "TB", default_capacity: "15" });
+  await post(page.request, "/workspace/members", token, { club_id: club, name: "Fixed original", phone: "0908877001", kind: "fixed", gender: "female" });
+  await page.goto(`/finance?club_id=${club}`); const member = await page.locator('select[name="member_id"] option').first().getAttribute("value");
+  await post(page.request, clubPath + `/members/${member}/edit`, token, { name: "Fixed updated", phone: "0908877001", kind: "fixed", gender: "female", level: "TB+" });
+  await page.goto(`/members?club_id=${club}`); await expect(page.getByText("Fixed updated", { exact: true })).toBeVisible();
+  await page.getByText("Sửa thành viên Fixed updated", { exact: true }).click();
+  const edit = page.locator("li").filter({ hasText: "Fixed updated" });
+  await edit.getByLabel("Trình độ", { exact: true }).fill("Khá"); await edit.getByRole("button", { name: "Lưu thành viên", exact: true }).click(); await expect(edit.getByRole("status")).toContainText("Đã cập nhật");
+  await post(page.request, clubPath + "/fixed-prices", token, { fixed_fee: "50000", fixed_fee_female: "0", fixed_fee_male: "" });
+  await post(page.request, clubPath + "/monthly-prices", token, { monthly_fee: "300000", monthly_fee_female: "250000", monthly_fee_male: "" });
+  const period = localNow().slice(0, 7);
+  await post(page.request, clubPath + "/dues", token, { member_id: member!, period, amount: "250000" });
+  await post(page.request, clubPath + "/dues/bulk", token, { period });
+  await page.goto(`/finance?club_id=${club}&period=${period}`);
+  const dueLinks = page.getByRole("link", { name: "Liên kết thanh toán riêng", exact: true }); await expect(dueLinks).toHaveCount(1);
+  const duePath = (await dueLinks.getAttribute("href"))!;
+  const visitorContext = await browser.newContext({ baseURL: origin, viewport: info.project.use.viewport });
+  try {
+    const visitor = await visitorContext.newPage(); const publicCsrf = await csrf(visitor, duePath);
+    const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "violet" } }).png().toBuffer();
+    const report = await visitor.request.post(duePath + "/proof", { multipart: { csrf: publicCsrf, proof: { name: "due.png", mimeType: "image/png", buffer } }, headers: { Origin: origin }, maxRedirects: 0 }); expect(report.status(), await report.text()).toBe(303);
+    await visitor.reload(); await expect(visitor.getByText("Biên nhận đang chờ đối soát", { exact: true })).toBeVisible();
+    await page.goto(`/payments/review?club_id=${club}`); const proofPath = (await page.getByRole("link", { name: /^Mở ảnh biên nhận #/ }).getAttribute("href"))!; const proof = proofPath.match(/\/proofs\/(\d+)\//)![1];
+    await post(page.request, `/proofs/${proof}/review`, token, { action: "confirm" });
+    await visitor.reload(); await expect(visitor.getByText("Host đã ghi nhận thanh toán", { exact: true })).toBeVisible();
+    await page.goto(`/finance?club_id=${club}&period=${period}`); await page.getByRole("button", { name: "Hoàn tác đã thu phí tháng", exact: true }).click(); await expect(page.getByRole("button", { name: "Host xác nhận đã thu phí tháng", exact: true })).toBeVisible();
+    await post(page.request, "/workspace/games", token, { club_id: club, title: "Recurring parity", starts_at: localNow(new Date(Date.now() + 7 * 86400000)), capacity: "3", weeks: "2", guest_fee: "70000" });
+    await page.goto(`/schedule?club_id=${club}`); await expect(page.getByRole("heading", { name: "Recurring parity", exact: true })).toHaveCount(3);
+    await page.getByLabel("Thêm tuần cho Recurring parity", { exact: true }).fill("1"); await page.getByRole("button", { name: "Gia hạn lịch lặp", exact: true }).click();
+    await expect(page.getByText(/3 tuần · Đang áp dụng/)).toBeVisible();
+    await page.getByRole("button", { name: "Kiểm tra / tạo các buổi còn thiếu", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Recurring parity", exact: true })).toHaveCount(4);
+    await page.getByRole("link").filter({ has: page.getByRole("heading", { name: "Recurring parity", exact: true }) }).first().click(); await expect(page).toHaveURL(/\/games\/\d+$/);
+    const gamePath = new URL(page.url()).pathname;
+    await page.getByText("Liên kết riêng của người chơi", { exact: true }).click();
+    const keyLink = page.getByRole("link", { name: "Mở đăng ký & thanh toán", exact: true });
+    const keyPath = (await keyLink.getAttribute("href"))!; const guestToken = await csrf(visitor, keyPath);
+    await post(visitor.request, keyPath + "/rsvp", guestToken, { action: "yes" }); await visitor.reload(); await expect(visitor.getByText("Đã xác nhận", { exact: true })).toBeVisible();
+    await page.reload(); await expect(page.getByText("1/3 chỗ", { exact: true })).toBeVisible();
+    await post(page.request, gamePath + "/toggle-open", token); await post(page.request, gamePath + "/toggle-open", token);
+    await post(page.request, gamePath + "/invite-fixed", token); await post(page.request, gamePath + "/fixed", token, { member_id: member! });
+    await page.reload(); const person = (await page.locator('li[id^="participant-"]').first().getAttribute("id"))!.split("-")[1];
+    await post(page.request, gamePath + `/participants/${person}/replace`, token, { name: "Substitute", gender: "female", level: "TB", version: "0", reason: "Thành viên bận" });
+    await post(page.request, gamePath + "/walk-ins", token, { name: "Walk-in", phone: "0908877002", gender: "male" });
+    await post(page.request, gamePath + "/lifecycle/start", token);
+    await post(page.request, gamePath + `/participants/${person}/attendance`, token, { action: "check_in", version: "1" });
+    await post(page.request, gamePath + "/lifecycle/finish", token);
+    await post(page.request, gamePath + "/lifecycle/reopen", token, { reason: "Kiểm tra tại sân" });
+    await page.goto(`/schedule?club_id=${club}`); await page.getByRole("button", { name: "Dừng lịch lặp", exact: true }).click(); await expect(page.getByText(/Đã dừng tạo mới/)).toBeVisible();
+    const invalidDelete = await page.request.post(clubPath + "/delete", { form: { csrf: token, confirmation_name: "wrong club" }, headers: { Origin: origin } }); expect(invalidDelete.status()).toBe(400);
+    expect((await page.request.get(gamePath)).status()).toBe(200);
+    await post(page.request, clubPath + "/delete", token, { confirmation_name: "Manage and delete only this club" });
+    expect((await page.request.get(clubPath)).status()).toBe(404); expect((await page.request.get(proofPath)).status()).toBe(404); expect((await page.request.get(otherPath)).status()).toBe(200);
+    await page.goto(otherPath); await expect(page.getByRole("heading", { name: "Keep other club", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  } finally { await visitorContext.close(); }
+});

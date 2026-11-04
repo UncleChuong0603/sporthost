@@ -5,6 +5,7 @@ local demos/tests. Never put a remote database password or SSH key in source.
 """
 import os
 import re
+from urllib.parse import urlsplit
 
 from sqlalchemy.engine import make_url
 from dotenv import load_dotenv
@@ -19,7 +20,7 @@ def load_settings():
         raise RuntimeError('APP_ENV must be development, test, staging, or production')
     url = os.getenv('DATABASE_URL', '' if hosted else 'sqlite:///./sporthost.db').strip()
     if not url:
-        raise RuntimeError('DATABASE_URL is required on Vercel; configure persistent PostgreSQL')
+        raise RuntimeError('DATABASE_URL is required; configure persistent PostgreSQL')
     # Marketplace providers supply standard URLs; consistently select psycopg 3.
     if url.startswith(('postgres://', 'postgresql://')):
         url = 'postgresql+psycopg://' + url.split('://', 1)[1]
@@ -44,4 +45,22 @@ def load_settings():
             raise RuntimeError('Set a strong SECRET_KEY (32+ random characters)')
         if not secure_cookie:
             raise RuntimeError('COOKIE_SECURE must be true on staging/production (HTTPS required)')
-    return {'env': env, 'url': url, 'driver': driver, 'schema': schema, 'secret': secret, 'cookie_secure': secure_cookie, 'serverless': hosted}
+    app_url = os.getenv('APP_URL', os.getenv('PUBLIC_BASE_URL', 'https://sporthost.vercel.app' if hosted else 'http://127.0.0.1:8000')).rstrip('/')
+    parsed = urlsplit(app_url)
+    if (parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password
+            or parsed.query or parsed.fragment or parsed.path):
+        raise RuntimeError('APP_URL/PUBLIC_BASE_URL must be an absolute origin without credentials, path, query or fragment')
+    if env in ('staging', 'production') and parsed.scheme != 'https':
+        raise RuntimeError('APP_URL/PUBLIC_BASE_URL must use HTTPS on staging/production')
+    allowed_hosts = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
+    read_only = os.getenv('APP_READ_ONLY', 'false').strip().lower()
+    if read_only not in ('true', 'false'):
+        raise RuntimeError('APP_READ_ONLY must be true or false')
+    if env in ('staging', 'production') and not hosted:
+        if not allowed_hosts or '*' in allowed_hosts:
+            raise RuntimeError('ALLOWED_HOSTS must explicitly list the Dokploy domains and localhost')
+        if parsed.hostname not in allowed_hosts:
+            raise RuntimeError('ALLOWED_HOSTS must include the APP_URL hostname')
+    return {'env': env, 'url': url, 'driver': driver, 'schema': schema, 'secret': secret,
+            'cookie_secure': secure_cookie, 'serverless': hosted, 'app_url': app_url,
+            'allowed_hosts': allowed_hosts, 'read_only': read_only == 'true'}

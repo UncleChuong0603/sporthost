@@ -10,7 +10,9 @@ os.environ['DATABASE_URL'] = 'sqlite:///' + _tmpdb.name
 os.environ['SECRET_KEY'] = 'test-only-secret-value-for-isolated-local-tests'
 os.environ['COOKIE_SECURE'] = 'false'
 # Never use connected cloud storage or email credentials during the local suite.
-for name in ('VERCEL', 'BLOB_READ_WRITE_TOKEN', 'BLOB_STORE_ID', 'SMTP_HOST', 'MAIL_FROM'):
+for name in ('VERCEL', 'BLOB_READ_WRITE_TOKEN', 'BLOB_STORE_ID', 'SMTP_HOST', 'MAIL_FROM',
+             'EMAIL_ENABLED', 'EMAIL_PROVIDER', 'EMAIL_FROM', 'RESEND_API_KEY',
+             'APP_URL', 'PUBLIC_BASE_URL', 'ALLOWED_HOSTS', 'STORAGE_BACKEND', 'STORAGE_ROOT', 'APP_READ_ONLY'):
     os.environ.pop(name, None)
 
 
@@ -21,6 +23,19 @@ def isolated_uploads(tmp_path_factory):
     storage.LOCAL_ROOT = tmp_path_factory.mktemp('sporthost-uploads')
     yield
     storage.LOCAL_ROOT = previous
+
+
+@pytest.fixture(autouse=True)
+def isolated_rate_limit_buckets():
+    # Every TestClient otherwise shares "testclient" across the whole suite and
+    # unrelated account tests exhaust the real per-hour signup bucket.
+    # Keep the limiter enabled within each test, including security regressions.
+    from sqlalchemy import delete
+    from app.main import SessionLocal, engine
+    from app.security import RequestLimit
+    assert engine.dialect.name == 'sqlite', 'Default suite must use disposable SQLite'
+    with SessionLocal.begin() as db:
+        db.execute(delete(RequestLimit))
 
 
 @pytest.fixture(scope='session')
