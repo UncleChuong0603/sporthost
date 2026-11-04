@@ -15,7 +15,9 @@ beforeAll(async () => {
   installTestEnv();
   for (const role of ["owner", "checker", "other"]) ownedHosts.push((await signup(prefix + role + "@example.com", "local-password-123")).id);
   [owner, checker, other] = ownedHosts;
-  club = (await createClub(owner, { name: "CLB kiểm thử", location: "Quận 8" })).id; ownedClubs.push(club);
+  club = (await createClub(owner, { name: "CLB kiểm thử", location: "Hồ Chí Minh" })).id; ownedClubs.push(club);
+  // Simulate a free-text location saved before province selection was introduced.
+  await getPool().query("UPDATE clubhost.clubs SET location='Quận 8' WHERE id=$1", [club]);
   await getPool().query("INSERT INTO clubhost.club_access(club_id,host_id,role,permissions) VALUES($1,$2,'custom',$3)", [club, checker, '["check_in"]']);
 });
 afterAll(async () => {
@@ -29,6 +31,17 @@ afterAll(async () => {
   await closePool();
 });
 describe("club and contact boundaries", () => {
+  it("validates new locations and preserves unchanged legacy locations", async () => {
+    await expect(createClub(owner, { name: "Invalid location", location: "Bình Dương" })).rejects.toMatchObject({ status: 400 });
+    await expect(updateClub(owner, club, { location: "An arbitrary venue" })).rejects.toMatchObject({ status: 400 });
+    expect((await clubSettings(owner, club)).location).toBe("Quận 8");
+    await updateClub(owner, club, { location: "Quận 8", skill_guidance: "Giữ khu vực cũ" });
+    expect((await clubSettings(owner, club)).location).toBe("Quận 8");
+    const created = await createClub(owner, { name: "Current province", location: " Đà Nẵng " }); ownedClubs.push(created.id);
+    expect((await clubSettings(owner, created.id)).location).toBe("Đà Nẵng");
+    await updateClub(owner, created.id, { location: "Đắk Lắk" });
+    expect((await clubSettings(owner, created.id)).location).toBe("Đắk Lắk");
+  });
   it("preserves all seven sport codes and explicit defaults without rewriting finance", async () => {
     for (const code of Object.keys(sports)) {
       const created = await createClub(owner, { name: "Sport " + code, sport_type: code }); ownedClubs.push(created.id);

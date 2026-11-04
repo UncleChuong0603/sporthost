@@ -1,6 +1,6 @@
 // Reviewed read model of existing clubhost at Alembic 0011. Never apply generated CREATE SQL to production.
 // drizzle-kit empty-string defaults and composite-key ordering corrected against native catalog.
-import { pgTable, pgSchema, varchar, index, foreignKey, unique, check, serial, integer, uniqueIndex, boolean } from "drizzle-orm/pg-core"
+import { pgSchema, varchar, index, foreignKey, unique, check, serial, integer, uniqueIndex, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const clubhost = pgSchema("clubhost");

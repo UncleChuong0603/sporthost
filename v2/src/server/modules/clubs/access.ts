@@ -3,7 +3,7 @@ import { and, eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getDb, transaction } from "@/server/db/client";
 import { hostsInClubhost as hosts, clubAccessInClubhost as access, auditLogsInClubhost as audit, clubsInClubhost as clubs } from "@/server/db/schema";
-import { requireClubAccess, capabilities, permissionLabels, type Permission } from "@/server/access/permissions";
+import { requireClubAccess, capabilities, permissionLabels } from "@/server/access/permissions";
 import { AppError } from "@/server/errors";
 
 export async function clubAccessDetails(hostId: number, clubId: number) {

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, ne, asc } from "drizzle-orm";
+import { and, eq, inArray, asc } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 import { transaction } from "@/server/db/client";

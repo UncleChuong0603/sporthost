@@ -1,4 +1,4 @@
-"""Restore and migration drill in a temporary LOCAL PostgreSQL process only.
+"""Next.js backup restore and regression drill in a temporary LOCAL PostgreSQL process only.
 
 Never reads source DB credentials. No production URL or target URL is accepted.
 The cluster and reports remain private under .vercel; no OS service is installed.
@@ -10,7 +10,6 @@ import os
 import secrets
 import socket
 import subprocess
-import sys
 import time
 import zipfile
 from pathlib import Path
@@ -86,16 +85,15 @@ def verify(args):
             except Exception:time.sleep(0.1)
         else:raise RuntimeError('Local verification server did not become ready')
         with engine.connect().execution_options(isolation_level='AUTOCOMMIT') as con:
-            con.execute(text('CREATE DATABASE sporthost_restore_check'))
-        env['PGDATABASE'] = 'sporthost_restore_check'
+            con.execute(text('CREATE DATABASE sporthost_restore_check_test'))
+        env['PGDATABASE'] = 'sporthost_restore_check_test'
         run([binary('pg_restore'), '--no-password', '--exit-on-error', '--no-owner', '--no-acl',
-             '--dbname=sporthost_restore_check', str(archive)], env, root, 'restore')
-        target_url = url.set(database='sporthost_restore_check')
+             '--dbname=sporthost_restore_check_test', str(archive)], env, root, 'restore')
+        target_url = url.set(database='sporthost_restore_check_test')
         target = create_engine(target_url)
         def compare_original_columns():
             with target.connect() as con:
                 for table, expected in manifest['tables'].items():
-                    if table == 'alembic_version':continue
                     if not re.fullmatch(r'[a-z][a-z0-9_]*',table):raise ValueError('Unsafe table name')
                     if not all(re.fullmatch(r'[a-z][a-z0-9_]*',column) for column in expected['columns']):
                         raise ValueError('Unsafe column name')
@@ -107,56 +105,36 @@ def verify(args):
         with target.connect() as con:
             restored_revision = con.scalar(text(f'SELECT version_num FROM "{schema}".alembic_version'))
         if restored_revision != manifest['revision']:raise RuntimeError('Restored revision mismatch')
-        app_env = dict(env, APP_ENV='test', DATABASE_URL=target_url.render_as_string(hide_password=False),
-                       DB_SCHEMA=schema, SECRET_KEY='local-restore-only-not-a-production-key', COOKIE_SECURE='false',
-                       APP_URL='http://127.0.0.1:8000', PUBLIC_BASE_URL='http://127.0.0.1:8000',
-                       EMAIL_ENABLED='false', APP_READ_ONLY='false')
-        for key in ('VERCEL','DATABASE_MIGRATION_URL','BLOB_READ_WRITE_TOKEN','BLOB_STORE_ID',
-                    'RESEND_API_KEY','SMTP_HOST','MAIL_FROM','ALLOWED_HOSTS'):
-            app_env.pop(key, None)
-        run([sys.executable,'-m','alembic','upgrade','head'], app_env, root, 'migration', cwd=workspace)
+        # Apply only the reviewed additive table on this disposable restored copy.
+        with target.connect().execution_options(isolation_level='AUTOCOMMIT') as con:
+            con.exec_driver_sql((workspace/'v2/migrations/0001_member_accounts.sql').read_text(encoding='utf8'))
         compare_original_columns()
-        with target.connect() as con:
-            new_revision = con.scalar(text(f'SELECT version_num FROM "{schema}".alembic_version'))
-            new_columns = con.execute(text('SELECT column_name FROM information_schema.columns WHERE table_schema=:s AND table_name=\'clubs\''),{'s':schema}).scalars().all()
-        assert new_revision == '0011_fixed_member_fees'
-        assert all(c in new_columns for c in ('fixed_fee','fixed_fee_male','fixed_fee_female'))
-        # Only read against the restored data, with DB-enforced read-only sessions.
-        app_env['DATABASE_URL'] = target_url.update_query_dict({'options':'-c default_transaction_read_only=on'}).render_as_string(hide_password=False)
-        app_env['APP_READ_ONLY'] = 'true'
-        probe = '''from app.main import app,SessionLocal,Club
-from sqlalchemy import select
-from fastapi.testclient import TestClient
-with TestClient(app) as c:
- assert c.get('/health').status_code==200
- assert c.get('/ready').status_code==200
- assert c.get('/login').status_code==200
-with SessionLocal() as db:
- db.execute(select(Club).limit(1))
-'''
-        run([sys.executable,'-c',probe], app_env, root, 'current-runtime-read', cwd=workspace)
-        # Historical source is evidence for that release only, not proof of live Vercel SHA.
-        old = root/'documented-vercel-source'
-        old.mkdir()
-        release = args.vercel_commit
-        if not re.fullmatch(r'[0-9a-f]{7,40}', release):
-            raise ValueError('Use the reviewed historical commit SHA')
-        payload = run(['git','archive','--format=zip',release,'app','public'], env, root, 'git-archive', cwd=workspace)
-        import io
-        with zipfile.ZipFile(io.BytesIO(payload)) as z:
-            for item in z.infolist():
-                dest=(old/item.filename).resolve()
-                if not dest.is_relative_to(old):raise ValueError('Unsafe source archive')
-                if not item.is_dir():
-                    dest.parent.mkdir(parents=True,exist_ok=True)
-                    dest.write_bytes(z.read(item))
-        run([sys.executable,'-c',probe], app_env, root, 'documented-vercel-runtime-read', cwd=old)
-        summary = {'restored_revision':restored_revision, 'verified_revision':new_revision,
+        expired_pruned = 0
+        if args.run_tests:
+            from sqlalchemy import MetaData, select
+            from time import time as unix_time
+            with target.connect() as con:
+                metadata = MetaData(); metadata.reflect(bind=con, schema=schema, resolve_fks=False)
+                counters = {row['id']:dict(row) for row in con.execute(select(metadata.tables[schema+'.request_limits'])).mappings()}
+                business_before = {name:rows_hash(con.execute(select(table)).mappings().all()) for name,table in metadata.tables.items() if table.name != 'request_limits'}
+            test_env = dict(os.environ, SPORTHOST_TEST_DATABASE_URL=target_url.set(drivername='postgresql').render_as_string(hide_password=False))
+            run(['npm.cmd' if os.name=='nt' else 'npm','test'], test_env, root, 'nextjs-regression', cwd=workspace/'v2')
+            with target.connect() as con:
+                for name,expected in business_before.items():
+                    if rows_hash(con.execute(select(metadata.tables[name])).mappings().all()) != expected:
+                        raise RuntimeError('Next.js tests changed restored original business rows')
+                remaining = {row['id']:dict(row) for row in con.execute(select(metadata.tables[schema+'.request_limits'])).mappings()}
+                if any(key not in counters or counters[key] != row for key,row in remaining.items()):
+                    raise RuntimeError('Operational test counters leaked into the restored copy')
+                removed = counters.keys()-remaining.keys()
+                if any(counters[key]['bucket'] >= int(unix_time()) for key in removed):
+                    raise RuntimeError('An active original rate counter was removed')
+                expired_pruned = len(removed)
+        summary = {'restored_revision':restored_revision, 'verified_revision':restored_revision,
                    'tables':len(manifest['tables']), 'restore_rows_verified':True,
-                   'migration_preserved_all_legacy_columns':True,
+                   'additive_member_schema_verified':True, 'legacy_business_rows_preserved':True,
                    'media_archive_verified':True, 'media_files':len(manifest['media']),
-                   'documented_vercel_commit_read_compatible':release,
-                   'current_container_code_read_probe':True, 'live_vercel_commit_verified':False,
+                   'nextjs_regression_passed':bool(args.run_tests), 'expired_operational_counters_pruned':expired_pruned,
                    'production_database_modified':False}
         (root/'verification.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
         print(json.dumps(summary,indent=2))
@@ -178,7 +156,7 @@ def main():
     parser.add_argument('--backup-dir',required=True)
     parser.add_argument('--pg-bin',required=True)
     parser.add_argument('--work-dir',required=True)
-    parser.add_argument('--vercel-commit',default='8ee0239',help='Latest Vercel source recorded in the Sprint 6 report; not proof of current live SHA')
+    parser.add_argument('--run-tests',action='store_true',help='Run the Node/Vitest suite on the disposable restored copy')
     args=parser.parse_args()
     try:verify(args)
     except Exception as exc:

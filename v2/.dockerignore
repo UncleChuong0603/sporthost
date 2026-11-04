@@ -6,4 +6,3 @@ tests
 test-results
 playwright-report
 *.tsbuildinfo
-drizzle/introspected

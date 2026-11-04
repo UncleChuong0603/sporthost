@@ -9,6 +9,7 @@ import { requireClubAccess } from "@/server/access/permissions";
 import { auditChange, paymentSnapshot, type Club } from "@/server/modules/bookings/core";
 import { moneySchema, optionalMoney } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
+import { requireLinkedMember, type PlayerDueAccess } from "@/server/modules/member-portal/access";
 
 export const periodSchema = z.string().regex(/^20\d\d-(0[1-9]|1[0-2])$/);
 async function clubActor(db: NodePgDatabase, hostId: number, clubId: number) {
@@ -90,16 +91,25 @@ export async function listDues(hostId: number, clubId: number, period?: string) 
   await requireClubAccess(getDb(), hostId, clubId, "manage_finance");
   return getDb().select({ id: dues.id, memberId: dues.memberId, name: members.name, period: dues.period, amount: dues.amount, paid: dues.paid, status: dues.paymentStatus, key: dues.accessKey }).from(dues).innerJoin(members, eq(members.id, dues.memberId)).where(and(eq(members.clubId, clubId), period ? eq(dues.period, validate(periodSchema, period)) : undefined)).orderBy(desc(dues.period), asc(members.name));
 }
-export async function dueContext(db: NodePgDatabase, key: string, lock = false) {
-  if (!/^[A-Za-z0-9_-]{24,256}$/.test(key)) throw new AppError(404, "Không tìm thấy khoản thu.");
-  const query = db.select().from(dues).where(eq(dues.accessKey, key));
-  const [due] = await (lock ? query.for("update") : query);
+export async function dueContext(db: NodePgDatabase, key: PlayerDueAccess, lock = false) {
+  if (typeof key === "string" && !/^[A-Za-z0-9_-]{24,256}$/.test(key)) throw new AppError(404, "Không tìm thấy khoản thu.");
+  const query = db.select().from(dues).where(typeof key === "string" ? eq(dues.accessKey, key) : eq(dues.id, key.dueId));
+  let [due] = await query;
   if (!due) throw new AppError(404, "Không tìm thấy khoản thu.");
+  if (typeof key !== "string") await requireLinkedMember(db, key.accountId, due.memberId);
   const [member] = await db.select().from(members).where(eq(members.id, due.memberId));
-  const [club] = await db.select().from(clubs).where(eq(clubs.id, member.clubId));
+  const clubQuery = db.select().from(clubs).where(eq(clubs.id, member.clubId));
+  // Same club -> due -> link order as host changes and account unlinking. This
+  // also keeps the club FK stable while an uploaded asset is being inserted.
+  const [club] = await (lock ? clubQuery.for("update") : clubQuery);
+  if (lock) {
+    [due] = await db.select().from(dues).where(eq(dues.id, due.id)).for("update");
+    if (!due) throw new AppError(404, "Không tìm thấy khoản thu.");
+    if (typeof key !== "string") await requireLinkedMember(db, key.accountId, due.memberId, true);
+  }
   return { due, member, club };
 }
-export async function duePage(key: string) {
+export async function duePage(key: PlayerDueAccess) {
   const db = getDb(); const { due, member, club } = await dueContext(db, key);
   const [reported] = await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.dueId, due.id), eq(proofs.status, "reported"))).limit(1);
   return { id: due.id, name: member.name, clubName: club.name, period: due.period, amount: due.amount, status: due.paymentStatus, paid: due.paid, canReport: !due.paid && !reported, payment: targetPayment(due, club) };

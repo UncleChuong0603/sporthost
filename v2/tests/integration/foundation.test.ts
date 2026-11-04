@@ -10,6 +10,7 @@ import { makeSession } from "@/server/auth/session";
 import { issueEmailToken, consumeEmailToken, validEmailToken } from "@/server/auth/email-tokens";
 import baseline from "../fixtures/schema-baseline.json";
 import { normalizePostgresDdl } from "../postgres-ddl";
+import { assertReady } from "@/server/readiness";
 
 const prefix = "v2-foundation-" + randomBytes(6).toString("hex");
 beforeAll(() => {
@@ -33,9 +34,28 @@ afterAll(async () => {
 });
 
 describe("existing clubhost physical schema and reviewed Drizzle mapping", () => {
+  it("accepts the complete schema and rejects missing financial fields or a different revision", async () => {
+    await transaction(assertReady, { readOnly: true });
+    const client = await getPool().connect();
+    try {
+      const query = client.query.bind(client);
+      const incomplete = vi.spyOn(client, "query").mockImplementation(async (...args: unknown[]) => {
+        const result = await (query as (...args: unknown[]) => Promise<{ rows: { name?: string; version_num?: string }[] }>)(...args);
+        if (String(args[0]).includes("information_schema.columns")) result.rows = result.rows.filter(row => row.name !== "money_movements.amount");
+        return result;
+      });
+      await expect(assertReady(client)).rejects.toThrow("Incomplete clubhost"); incomplete.mockRestore();
+      const revision = vi.spyOn(client, "query").mockImplementation(async (...args: unknown[]) => {
+        const result = await (query as (...args: unknown[]) => Promise<{ rows: { name?: string; version_num?: string }[] }>)(...args);
+        if (String(args[0]).includes("alembic_version")) result.rows = [{ version_num: "unknown_baseline" }];
+        return result;
+      });
+      await expect(assertReady(client)).rejects.toThrow("Unexpected baseline"); revision.mockRestore();
+    } finally { vi.restoreAllMocks(); client.release(); }
+  });
   it("matches all 241 columns of the observed production baseline", async () => {
     const { rows } = await getPool().query(`SELECT table_name,column_name,data_type,is_nullable,column_default
-      FROM information_schema.columns WHERE table_schema='clubhost' ORDER BY table_name,ordinal_position`);
+      FROM information_schema.columns WHERE table_schema='clubhost' AND table_name <> 'member_account_links' ORDER BY table_name,ordinal_position`);
     expect(rows).toEqual(baseline.columns);
     let total = 0;
     for (const table of Object.values(schema).filter(value => value !== schema.clubhost)) {
@@ -55,10 +75,10 @@ describe("existing clubhost physical schema and reviewed Drizzle mapping", () =>
   it("retains existing foreign keys, check constraints, sequence and index definitions", async () => {
     const { rows } = await getPool().query(`SELECT c.relname AS table_name,k.conname AS name,k.contype AS type,pg_get_constraintdef(k.oid) AS definition
       FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname='clubhost' ORDER BY c.relname,k.conname`);
+      WHERE n.nspname='clubhost' AND c.relname <> 'member_account_links' ORDER BY c.relname,k.conname`);
     const comparable = (values: typeof rows) => values.map(row => ({ ...row, definition: normalizePostgresDdl(row.definition) }));
     expect(comparable(rows)).toEqual(comparable(baseline.constraints));
-    const indexes = await getPool().query("SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='clubhost' ORDER BY tablename,indexname");
+    const indexes = await getPool().query("SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='clubhost' AND tablename <> 'member_account_links' ORDER BY tablename,indexname");
     expect(indexes.rows).toEqual(baseline.indexes);
   });
   it("rolls back failed writes and enforces real PostgreSQL read-only transactions", async () => {

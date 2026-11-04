@@ -5,7 +5,7 @@ Source: working tree. Regenerate with `python -m scripts.audit_nextjs_sprint0`; 
 AST inventory is exhaustive for Python files in the stated roots. Calls are syntactic evidence,
 not proof of authorization/locking: review the business rules and acceptance matrix too.
 
-82 Python files; 89 application HTTP routes; 21 ORM models; 108 test functions; 11 historical migrations; 34 templates/static assets.
+85 Python files; 89 application HTTP routes; 21 ORM models; 108 test functions; 11 historical migrations; 34 templates/static assets.
 
 Framework-generated OpenAPI/docs routes and the `/static` mount are described in AUDIT.md.
 
@@ -50,18 +50,21 @@ Framework-generated OpenAPI/docs routes and the `/static` mount are described in
 | `index.py` | 4 | operator/test tooling; see source docstring |
 | `scripts/__init__.py` | 0 | operator/test tooling; see source docstring |
 | `scripts/admin.py` | 29 | operator/test tooling; see source docstring |
+| `scripts/apply_nextjs_member_schema.py` | 53 | operator/test tooling; see source docstring |
 | `scripts/apply_verified_release.py` | 60 | operator/test tooling; see source docstring |
 | `scripts/audit_nextjs_database.py` | 96 | operator/test tooling; see source docstring |
 | `scripts/audit_nextjs_sprint0.py` | 195 | operator/test tooling; see source docstring |
 | `scripts/backup.py` | 103 | operator/test tooling; see source docstring |
-| `scripts/backup_dokploy_source.py` | 149 | operator/test tooling; see source docstring |
+| `scripts/backup_dokploy_source.py` | 183 | operator/test tooling; see source docstring |
+| `scripts/backup_nextjs_media.py` | 91 | operator/test tooling; see source docstring |
 | `scripts/check_backup_restore.py` | 98 | operator/test tooling; see source docstring |
 | `scripts/check_db.py` | 31 | operator/test tooling; see source docstring |
 | `scripts/check_group_concurrency.py` | 239 | operator/test tooling; see source docstring |
 | `scripts/check_nextjs_auth_compatibility.py` | 53 | operator/test tooling; see source docstring |
-| `scripts/check_nextjs_finance_compatibility.py` | 47 | operator/test tooling; see source docstring |
+| `scripts/check_nextjs_finance_compatibility.py` | 60 | operator/test tooling; see source docstring |
+| `scripts/check_nextjs_http_evidence.py` | 105 | operator/test tooling; see source docstring |
 | `scripts/create_nextjs_smtp_fixture.py` | 29 | operator/test tooling; see source docstring |
-| `scripts/dokploy_api_ssh.py` | 119 | operator/test tooling; see source docstring |
+| `scripts/dokploy_api_ssh.py` | 121 | operator/test tooling; see source docstring |
 | `scripts/dokploy_preflight.py` | 93 | operator/test tooling; see source docstring |
 | `scripts/dokploy_smoke.py` | 55 | operator/test tooling; see source docstring |
 | `scripts/migrate.py` | 44 | operator/test tooling; see source docstring |

@@ -12,6 +12,7 @@ import { getConfig } from "@/server/config";
 import { readSigned, signPayload, salts } from "@/server/compatibility/signed-payload";
 import { digest, tokenValid } from "@/server/compatibility/guest-capability";
 import { createBooking, memberFee, canFit, participants, auditChange, allowGuestChange, promoteWaitlist, type Game, type Member, type Booking, type PartyPerson } from "./core";
+import { requireLinkedMember, type PlayerBookingAccess } from "@/server/modules/member-portal/access";
 
 export type GuestOwner = { booking: number; key: string } | null;
 const lookupSchema = z.object({ game: z.string().max(256), phone: z.string().max(22), version: z.string().regex(/^[0-9a-f]{64}$/) }).strict();
@@ -22,18 +23,20 @@ export type GuestInput = z.input<typeof guestInputSchema>;
 function rawTokenValid(key: string, booking: Booking) {
   return tokenValid(key, { token_revoked: booking.tokenRevoked, token_expires_at: booking.tokenExpiresAt, token_digest: booking.tokenDigest, legacy_token_digest: booking.legacyTokenDigest || (booking.accessKey ? digest(booking.accessKey) : null) });
 }
-export async function guestContext(db: NodePgDatabase, key: string, lock = false) {
-  if (key.length < 24 || key.length > 256) throw new AppError(404, "Liên kết không còn khả dụng.");
-  const hash = digest(key);
-  let [booking] = await db.select().from(bookings).where(or(eq(bookings.tokenDigest, hash), eq(bookings.legacyTokenDigest, hash), eq(bookings.accessKey, key))).limit(1);
+export async function guestContext(db: NodePgDatabase, key: PlayerBookingAccess, lock = false) {
+  if (typeof key === "string" && (key.length < 24 || key.length > 256)) throw new AppError(404, "Liên kết không còn khả dụng.");
+  const hash = typeof key === "string" ? digest(key) : "";
+  let [booking] = await db.select().from(bookings).where(typeof key === "string" ? or(eq(bookings.tokenDigest, hash), eq(bookings.legacyTokenDigest, hash), eq(bookings.accessKey, key)) : eq(bookings.id, key.bookingId)).limit(1);
   if (!booking) throw new AppError(404, "Liên kết không còn khả dụng.");
+  if (typeof key !== "string") await requireLinkedMember(db, key.accountId, booking.memberId);
   const query = db.select().from(sessions).where(eq(sessions.id, booking.sessionId));
   const [game] = await (lock ? query.for("update") : query);
   if (lock) [booking] = await db.select().from(bookings).where(eq(bookings.id, booking.id));
-  if (!game || !booking || !rawTokenValid(key, booking)) throw new AppError(404, "Liên kết không còn khả dụng.");
+  if (!game || !booking || (typeof key === "string" && !rawTokenValid(key, booking))) throw new AppError(404, "Liên kết không còn khả dụng.");
   const [member] = await db.select().from(members).where(eq(members.id, booking.memberId));
   const clubQuery = db.select().from(clubs).where(eq(clubs.id, game.clubId));
   const [club] = await (lock ? clubQuery.for("update") : clubQuery);
+  if (typeof key !== "string" && lock) await requireLinkedMember(db, key.accountId, booking.memberId, true);
   return { booking, game, member, club };
 }
 async function ownsContact(db: NodePgDatabase, game: Game, member: Member | undefined, owner: GuestOwner) {
@@ -120,7 +123,7 @@ export async function joinGuest(publicId: string, raw: GuestInput, owner: GuestO
   });
 }
 
-export async function guestDecision(key: string, action: "cancel" | "yes" | "no") {
+export async function guestDecision(key: PlayerBookingAccess, action: "cancel" | "yes" | "no") {
   return transaction(async client => {
     const db = drizzle(client); const { booking, game, member, club } = await guestContext(db, key, true);
     if (action !== "cancel" && member.kind !== "fixed") throw new AppError(403, "Chỉ thành viên cố định có thể RSVP.");
@@ -138,7 +141,7 @@ export async function guestDecision(key: string, action: "cancel" | "yes" | "no"
   });
 }
 
-export async function editGuestGroup(key: string, companions: GuestInput["companions"]) {
+export async function editGuestGroup(key: PlayerBookingAccess, companions: GuestInput["companions"]) {
   return transaction(async client => {
     const db = drizzle(client); const { booking, game, member, club } = await guestContext(db, key, true);
     await allowGuestChange(db, booking, game);

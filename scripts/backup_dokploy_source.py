@@ -1,4 +1,4 @@
-"""Read-only native schema/Blob backup, independent of the current ORM revision.
+"""Read-only native schema and verified-volume backup, independent of ORM revision.
 
 Writes private artifacts only below gitignored .vercel/. No restore/migration command.
 Credentials are read from a private env file, never passed on the command line.
@@ -65,7 +65,7 @@ def backup(args):
     restore = pg_bin / ('pg_restore' + suffix)
     archive = root / 'sporthost-schema.dump'
     manifest = {'format':1, 'schema':args.schema, 'created_utc':datetime.now(timezone.utc).isoformat(),
-                'source_identity_verified_as_live_vercel':False, 'tables':{}, 'media':{},
+                'tables':{}, 'media':{},
                 'source_fingerprint':hashlib.sha256(f'{url.host}|{url.port}|{url.database}|{args.schema}'.encode()).hexdigest()}
     try:
         with engine.connect().execution_options(isolation_level='REPEATABLE READ') as con, con.begin():
@@ -92,31 +92,42 @@ def backup(args):
         (root/'archive-toc.private.txt').write_bytes(toc)
         manifest['dump_sha256'] = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
         manifest['native_archive_readable'] = True
-        token = values.get('BLOB_READ_WRITE_TOKEN')
         manifest['media_verified'] = False
-        if token and token != '[SENSITIVE]':
-            os.environ['BLOB_READ_WRITE_TOKEN'] = token
-            # Backup all objects within the application's key prefix, including orphan uploads.
-            from vercel.blob import sync as blob
-            try:
-                with zipfile.ZipFile(root/'sporthost-media.zip', 'x', zipfile.ZIP_DEFLATED) as media:
-                    for index, obj in enumerate(blob.query_blobs(prefix='clubs/')):
-                        body = blob.get_blob(obj.pathname, access='private').body
-                        entry = f'media/{index:08d}.bin'
-                        media.writestr(entry, body)
-                        manifest['media'][obj.pathname] = {'file':entry, 'sha256':hashlib.sha256(body).hexdigest(), 'size':len(body)}
-                with zipfile.ZipFile(root/'sporthost-media.zip') as media:
-                    if media.testzip():
-                        raise RuntimeError('Media archive CRC failed')
-                    for info in manifest['media'].values():
-                        if hashlib.sha256(media.read(info['file'])).hexdigest() != info['sha256']:
-                            raise RuntimeError('Media archive hash mismatch')
-                manifest['media_verified'] = True
-            except Exception as exc:
-                # Deliberately omit exception text, request headers and object URLs.
-                manifest['media_error_category'] = type(exc).__name__
+        if getattr(args, 'volume_media_manifest', None):
+            volume_path = Path(args.volume_media_manifest).resolve()
+            if not volume_path.is_relative_to(private_root):
+                raise ValueError('Volume manifest must be a private local artifact')
+            volume = json.loads(volume_path.read_text(encoding='utf8'))
+            if not volume.get('binary_sha256_verified') or volume.get('source_fingerprint') != manifest['source_fingerprint']:
+                raise ValueError('Volume backup source identity does not match this database')
+            with engine.connect() as con:
+                con.exec_driver_sql('SET TRANSACTION READ ONLY')
+                asset_table = metadata.tables[f'{args.schema}.stored_assets']
+                current = con.execute(select(asset_table)).mappings().all()
+                if rows_hash(current) != manifest['tables']['stored_assets']['sha256']:
+                    raise RuntimeError('Media records changed during backup; freeze writes and retry')
+                expected = {row['key']:(row['sha256'],row['size']) for row in current}
+            if expected != {row['key']:(row['sha256'],row['size']) for row in volume['assets']}:
+                raise RuntimeError('Volume asset inventory does not match the database snapshot')
+            with zipfile.ZipFile(root/'sporthost-media.zip', 'x', zipfile.ZIP_DEFLATED) as media:
+                for index, row in enumerate(volume['assets']):
+                    if not re.fullmatch(r'clubs/[1-9][0-9]*/(?:qr|proof)/[A-Za-z0-9_-]{24,128}\.png',row['key']):
+                        raise ValueError('Unexpected private image key')
+                    if not row['size']:
+                        continue
+                    body = (volume_path.parent/'media'/row['key']).read_bytes()
+                    if len(body) != row['size'] or hashlib.sha256(body).hexdigest() != row['sha256']:
+                        raise RuntimeError('Volume media hash mismatch')
+                    entry = f'media/{index:08d}.bin';media.writestr(entry,body)
+                    manifest['media'][row['key']] = {'file':entry,'sha256':row['sha256'],'size':row['size']}
+            with zipfile.ZipFile(root/'sporthost-media.zip') as media:
+                if media.testzip():raise RuntimeError('Media archive CRC failed')
+                for info in manifest['media'].values():
+                    if hashlib.sha256(media.read(info['file'])).hexdigest()!=info['sha256']:raise RuntimeError('Media archive hash mismatch')
+            manifest['media_verified'] = True
+            manifest['media_backend'] = 'dokploy-volume'
         else:
-            manifest['media_error_category'] = 'MissingToken'
+            raise ValueError('A verified Dokploy volume manifest is required')
         (root/'manifest.private.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf-8')
         summary = {'backup_directory':str(root.relative_to(Path.cwd().resolve())),
                    'revision':manifest['revision'], 'tables':len(manifest['tables']),
@@ -124,7 +135,7 @@ def backup(args):
                    'client_tls':manifest['client_tls'], 'native_archive_readable':True,
                    'dump_sha256':manifest['dump_sha256'], 'media_files':len(manifest['media']),
                    'media_verified':manifest['media_verified'],
-                   'source_identity_verified_as_live_vercel':False}
+                   'media_backend':'dokploy-volume'}
         print(json.dumps(summary, indent=2))
         return 0 if manifest['media_verified'] else 2
     finally:
@@ -137,6 +148,7 @@ def main():
     parser.add_argument('--schema', required=True)
     parser.add_argument('--pg-bin', required=True)
     parser.add_argument('--output-dir', required=True)
+    parser.add_argument('--volume-media-manifest', required=True, help='Verified binary volume manifest from backup_nextjs_media')
     args = parser.parse_args()
     try:
         status = backup(args)

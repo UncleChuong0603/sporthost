@@ -34,7 +34,7 @@ export async function accountAction(mode: "password" | "forgot" | "reset" | "ver
       await consumeEmailToken(String(form.get("token") || ""), "reset", password);
       (await cookies()).delete("clubhost"); destination = "/login?message=reset";
     } else if (mode === "verify") {
-      await consumeEmailToken(String(form.get("token") || ""), "verify"); destination = "/login?message=verified";
+      await consumeEmailToken(String(form.get("token") || ""), "verify"); destination = form.get("audience") === "member" ? "/me/profile" : "/login?message=verified";
     } else throw new AppError(400, "Thao tác không hợp lệ.");
   } catch (error) { return { error: safeError(error).message }; }
   redirect(destination);

@@ -1,0 +1,4 @@
+# Optional operator tools only. The application and its tests run on Node.
+python-dotenv==1.2.4
+SQLAlchemy==2.1.6
+psycopg[binary]==3.3.6

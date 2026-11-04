@@ -1,0 +1,90 @@
+method,legacy_path,status,http_statuses,evidence
+GET,/,observed-success,307,strict-get-smoke
+GET,/account,observed-success,200,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+POST,/account/password,observed-success,303,admin-email-parity.spec.ts
+POST,/account/verify-email,observed-mail-disabled,503,admin-email-parity.spec.ts
+GET,/admin,observed-success,200 403,admin-email-parity.spec.ts
+POST,/admin/clubs/{club_id}/trial,observed-success,303,admin-email-parity.spec.ts
+GET,/admin/platform-ledger,observed-success,200,admin-email-parity.spec.ts
+POST,/admin/platform-ledger,observed-success,303,admin-email-parity.spec.ts
+POST,/admin/platform-ledger/{entry_id}/edit,observed-success,303 409,admin-email-parity.spec.ts
+GET,/attend/{key},observed-success,200 404,booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+POST,/attend/{key}/cancel,observed-success,303,guest-link-parity.spec.ts
+POST,/attend/{key}/edit,observed-success,303,guest-link-parity.spec.ts
+POST,/attend/{key}/payer,observed-success,303,guest-link-parity.spec.ts
+POST,/attend/{key}/proof,observed-success,200 303,cohost-privacy.spec.ts fifteen-players.spec.ts legacy-forms.spec.ts
+GET,/attend/{key}/qr,observed-success,200,legacy-forms.spec.ts
+POST,/attend/{key}/rsvp,observed-success,303,management-parity.spec.ts
+GET,/clubs,observed-success,200 401,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+POST,/clubs,observed-success,303,admin-email-parity.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts
+GET,/clubs/{club_id},observed-success,200 307 404,accounts-clubs.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+POST,/clubs/{club_id}/cohosts,observed-success,303,cohost-privacy.spec.ts native-settings-parity.spec.ts
+POST,/clubs/{club_id}/cohosts/{access_id}/remove,observed-success,303,native-settings-parity.spec.ts
+POST,/clubs/{club_id}/delete,observed-success,303 400,management-parity.spec.ts
+POST,/clubs/{club_id}/dues,observed-success,303,management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts
+POST,/clubs/{club_id}/dues/bulk,observed-success,303,management-parity.spec.ts
+POST,/clubs/{club_id}/fixed-prices,observed-success,303,management-parity.spec.ts
+POST,/clubs/{club_id}/games,observed-success,303,cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts member-portal.spec.ts
+POST,/clubs/{club_id}/members,observed-success,303,member-portal.spec.ts native-settings-parity.spec.ts
+POST,/clubs/{club_id}/members/{member_id}/edit,observed-success,303,management-parity.spec.ts
+POST,/clubs/{club_id}/monthly-prices,observed-success,303,management-parity.spec.ts
+POST,/clubs/{club_id}/payment-settings,observed-success,303,cohost-privacy.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts
+POST,/clubs/{club_id}/payment-settings/remove-qr,observed-success,303,management-parity.spec.ts
+GET,/clubs/{club_id}/qr,observed-success,200 403,cohost-privacy.spec.ts native-settings-parity.spec.ts
+GET,/clubs/{club_id}/settings,observed-success,200,legacy-forms.spec.ts native-settings-parity.spec.ts
+POST,/clubs/{club_id}/settings,observed-success,303,management-parity.spec.ts
+GET,/dashboard,observed-success,200 307 401,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+GET,/dues/pay/{key},observed-success,200,management-parity.spec.ts
+POST,/dues/pay/{key}/proof,observed-success,303,management-parity.spec.ts
+GET,/dues/pay/{key}/qr,observed-success,200,management-parity.spec.ts
+POST,/dues/{due_id}/toggle,observed-success,303,native-settings-parity.spec.ts
+GET,/finance,observed-success,200 401 403,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+GET,/finance/export.csv,observed-success,200 403 404,cohost-privacy.spec.ts member-portal.spec.ts native-settings-parity.spec.ts
+GET,/forgot-password,observed-success,200,accounts-clubs.spec.ts admin-email-parity.spec.ts
+POST,/forgot-password,observed-mail-disabled,503,admin-email-parity.spec.ts
+GET,/games/{game_id},observed-success,200 307 404,booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+GET,/games/{game_id}/billing,observed-success,200 403,booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+POST,/games/{game_id}/billing/adjustments,observed-success,303,legacy-forms.spec.ts
+POST,/games/{game_id}/billing/bookings/{booking_id}/money,observed-success,303,legacy-forms.spec.ts
+POST,/games/{game_id}/billing/bookings/{booking_id}/payer,observed-success,303,legacy-forms.spec.ts
+POST,/games/{game_id}/billing/close,observed-success,303 403,legacy-forms.spec.ts
+POST,/games/{game_id}/billing/issue,observed-success,303,legacy-forms.spec.ts
+POST,/games/{game_id}/billing/participants/{person_id},observed-success,303,legacy-forms.spec.ts
+POST,/games/{game_id}/bookings/{booking_id}/private-link/revoke,observed-success,303,guest-link-parity.spec.ts
+POST,/games/{game_id}/bookings/{booking_id}/private-link/rotate,observed-success,303,guest-link-parity.spec.ts
+POST,/games/{game_id}/bookings/{booking_id}/{action},observed-success,303,guest-link-parity.spec.ts
+POST,/games/{game_id}/cancel,observed-success,303,guest-link-parity.spec.ts
+POST,/games/{game_id}/expenses,observed-success,303,legacy-forms.spec.ts
+GET,/games/{game_id}/export.csv,observed-success,200 403,cohost-privacy.spec.ts legacy-forms.spec.ts
+POST,/games/{game_id}/fixed,observed-success,303,management-parity.spec.ts
+POST,/games/{game_id}/invite-fixed,observed-success,303,management-parity.spec.ts member-portal.spec.ts
+POST,/games/{game_id}/lifecycle/{action},observed-success,303,legacy-forms.spec.ts management-parity.spec.ts
+POST,/games/{game_id}/participants/{person_id}/attendance,observed-success,303,legacy-forms.spec.ts management-parity.spec.ts
+POST,/games/{game_id}/participants/{person_id}/replace,observed-success,303,management-parity.spec.ts
+POST,/games/{game_id}/settings,observed-success,303,guest-link-parity.spec.ts
+POST,/games/{game_id}/toggle-open,observed-success,303 404,cohost-privacy.spec.ts management-parity.spec.ts
+POST,/games/{game_id}/walk-ins,observed-success,303 403,cohost-privacy.spec.ts management-parity.spec.ts
+GET,/health,observed-success,200,strict-get-smoke
+GET,/join/{public_id},observed-success,200,booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+POST,/join/{public_id},observed-success,303,cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts
+POST,/join/{public_id}/lookup,observed-success,200,legacy-forms.spec.ts
+GET,/login,observed-success,200,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts strict-get-smoke
+POST,/login,observed-success,303 403,accounts-clubs.spec.ts admin-email-parity.spec.ts
+POST,/logout,observed-success,303,admin-email-parity.spec.ts
+GET,/members,observed-success,200 401 403,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+GET,/payments/review,observed-success,200 403,cohost-privacy.spec.ts fifteen-players.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+GET,/proofs/{proof_id}/image,observed-success,200 401 403 404,cohost-privacy.spec.ts legacy-forms.spec.ts management-parity.spec.ts
+POST,/proofs/{proof_id}/review,observed-success,303 400,legacy-forms.spec.ts management-parity.spec.ts
+GET,/ready,observed-success,200,strict-get-smoke
+GET,/reset-password,observed-success,200 400,admin-email-parity.spec.ts
+POST,/reset-password,observed-success,303,admin-email-parity.spec.ts
+POST,/rules/{rule_id}/extend,observed-success,303,management-parity.spec.ts
+POST,/rules/{rule_id}/generate,observed-success,303,management-parity.spec.ts
+POST,/rules/{rule_id}/stop,observed-success,303,management-parity.spec.ts
+GET,/schedule,observed-success,200 401,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts
+GET,/signup,observed-success,200,accounts-clubs.spec.ts admin-email-parity.spec.ts booking-billing.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts province-select.spec.ts strict-get-smoke
+POST,/signup,observed-success,303,accounts-clubs.spec.ts admin-email-parity.spec.ts cohost-privacy.spec.ts fifteen-players.spec.ts guest-link-parity.spec.ts legacy-forms.spec.ts management-parity.spec.ts member-portal.spec.ts native-settings-parity.spec.ts
+GET,/verify-email,observed-success,200 400,admin-email-parity.spec.ts member-portal.spec.ts
+POST,/verify-email,observed-success,303,admin-email-parity.spec.ts
+POST,/workspace/games,observed-success,303,management-parity.spec.ts
+POST,/workspace/members,observed-success,303,management-parity.spec.ts

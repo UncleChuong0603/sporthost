@@ -6,6 +6,7 @@ import { getDb, transaction } from "@/server/db/client";
 import { clubsInClubhost as clubs, clubAccessInClubhost as access, auditLogsInClubhost as audit } from "@/server/db/schema";
 import { requireClubAccess, capabilities, hasPermission } from "@/server/access/permissions";
 import { sports } from "@/domain/catalog";
+import { isVietnamProvince } from "@/domain/vietnam-provinces";
 import { AppError } from "@/server/errors";
 
 export const clubSchema = z.object({
@@ -19,9 +20,14 @@ export const clubSchema = z.object({
 type Settings = z.infer<typeof clubSchema>;
 const asColumns = (v: Settings) => ({ name: v.name, location: v.location, sportType: v.sport_type, skillGuidance: v.skill_guidance, defaultCapacity: v.default_capacity, defaultApprovalMode: v.default_approval_mode, cancellationPolicy: v.cancellation_policy, defaultFeeMode: v.default_fee_mode, venueInstructions: v.venue_instructions });
 function settingsOf(club: typeof clubs.$inferSelect): Settings { return { name: club.name, location: club.location, sport_type: club.sportType as Settings["sport_type"], skill_guidance: club.skillGuidance, default_capacity: club.defaultCapacity, default_approval_mode: club.defaultApprovalMode as Settings["default_approval_mode"], cancellation_policy: club.cancellationPolicy, default_fee_mode: club.defaultFeeMode as Settings["default_fee_mode"], venue_instructions: club.venueInstructions }; }
-function parsedSettings(raw: unknown) {
+function parsedSettings(raw: unknown, previousLocation?: string) {
   const result = clubSchema.safeParse(raw);
   if (!result.success) throw new AppError(400, result.error.issues.map(i => i.message).join(" "));
+  // Existing free-text locations remain editable without forcing a data migration.
+  // Any newly supplied location must be one of the current province-level names.
+  if (result.data.location && result.data.location !== previousLocation && !isVietnamProvince(result.data.location)) {
+    throw new AppError(400, "Vui lòng chọn khu vực trong danh sách tỉnh/thành phố Việt Nam.");
+  }
   return result.data;
 }
 
@@ -56,7 +62,7 @@ export async function updateClub(hostId: number, clubId: number, raw: Record<str
     await db.select({ id: clubs.id }).from(clubs).where(eq(clubs.id, clubId)).for("update");
     const { club } = await requireClubAccess(db, hostId, clubId, "edit_club_settings");
     const before = settingsOf(club);
-    const values = parsedSettings({ ...before, ...raw });
+    const values = parsedSettings({ ...before, ...raw }, before.location);
     await db.update(clubs).set(asColumns(values)).where(eq(clubs.id, clubId));
     await db.insert(audit).values({ clubId, hostId, action: "Cập nhật cài đặt CLB", details: JSON.stringify({ before, after: values }), createdAt: new Date().toISOString() });
   });

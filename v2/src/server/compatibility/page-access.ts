@@ -2,14 +2,24 @@ import { findCurrentHost } from "@/server/auth/service";
 import { requireClubAccess, type Capability } from "@/server/access/permissions";
 import { getDb } from "@/server/db/client";
 import { gameSessionsInClubhost as sessions, storedAssetsInClubhost as assets, paymentProofsInClubhost as proofs } from "@/server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validEmailToken } from "@/server/auth/email-tokens";
 import { AppError } from "@/server/errors";
+import { guestContext } from "@/server/modules/bookings/guest";
+import { dueContext } from "@/server/modules/finance/club";
 
 // Preserve legacy 401/403/404 HTTP statuses using a stable Proxy response, before page streaming begins.
 // Services repeat authorization at the data boundary; this is an HTTP compatibility guard only.
 export async function pageAccess(url: URL, cookie: string) {
   const path = url.pathname;
+  const playerResource = /^\/me\/(bookings|dues)\/([1-9]\d*)(?:\/(?:qr|proof))?$/.exec(path);
+  if (playerResource) {
+    const account = await findCurrentHost(cookie); if (!account) throw new AppError(401, "Vui lòng đăng nhập để tiếp tục.");
+    const id = Number(playerResource[2]); if (!Number.isSafeInteger(id) || id > 2147483647) throw new AppError(404, "Không tìm thấy thông tin.");
+    if (playerResource[1] === "bookings") await guestContext(getDb(), { accountId: account.id, bookingId: id });
+    else await dueContext(getDb(), { accountId: account.id, dueId: id });
+    return;
+  }
   if (["/verify-email", "/reset-password"].includes(path)) { await validEmailToken(url.searchParams.get("token") || "", path === "/verify-email" ? "verify" : "reset"); return; }
   if (!/^(?:\/(?:dashboard|account|clubs|members|schedule|finance|payments\/review|admin)(?:\/.*)?|\/games\/\d+(?:\/.*)?|\/proofs\/\d+\/image)$/.test(path)) return;
   const host = await findCurrentHost(cookie); if (!host) throw new AppError(401, "Vui lòng đăng nhập để tiếp tục.");

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, desc } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSessionsInClubhost as sessions, bookingsInClubhost as bookings, membersInClubhost as members, monthlyDuesInClubhost as dues, expensesInClubhost as expenses, bookingParticipantsInClubhost as people } from "@/server/db/schema";
 import { listClubs } from "@/server/modules/clubs/service";

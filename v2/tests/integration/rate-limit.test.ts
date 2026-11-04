@@ -1,0 +1,20 @@
+import { afterAll, beforeAll, expect, it } from "vitest";
+import { createHmac, randomBytes } from "node:crypto";
+import { installTestEnv } from "./environment";
+import { getPool, closePool } from "@/server/db/client";
+import { rateLimit } from "@/server/infrastructure/rate-limit";
+const run = randomBytes(12).toString("hex");
+const scope = `v2-limit-${run}`;
+const prefix = () => createHmac("sha256", process.env.SECRET_KEY!).update(scope + "|" + run).digest("hex") + ":";
+beforeAll(installTestEnv);
+afterAll(async () => { await getPool().query("DELETE FROM clubhost.request_limits WHERE id LIKE $1 OR id=ANY($2::varchar[])", [prefix() + "%", [run + "-expired", run + "-live"]]); await closePool(); });
+it("serializes competing counters, rejects after the exact limit, and prunes only expired buckets", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  await getPool().query("INSERT INTO clubhost.request_limits(id,bucket,hits) VALUES($1,$2,1),($3,$4,1)", [run + "-expired", now - 100, run + "-live", now + 3600]);
+  const attempts = await Promise.allSettled(Array.from({ length: 8 }, () => rateLimit(run, scope, 3, 3600)));
+  expect(attempts.filter(result => result.status === "fulfilled")).toHaveLength(3);
+  expect(attempts.filter(result => result.status === "rejected")).toHaveLength(5);
+  for (const result of attempts) if (result.status === "rejected") expect(result.reason).toMatchObject({ status: 429 });
+  expect((await getPool().query("SELECT hits FROM clubhost.request_limits WHERE id LIKE $1", [prefix() + "%"])).rows).toEqual([{ hits: 8 }]);
+  expect((await getPool().query("SELECT id FROM clubhost.request_limits WHERE id=ANY($1::varchar[]) ORDER BY id", [[run + "-expired", run + "-live"]])).rows).toEqual([{ id: run + "-live" }]);
+});

@@ -14,6 +14,7 @@ import { batchFor, balances } from "./queries";
 import { recordMoney, scopedBooking } from "./service";
 import { moneySchema } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
+import type { PlayerBookingAccess, PlayerDueAccess } from "@/server/modules/member-portal/access";
 
 const now = () => new Date().toISOString();
 // A DB failure, including COMMIT failure, removes the newly written file. Historical assets stay immutable.
@@ -45,7 +46,7 @@ export async function updateBankWithQr(hostId: number, clubId: number, raw: unkn
     await auditChange(db, clubId, hostId, "Cập nhật thông tin nhận tiền", paymentSnapshot(club), { ...parsed.data, qr_key: asset.key });
   });
 }
-export async function reportBookingProof(key: string, upload: File, raw: { reportedAmount?: unknown; payerParticipantId?: number | null }) {
+export async function reportBookingProof(key: PlayerBookingAccess, upload: File, raw: { reportedAmount?: unknown; payerParticipantId?: number | null }) {
   return uploadTransaction(upload, "proof", async (db, save) => {
     const { booking, game, club } = await guestContext(db, key, true);
     const batch = await batchFor(db, game.id);
@@ -66,7 +67,7 @@ export async function reportBookingProof(key: string, upload: File, raw: { repor
     await auditChange(db, club.id, null, "Nhận biên nhận", null, { booking_id: booking.id, proof_id: proof.id }); return proof;
   });
 }
-export async function reportDueProof(key: string, upload: File) {
+export async function reportDueProof(key: PlayerDueAccess, upload: File) {
   return uploadTransaction(upload, "proof", async (db, save) => {
     const { due, club } = await dueContext(db, key, true);
     if (due.paid || (await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.dueId, due.id), eq(proofs.status, "reported"))).limit(1)).length) throw new AppError(409, "Khoản thu đã xử lý hoặc đang chờ duyệt.");
@@ -122,12 +123,12 @@ export async function proofImage(hostId: number, proofId: number) {
   if (!record.asset.size) throw new AppError(410, "Ảnh biên nhận đã hết thời hạn lưu trữ.");
   return readImage(record.asset.key);
 }
-export async function bookingQr(key: string) {
+export async function bookingQr(key: PlayerBookingAccess) {
   const db = getDb(); const { booking, game, club } = await guestContext(db, key);
   const batch = await batchFor(db, game.id); const payment = batch ? JSON.parse(batch.snapshot).payment : targetPayment(booking, club);
   if (!payment.qr_key) throw new AppError(404, "Chưa có ảnh QR."); return readImage(payment.qr_key);
 }
-export async function dueQr(key: string) {
+export async function dueQr(key: PlayerDueAccess) {
   const { due, club } = await dueContext(getDb(), key); const payment = targetPayment(due, club);
   if (!payment.qr_key) throw new AppError(404, "Chưa có ảnh QR."); return readImage(payment.qr_key);
 }

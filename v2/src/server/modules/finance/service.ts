@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 import { transaction } from "@/server/db/client";
@@ -141,7 +141,7 @@ export async function setPayerMode(db: NodePgDatabase, game: Game, booking: Book
 export async function changePayer(hostId: number, gameId: number, bookingId: number, mode: string) {
   return transaction(async client => { const db = drizzle(client); const { game } = await gameActor(db, hostId, gameId, "manage_finance", true); await setPayerMode(db, game, await scopedBooking(db, gameId, bookingId), mode, hostId); });
 }
-export async function guestPayer(key: string, mode: string) {
+export async function guestPayer(key: import("@/server/modules/member-portal/access").PlayerBookingAccess, mode: string) {
   return transaction(async client => { const db = drizzle(client); const { game, booking } = await guestContext(db, key, true); if (booking.status !== "confirmed") throw new AppError(409, "Chỉ chọn thanh toán cho lượt đã được nhận."); await setPayerMode(db, game, booking, mode, null); });
 }
 export async function draftAdjustment(hostId: number, gameId: number, participantId: number, raw: unknown) {

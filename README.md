@@ -1,102 +1,48 @@
-# SportHost Beta
+# SportHost
 
-Quản lý CLB thể thao cho host — [mở bản thử nghiệm](https://sporthost.vercel.app).
-FastAPI, Jinja2, SQLAlchemy, PostgreSQL/Alembic, Vercel và private Blob.
+SportHost runs at https://sporthost.online. Hosts manage clubs, schedules, players and money; players use https://sporthost.online/me for their own invitations, registrations and payments.
 
-## Chức năng
+The application is the single full-stack Next.js project in `v2/`: App Router, React, TypeScript, Tailwind/shadcn, Route Handlers/Server Actions, Drizzle ORM and PostgreSQL. Authentication and sessions are self-hosted. Private images live on the Dokploy VPS; email uses configurable SMTP. There is no FastAPI, separate backend, Blob SDK or Python application/test runtime.
 
-- Chọn môn thể thao, hướng dẫn trình độ/sân, chính sách hủy và các mặc định của CLB.
-- Workspace có sidebar, tổng quan, lịch, thành viên, thu chi, cài đặt từng CLB và hỗ trợ mobile.
-- Lịch tuần, RSVP riêng, ưu tiên member, duyệt vãng lai, danh sách chờ và điểm danh.
-- Nam/nữ, phí riêng theo giới tính/loại thành viên; giới hạn tổng và chỗ nam/nữ tùy chọn.
-- Vãng lai nhập điện thoại trước, tự điền hồ sơ trong CLB, kiểm tra rồi xác nhận.
-- Đăng ký hộ nhiều người, duyệt cả nhóm, tự động nhận hoặc host duyệt; danh sách chờ tính theo số người.
-- Link quản lý khách có hash, hạn dùng và thu hồi/cấp lại; sửa/hủy theo chính sách đã nhận.
-- Upload QR, biên nhận riêng tư và đối soát thủ công; phí thành viên cố định / buổi và phí vãng lai, chi phí, CSV.
-- Đồng quản lý, quyền điều hành/thu chi, audit, tài khoản và quản trị Pro trial miễn phí.
-- Chủ CLB có thể xóa vĩnh viễn CLB trong Cài đặt sau khi nhập lại tên và xác nhận; xóa dữ liệu liên quan, giữ nhật ký thao tác.
+## Development
 
-[Chi tiết tính năng](FULL_ROADMAP.md) · [Triển khai](DEPLOY_VERCEL.md) · [Vận hành](OPERATIONS.md)
-
-**Email thật cần cấu hình Resend hoặc SMTP.** Hiện đổi mật khẩu trong phiên đăng nhập hoạt động;
-quên mật khẩu/xác minh email chỉ gửi được khi dịch vụ email được cấu hình.
-Upload biên nhận không tự xác nhận đã thu. Chưa thu phí phần mềm trong beta.
-
-## Chuẩn bị chuyển sang Dokploy
-
-[Audit](docs/deployment/DOKPLOY_AUDIT.md) · [Runbook](docs/deployment/DOKPLOY_RUNBOOK.md) ·
-[Báo cáo migration](docs/deployment/MIGRATION_REPORT.md) · [DNS/rollback](docs/deployment/DNS_CUTOVER.md) ·
-[Resend](docs/deployment/RESEND_SETUP.md).
-Dockerfile dùng Python 3.12, user riêng, port nội bộ 8000 và healthcheck; không tự migrate.
-App Dokploy đã deploy và healthy ở chế độ chỉ đọc; Vercel vẫn phục vụ, chưa chuyển DNS.
-Quy trình hiện tại chỉ cần một app `sporthost-production`, không yêu cầu staging riêng.
-Preview dùng `APP_READ_ONLY=true`; backup native/restore đã pass, migration 0011 đã được duyệt và áp dụng, dữ liệu cũ giữ nguyên.
-Các bước còn cần chủ sở hữu thực hiện: [Manual actions](docs/deployment/MANUAL_ACTIONS.md).
-Giữ private Blob hiện có khi cutover. Backend local chỉ dùng với cấu hình storage rõ ràng
-và volume bền vững; không tự chuyển dữ liệu ảnh. Resend mặc định tắt đến khi có key/domain đã xác minh.
-
-## Action plan 01/11/2026 — trạng thái nhánh này
-
-Sprint 1 đã lên production (`7a8ae26`, migration `0005_club_settings`) sau khi backup,
-phục hồi/migrate thử vào schema riêng và smoke test bằng CLB thử.
-Sprint 2 bổ sung đăng ký nhóm, policy snapshot, hạn đăng ký/sửa/hủy, duyệt/waitlist
-atomic theo số người và link riêng có bảo vệ; migration `0006_group_bookings` mở rộng
-bảng cũ và map mỗi booking cũ đúng một participant. Trạng thái release/test mới nhất
-được ghi tại báo cáo sprint bên dưới.
-
-Sprint 3 thêm điểm danh từng người, walk-in, về sớm, thay người và kết thúc đánh;
-[báo cáo Sprint 3](docs/SPORT_HOST_SPRINT_3_REPORT.md) ghi rõ kiểm chứng và release.
-Sprint 4 thêm engine chia đều/giá cố định, miễn phí tháng đã đóng, bản nháp/phát hành,
-thu thiếu/đủ/thừa nhiều lần, hoàn thủ công, tách payer và snapshot QR/tài khoản.
-[Báo cáo Sprint 4](docs/SPORT_HOST_SPRINT_4_REPORT.md) ghi phạm vi, tương thích và kiểm chứng.
-Sprint 5 thêm chốt sổ còn nợ, điều chỉnh có version/lý do, quyền co-host chi tiết và
-sổ nền tảng riêng; [báo cáo Sprint 5](docs/SPORT_HOST_SPRINT_5_REPORT.md).
-Sprint 6 bổ sung E2E mobile 15 người, privacy lookup, upload/DB-failure hardening,
-snapshot QR/text cho phí tháng và backup ảnh; [báo cáo Sprint 6](docs/SPORT_HOST_SPRINT_6_REPORT.md).
-Luồng 15 người kiểm chứng: 1.050.000đ phải thu, 500.000đ thực nhận, 550.000đ còn nợ sau chốt.
-Không tự đổi nghĩa vụ tiền cũ; session chưa phát hành vẫn giữ luồng legacy giá cố định.
-
-[Gap analysis](docs/SPORT_HOST_GAP_ANALYSIS.md) ·
-[Kịch bản nghiệm thu](docs/SPORT_HOST_E2E_SCENARIOS.md) ·
-[Báo cáo sprint](docs/SPORT_HOST_SPRINT_REPORT.md) ·
-[Test/migration](docs/SPORT_HOST_TESTING.md)
-
-[Hướng dẫn host/khách](docs/SPORT_HOST_USER_GUIDE.md) ·
-[Vận hành beta, staging/tunnel và giới hạn](docs/SPORT_HOST_BETA_OPERATIONS.md)
-
-Giữ nguyên PostgreSQL/schema `clubhost` đã cấu hình của ứng dụng. Trong phiên tiếp tục,
-cấu hình thực tế từ Vercel là endpoint PostgreSQL trực tiếp; không tạo/chuyển dịch vụ DB
-hoặc thay SSH. Người dùng đã cho phép push/deploy và test production ngày 01/11/2026.
-Migration vẫn được backup/restore và kiểm chứng trong schema thử riêng trước khi áp dụng;
-test production chỉ dùng tenant được tạo riêng rồi dọn chính dữ liệu thử đó.
-
-## Chạy local
+Use Node 22.12+ and PostgreSQL 18. Copy `v2/.env.example` to a private `v2/.env.local` on a new checkout, configure its database and run:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+cd v2
+npm ci
+npm run dev
 ```
 
-Mở http://127.0.0.1:8000/signup. SQLite và ảnh local chỉ dùng development/test.
-Staging/production yêu cầu PostgreSQL, HTTPS cookie, khóa bí mật và storage bền vững riêng tư.
-Dokploy cần APP_URL HTTPS, ALLOWED_HOSTS rõ ràng và cấu hình proxy tin cậy theo runbook.
-Migration chạy riêng, không chạy khi app khởi động hoặc Vercel build.
+Never overwrite an existing private env file. The production database retains schema `clubhost` and the reviewed legacy revision `0011_fixed_member_fees`; the additive member-account table is applied explicitly by an operator. Application startup never migrates.
 
-## Kiểm thử
+## Verification
+
+Use a disposable loopback PostgreSQL database named `*_test`. After configuring its URL in the private env file:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q
+cd v2
+npm run db:test:prepare
+npm test
+npm run typecheck
+npm run build
+npm run test:e2e
 ```
 
-Bộ mặc định dùng SQLite tạm. PostgreSQL, migration giữ dữ liệu, private Blob,
-backup/restore và trình duyệt được kiểm chứng riêng trong schema/tài khoản test.
-Không chạy kiểm thử ghi dữ liệu trên CLB đang dùng. Chưa kiểm thử tải lớn.
+`db:test:prepare` initializes only an empty local test schema from a checked-in schema-only fixture, then adds the reviewed member table. It refuses remote/non-test targets and never replaces existing business tables. Tests require OpenSSL 3+ for a short-lived localhost SMTP certificate; Git for Windows' bundled OpenSSL is detected automatically, or set `SPORTHOST_OPENSSL`. Browser tests use installed Microsoft Edge. No real email is sent by tests.
 
-## Nguồn gốc
+Compatibility checks use independently captured Python password/session and billing fixtures. They no longer start Python or import the retired application. Existing guest URLs, native form POSTs and fixed-price bookings remain active product contracts.
 
-Dựa trên `clubhost-sprint01-postgresql.zip`; giữ schema/cookie `clubhost` để tương thích.
-`SPRINT_0_1.md`, `BUILD_PLAN.md`, `CODEX_PROMPT.md` là tài liệu bàn giao cũ;
-trạng thái hiện tại ở README, FULL_ROADMAP và OPERATIONS. UI áp dụng UI UX Pro Max;
-quyết định thiết kế lưu tại `design-system/sporthost/MASTER.md`.
+## Deployment and operations
+
+Build from `v2/`, for example `docker build --tag sporthost:v2 v2` from the repository root. Existing Dokploy production uses port 8000 and a private writable `/data/uploads` volume owned by UID/GID 10001. Keep the database URL, session signing key and persistent media across releases. Do not edit production DNS or run destructive migrations without approval.
+
+The six operator commands under `scripts/` handle database/media backups, local restore verification, the reviewed additive schema change, Dokploy access and HTTP evidence. They are outside the application image. If needed, use Python 3.11+ to install their separate operator dependencies with `python -m pip install -r scripts/requirements.txt`; FastAPI, SQLAlchemy application models, Alembic and the old web runtime are not required. Backup tools use native PostgreSQL clients and a verified VPS-volume inventory.
+
+- [Application setup](v2/README.md)
+- [Member onboarding and permissions](docs/nextjs/MEMBER_PORTAL.md)
+- [Current release evidence](docs/nextjs/PROGRESS.md)
+- [Deployment and rollback](docs/nextjs/RELEASE_RUNBOOK.md)
+- [Cleanup scope and retained compatibility](docs/nextjs/CLEANUP.md)
+
+Earlier sprint reports and `docs/deployment/` are historical v1 evidence. Follow `docs/nextjs/` for current operations. Retired working-tree source was snapshotted privately before removal; immutable release images, backups, data, uploads and secrets were preserved.

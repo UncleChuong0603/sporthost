@@ -51,6 +51,8 @@ try:
  if isinstance(result,dict):
   safe={k:result.get(k) for k in p['fields'] if k in result}
   safe['response_keys']=list(result)
+  if p['endpoint']=='application.one':
+   safe['configured_mounts']=[{k:mount.get(k) for k in ('mountId','type','volumeName','mountPath','applicationId')} for mount in result.get('mounts',[])]
   if p['endpoint']=='docker.getConfig':
    config=result
    if isinstance(result.get('config'),str):
@@ -94,7 +96,7 @@ SAFE_FIELDS = {'projectId','applicationId','environmentId','domainId','name','ap
 ALLOWED = {'application.create','application.one','application.update','application.saveBuildType',
            'application.saveEnvironment','application.saveGitProvider','application.saveGithubProvider',
            'application.deploy','domain.create','domain.generateDomain','domain.byApplicationId','deployment.all',
-           'docker.getContainers','docker.getConfig','docker.getContainersByAppNameMatch','application.dropDeployment','mounts.create','mounts.allNamedByApplicationId'}
+           'docker.getContainers','docker.getConfig','docker.getContainersByAppNameMatch','application.dropDeployment','mounts.create','mounts.remove','mounts.allNamedByApplicationId'}
 
 
 def call(endpoint, *, body=None, query=None, fields=(), zip_path=None, env_patch=None):

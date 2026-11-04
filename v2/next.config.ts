@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-Robots-Tag", value: "noindex, nofollow" },
       { key: "Referrer-Policy", value: "no-referrer" },
-    ] }];
+    ] }, { source: "/me/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] }];
   },
 };
 

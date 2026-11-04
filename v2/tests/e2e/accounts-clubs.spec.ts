@@ -11,7 +11,8 @@ test("host signs up, creates a real club, changes settings, and logs in again", 
   await expect(page.getByRole("heading", { name: "Bắt đầu với câu lạc bộ đầu tiên" })).toBeVisible();
   await page.getByRole("link", { name: "Tạo câu lạc bộ", exact: true }).click();
   await page.getByLabel("Tên câu lạc bộ").fill("CLB cầu lông mới");
-  await page.getByLabel("Khu vực").fill("Quận 8");
+  await page.getByRole("combobox", { name: "Khu vực", exact: true }).fill("ho chi minh");
+  await page.getByRole("option", { name: "Hồ Chí Minh", exact: true }).click();
   await page.getByLabel("Sức chứa mặc định").fill("15");
   await page.getByRole("button", { name: "Tạo câu lạc bộ", exact: true }).click();
   await expect(page.getByRole("heading", { name: "CLB cầu lông mới", exact: true })).toBeVisible();
@@ -19,6 +20,7 @@ test("host signs up, creates a real club, changes settings, and logs in again", 
   await page.getByRole("button", { name: "Lưu cài đặt" }).click();
   await expect(page.getByRole("status")).toContainText("Đã lưu");
   await page.reload();
+  await expect(page.getByRole("combobox", { name: "Khu vực", exact: true })).toHaveValue("Hồ Chí Minh");
   await expect(page.getByLabel("Chính sách hủy")).toHaveValue("Báo host trước buổi chơi.");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("link", { name: "Thành viên", exact: true }).last().click();

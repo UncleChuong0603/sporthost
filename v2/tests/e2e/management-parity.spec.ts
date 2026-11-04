@@ -1,6 +1,7 @@
 import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
 import sharp from "sharp";
 import { localNow } from "../../src/domain/session-policy";
+import { disposablePool } from "./disposable-db";
 const origin = process.env.SPORTHOST_E2E_ORIGIN || "http://127.0.0.1:3100";
 async function csrf(page: Page, path: string) { expect((await page.goto(path))?.status()).toBe(200); return page.locator('input[name="csrf"]').first().inputValue(); }
 async function post(request: APIRequestContext, path: string, token: string, form: Record<string, string> = {}) {
@@ -13,7 +14,7 @@ test("native member settings, recurring RSVP, monthly proof and typed deletion p
   const token = await csrf(page, "/clubs/new");
   const other = await post(page.request, "/clubs", token, { name: "Keep other club" }); const otherPath = new URL(other.headers().location).pathname;
   const created = await post(page.request, "/clubs", token, { name: "Manage and delete only this club" }); const clubPath = new URL(created.headers().location).pathname; const club = clubPath.split("/").at(-1)!;
-  await post(page.request, clubPath + "/settings", token, { location: "Quận 8", skill_guidance: "TB", default_capacity: "15" });
+  await post(page.request, clubPath + "/settings", token, { location: "Hồ Chí Minh", skill_guidance: "TB", default_capacity: "15" });
   await post(page.request, "/workspace/members", token, { club_id: club, name: "Fixed original", phone: "0908877001", kind: "fixed", gender: "female" });
   await page.goto(`/finance?club_id=${club}`); const member = await page.locator('select[name="member_id"] option').first().getAttribute("value");
   await post(page.request, clubPath + `/members/${member}/edit`, token, { name: "Fixed updated", phone: "0908877001", kind: "fixed", gender: "female", level: "TB+" });
@@ -24,14 +25,18 @@ test("native member settings, recurring RSVP, monthly proof and typed deletion p
   await post(page.request, clubPath + "/fixed-prices", token, { fixed_fee: "50000", fixed_fee_female: "0", fixed_fee_male: "" });
   await post(page.request, clubPath + "/monthly-prices", token, { monthly_fee: "300000", monthly_fee_female: "250000", monthly_fee_male: "" });
   const period = localNow().slice(0, 7);
+  const qrBuffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).png().toBuffer();
+  expect((await page.request.post(clubPath + "/payment-settings", { multipart: { csrf: token, bank_name: "Monthly bank", account_number: "123123", qr: { name: "qr.png", mimeType: "image/png", buffer: qrBuffer } }, headers: { Origin: origin }, maxRedirects: 0 })).status()).toBe(303);
   await post(page.request, clubPath + "/dues", token, { member_id: member!, period, amount: "250000" });
   await post(page.request, clubPath + "/dues/bulk", token, { period });
   await page.goto(`/finance?club_id=${club}&period=${period}`);
   const dueLinks = page.getByRole("link", { name: "Liên kết thanh toán riêng", exact: true }); await expect(dueLinks).toHaveCount(1);
   const duePath = (await dueLinks.getAttribute("href"))!;
+  await post(page.request, clubPath + "/payment-settings/remove-qr", token);
   const visitorContext = await browser.newContext({ baseURL: origin, viewport: info.project.use.viewport });
   try {
     const visitor = await visitorContext.newPage(); const publicCsrf = await csrf(visitor, duePath);
+    const dueQr = await visitor.request.get(duePath + "/qr"); expect(dueQr.status()).toBe(200); expect(dueQr.headers()["cache-control"]).toContain("no-store");
     const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "violet" } }).png().toBuffer();
     const report = await visitor.request.post(duePath + "/proof", { multipart: { csrf: publicCsrf, proof: { name: "due.png", mimeType: "image/png", buffer } }, headers: { Origin: origin }, maxRedirects: 0 }); expect(report.status(), await report.text()).toBe(303);
     await visitor.reload(); await expect(visitor.getByText("Biên nhận đang chờ đối soát", { exact: true })).toBeVisible();
@@ -45,6 +50,10 @@ test("native member settings, recurring RSVP, monthly proof and typed deletion p
     await expect(page.getByText(/3 tuần · Đang áp dụng/)).toBeVisible();
     await page.getByRole("button", { name: "Kiểm tra / tạo các buổi còn thiếu", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Recurring parity", exact: true })).toHaveCount(4);
+    const pool = disposablePool(); let rule: number;
+    try { rule = (await pool.query("SELECT id FROM clubhost.recurring_rules WHERE club_id=$1 AND title='Recurring parity'", [club])).rows[0].id; } finally { await pool.end(); }
+    await post(page.request, `/rules/${rule}/generate`, token);
+    await post(page.request, `/rules/${rule}/extend`, token, { weeks: "1" });
     await page.getByRole("link").filter({ has: page.getByRole("heading", { name: "Recurring parity", exact: true }) }).first().click(); await expect(page).toHaveURL(/\/games\/\d+$/);
     const gamePath = new URL(page.url()).pathname;
     await page.getByText("Liên kết riêng của người chơi", { exact: true }).click();
@@ -62,6 +71,7 @@ test("native member settings, recurring RSVP, monthly proof and typed deletion p
     await post(page.request, gamePath + "/lifecycle/finish", token);
     await post(page.request, gamePath + "/lifecycle/reopen", token, { reason: "Kiểm tra tại sân" });
     await page.goto(`/schedule?club_id=${club}`); await page.getByRole("button", { name: "Dừng lịch lặp", exact: true }).click(); await expect(page.getByText(/Đã dừng tạo mới/)).toBeVisible();
+    await post(page.request, `/rules/${rule}/stop`, token);
     const invalidDelete = await page.request.post(clubPath + "/delete", { form: { csrf: token, confirmation_name: "wrong club" }, headers: { Origin: origin } }); expect(invalidDelete.status()).toBe(400);
     expect((await page.request.get(gamePath)).status()).toBe(200);
     await post(page.request, clubPath + "/delete", token, { confirmation_name: "Manage and delete only this club" });

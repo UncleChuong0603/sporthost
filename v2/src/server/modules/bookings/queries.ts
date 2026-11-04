@@ -12,6 +12,7 @@ import { guestOpen, registrationOpen } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
 import { balances, batchFor } from "@/server/modules/finance/queries";
 import type { BillingSnapshot } from "@/domain/billing";
+import type { PlayerBookingAccess } from "@/server/modules/member-portal/access";
 
 export function publicGameFields(game: Game) {
   return { id: game.id, publicId: game.publicId, title: game.title, venue: game.venue, startsAt: game.startsAt, capacity: game.capacity, capacityMale: game.capacityMale, capacityFemale: game.capacityFemale, fixedFee: game.fixedFee, guestFee: game.guestFee, fixedFeeMale: game.fixedFeeMale, fixedFeeFemale: game.fixedFeeFemale, guestFeeMale: game.guestFeeMale, guestFeeFemale: game.guestFeeFemale, approvalMode: game.approvalMode, sport: game.sportSnapshot, skillGuidance: game.skillGuidance, venueInstructions: game.venueInstructions, cancellationPolicy: game.cancellationPolicy, participationConditions: game.participationConditions, mapsUrl: game.mapsUrl, registrationDeadline: game.registrationDeadline, cancellationDeadline: game.cancellationDeadline, lifecycleStatus: game.lifecycleStatus, feeMode: game.feeMode, noShowPolicy: game.noShowPolicy, monthlyPolicy: game.monthlyPolicy, isCancelled: game.isCancelled, attendanceLocked: game.attendanceLocked };
@@ -43,7 +44,7 @@ export async function hostSession(hostId: number, gameId: number) {
   const publicFields = publicGameFields(game);
   return { ...publicFields, fixedFee: finance ? game.fixedFee : null, guestFee: finance ? game.guestFee : null, fixedFeeMale: finance ? game.fixedFeeMale : null, fixedFeeFemale: finance ? game.fixedFeeFemale : null, guestFeeMale: finance ? game.guestFeeMale : null, guestFeeFemale: finance ? game.guestFeeFemale : null, clubId: club.id, clubName: club.name, owner, rights, canFinance: finance, canBookings: manage, canCheckIn: hasPermission(owner, rights, "check_in"), canSession: hasPermission(owner, rights, "manage_session"), isOpen: game.isOpen, roster, fixed, confirmed: Object.values(await seatCounts(db, game.id)).reduce((a, b) => a + b, 0) };
 }
-export async function guestBooking(key: string) {
+export async function guestBooking(key: PlayerBookingAccess) {
   const db = getDb(); const { game, booking, member, club } = await guestContext(db, key);
   let editable = false, cancellable = false;
   try { await allowGuestChange(db, booking, game); editable = member.kind === "guest" && !["cancelled", "rejected", "invited"].includes(booking.status); } catch (error) { if (!(error instanceof AppError)) throw error; }
@@ -54,7 +55,7 @@ export async function guestBooking(key: string) {
   return { ...publicGameFields(game), clubName: club.name, bookingId: booking.id, name: member.name, phone: member.phone, kind: member.kind, status: booking.status, issued, feeAmount, paymentStatus: booking.paymentStatus, paid: booking.paid, payerMode: booking.payerMode, editable, cancellable, policy: bookedPolicy(booking, game), participants: party.map(p => ({ id: p.id, name: p.name, gender: p.gender, level: p.level, attendanceStatus: p.attendanceStatus })) };
 }
 
-export async function guestFinance(key: string) {
+export async function guestFinance(key: PlayerBookingAccess) {
   const db = getDb(); const { booking, game, club } = await guestContext(db, key);
   const batch = await batchFor(db, game.id);
   const saved = JSON.parse(booking.paymentSnapshot || "{}");

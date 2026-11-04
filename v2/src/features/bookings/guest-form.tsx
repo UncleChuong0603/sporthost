@@ -10,7 +10,7 @@ import { genderLabels } from "@/domain/catalog";
 type Fields = { name: string; phone: string; gender: "male" | "female" | "unspecified"; level: string; lookup_token: string; channel: "facebook_link" | "direct"; companions: { name: string; gender: "male" | "female" | "unspecified"; level: string }[] };
 export function GuestForm({ publicId, csrf, facebook }: { publicId: string; csrf: string; facebook: boolean }) {
   const [step, setStep] = useState(1), [busy, setBusy] = useState(false), [error, setError] = useState("");
-  const { register, control, handleSubmit, getValues, setValue } = useForm<Fields>({ defaultValues: { name: "", phone: "", gender: "unspecified", level: "", lookup_token: "", channel: facebook ? "facebook_link" : "direct", companions: [] } });
+  const { register, control, handleSubmit, setValue } = useForm<Fields>({ defaultValues: { name: "", phone: "", gender: "unspecified", level: "", lookup_token: "", channel: facebook ? "facebook_link" : "direct", companions: [] } });
   const { fields, append, remove } = useFieldArray({ control, name: "companions" });
   return <form onSubmit={handleSubmit(async value => {
     setBusy(true); setError("");

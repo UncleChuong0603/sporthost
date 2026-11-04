@@ -10,7 +10,7 @@ import { rateLimit } from "@/server/infrastructure/rate-limit";
 import { safeError } from "@/server/errors";
 
 export type AuthResult = { error?: string; fields?: Record<string, string> };
-export async function authenticate(mode: "login" | "signup", input: { email: string; password: string; csrf: string }): Promise<AuthResult> {
+export async function authenticate(mode: "login" | "signup", input: { email: string; password: string; csrf: string }, destination: "/dashboard" | "/me" = "/dashboard"): Promise<AuthResult> {
   try {
     const requestHeaders = await headers();
     ensureMutation(requestHeaders);
@@ -21,12 +21,12 @@ export async function authenticate(mode: "login" | "signup", input: { email: str
     const host = mode === "signup" ? await signup(parsed.data.email, parsed.data.password) : await login(parsed.data.email, parsed.data.password);
     await setSession(host);
   } catch (error) { return { error: safeError(error).message }; }
-  redirect("/dashboard");
+  redirect(destination === "/me" ? "/me" : "/dashboard");
 }
 
 export async function logout(form: FormData) {
   ensureMutation(await headers());
   ensureCsrf(String(form.get("csrf") || ""), await sessionCookie());
   (await cookies()).delete("clubhost");
-  redirect("/login");
+  redirect(form.get("audience") === "member" ? "/me/login" : "/login");
 }

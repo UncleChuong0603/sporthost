@@ -37,16 +37,15 @@ function serve(socket: Socket, encrypted: boolean) {
   socket.on("data", consume); if (!encrypted) socket.write("220 localhost synthetic SMTP sink\r\n");
 }
 beforeAll(async () => {
-  const python = process.env.SPORTHOST_LEGACY_PYTHON || resolve("../.venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
-  execFileSync(python, ["-m", "scripts.create_nextjs_smtp_fixture"], { cwd: resolve(".."), windowsHide: true, stdio: "pipe" });
-  certificate = readFileSync("../.vercel/nextjs/smtp-test/localhost-cert.pem"); key = readFileSync("../.vercel/nextjs/smtp-test/localhost-key.pem");
+  execFileSync(process.execPath, ["scripts/create-smtp-fixture.mjs"], { windowsHide: true, stdio: "pipe" });
+  certificate = readFileSync(".local/smtp-test/localhost-cert.pem"); key = readFileSync(".local/smtp-test/localhost-key.pem");
   await new Promise<void>(done => sink.listen(0, "127.0.0.1", done));
   port = (sink.address() as { port: number }).port;
 });
 beforeEach(() => {
   installTestEnv(); deliveries = []; rejectRecipient = false; starts = 0;
   vi.stubEnv("SMTP_HOST", "127.0.0.1"); vi.stubEnv("SMTP_PORT", String(port)); vi.stubEnv("SMTP_USER", ""); vi.stubEnv("SMTP_PASSWORD", ""); vi.stubEnv("EMAIL_FROM", "SportHost <no-reply@example.test>");
-  vi.stubEnv("SMTP_TLS_CA_FILE", resolve("../.vercel/nextjs/smtp-test/localhost-cert.pem"));
+  vi.stubEnv("SMTP_TLS_CA_FILE", resolve(".local/smtp-test/localhost-cert.pem"));
 });
 afterAll(async () => { for (const socket of sockets) socket.destroy(); await new Promise<void>(done => sink.close(() => done())); });
 describe("SMTP delivery against an isolated local STARTTLS sink", () => {

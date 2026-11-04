@@ -1,5 +1,7 @@
 # SportHost v2 — Sprint 0
 
+> Historical migration evidence. The Python application and one-time audit tools were retired after the Next.js release on 2026-11-04. This inventory describes the audited source snapshot; it is not the current file tree. See [current progress](../PROGRESS.md), [cleanup notes](../CLEANUP.md) and [release runbook](../RELEASE_RUNBOOK.md) for active instructions. Retain the 89-route inventory as an independent compatibility contract.
+
 Ngày audit: **03/11/2026, Asia/Bangkok**. Phạm vi: working tree thực tế, gồm cả thay đổi Dokploy chưa commit trên HEAD `429f1624b56404befff824ff20a4147b04a8e36b`.
 
 **Sprint 0 hoàn tất về audit source và thiết kế. Chưa rewrite tính năng, chưa deploy v2.** Các giới hạn kiểm chứng live được ghi riêng; đây không phải chứng nhận feature parity hay production readiness.

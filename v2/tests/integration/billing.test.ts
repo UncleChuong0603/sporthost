@@ -10,24 +10,14 @@ import { attendanceCommand, lifecycle } from "@/server/modules/attendance/servic
 import { issueCharges, hostRecordMoney, closeSession, adjustCharge, guestPayer, saveExpense, draftAdjustment } from "@/server/modules/finance/service";
 import { financeView } from "@/server/modules/finance/queries";
 import { localNow } from "@/domain/session-policy";
-import { spawn } from "node:child_process";
-import { resolve } from "node:path";
-import { fingerprint } from "@/domain/billing";
+import { fingerprint, encode, type BillingSnapshot } from "@/domain/billing";
+import legacyBilling from "../fixtures/legacy-billing.json";
+import { guestBooking } from "@/server/modules/bookings/queries";
 import { getDb } from "@/server/db/client";
 import { draft } from "@/server/modules/finance/queries";
 import { gameActor } from "@/server/modules/scheduling/service";
 import * as database from "@/server/db/client";
 
-async function legacyOracle(gameId: number, bookingId: number, accessKey: string) {
-  const executable = process.env.SPORTHOST_LEGACY_PYTHON || resolve("../.venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
-  return await new Promise<Record<string, unknown>>((done, reject) => {
-    const child = spawn(executable, ["-m", "scripts.check_nextjs_finance_compatibility"], { cwd: resolve(".."), windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
-    let output = ""; child.stdout.setEncoding("utf8"); child.stdout.on("data", data => { output += data; });
-    child.on("error", () => reject(new Error("Legacy oracle executable unavailable")));
-    child.on("close", code => { if (code) reject(new Error("Read-only legacy oracle failed")); else try { done(JSON.parse(output)); } catch { reject(new Error("Invalid oracle output")); } });
-    child.stdin.end(JSON.stringify({ url: process.env.DATABASE_URL, secret: process.env.SECRET_KEY, game_id: gameId, booking_id: bookingId, key: accessKey }));
-  });
-}
 
 const run = randomBytes(5).toString("hex"); const key = () => randomBytes(16).toString("hex");
 let host: number, outsider: number, checker: number, club: number, phoneCounter = 0;
@@ -74,18 +64,39 @@ const issue = async (gameId: number) => issueCharges(host, gameId, (await financ
 const receipt = (gameId: number, bookingId: number, amount: number, extra: Record<string, unknown> = {}) => hostRecordMoney(host, gameId, bookingId, { amount, kind: "RECEIVED", source: "BANK_TRANSFER", requestKey: key(), ...extra });
 
 describe("immutable billing and append-only integer-VND money", () => {
-  it("matches actual Python billing bytes, fingerprints, balances and guest tokens on v2-written records", async () => {
+  it("preserves captured Python billing bytes, balances and receipt row compatibility without a Python process", async () => {
     const { gameId, bookingId, guestKey } = await setup(3, { fee_mode: "COST_SHARING" });
     await saveExpense(host, gameId, null, { title: "Tiền sân có dấu", amount: 100001, category: "COURT" });
-    const preview = await financeView(host, gameId); const before = await legacyOracle(gameId, bookingId, guestKey);
-    expect(before.calculation).toEqual(preview.calculation); expect(before.fingerprint).toBe(preview.draftHash); expect(before.token_valid).toBe(true);
+    const preview = await financeView(host, gameId);
+    const normalize = (snapshot: BillingSnapshot) => ({
+      ...snapshot,
+      people: snapshot.people.map((person, index) => ({ ...person, participant_id: index + 1, booking_id: 1, arrived_at: person.arrived_at ? "<recorded>" : null, left_at: person.left_at ? "<recorded>" : null })),
+      expenses: snapshot.expenses.map((expense, index) => ({ ...expense, id: index + 1, created_by: expense.created_by === null ? null : 1, created_at: expense.created_at ? "<recorded>" : null })),
+      advances: snapshot.advances.map(advance => ({ ...advance, booking_id: 1 })),
+    });
+    expect(normalize(preview.calculation)).toEqual(normalize(legacyBilling.calculation as BillingSnapshot));
+    expect(encode(legacyBilling.calculation)).toBe(legacyBilling.canonical_json);
+    expect(fingerprint(legacyBilling.calculation)).toBe(legacyBilling.fingerprint);
     await issue(gameId); await receipt(gameId, bookingId, 60000);
-    const native = await financeView(host, gameId); const after = await legacyOracle(gameId, bookingId, guestKey);
-    expect(after.totals).toEqual(native.totals);
-    expect(after.booking_fee).toBe(100001);
-    expect(after.payers).toEqual(native.payers.map(({ booking_id, payer_participant_id, name, amount, received, refunded, net, outstanding, credit, status }) => ({ booking_id, payer_participant_id, name, amount, received, refunded, net, outstanding, credit, status })));
+    const native = await financeView(host, gameId);
+    expect(native.totals).toEqual(legacyBilling.after_receipt.totals);
+    expect((await guestBooking(guestKey)).feeAmount).toBe(legacyBilling.after_receipt.booking_fee);
+    expect(native.payers.map(({ payer_participant_id, name, amount, received, refunded, net, outstanding, credit, status }) => ({ booking_id: 1, payer_participant_id, name, amount, received, refunded, net, outstanding, credit, status })))
+      .toEqual(legacyBilling.after_receipt.payers.map(row => ({ ...row, booking_id: 1 })));
     const currentDraft = await draft(getDb(), (await gameActor(getDb(), host, gameId, "manage_finance")).game);
-    expect(after.fingerprint).toBe(fingerprint(currentDraft));
+    expect(normalize(currentDraft)).toEqual(normalize(legacyBilling.calculation as BillingSnapshot));
+    // Insert the exact captured legacy receipt shape into this guarded disposable DB.
+    // Repeated delivery keeps the original database uniqueness/idempotency contract.
+    const old = legacyBilling.after_legacy_receipt.legacy_receipt;
+    const requestKey = key();
+    const insert = `INSERT INTO clubhost.money_movements(session_id,booking_id,payer_participant_id,amount,kind,source,reference,reason,confirmed_by,occurred_at,created_at,request_key,proof_id,reverses_id)
+      VALUES($1,$2,NULL,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(session_id,request_key) DO NOTHING`;
+    const values = [gameId,bookingId,old.amount,old.kind,old.source,old.reference,old.reason,host,old.occurred_at,old.created_at,requestKey,old.proof_id,old.reverses_id];
+    await getPool().query(insert,values); await getPool().query(insert,values);
+    const resumed = await financeView(host,gameId);
+    expect(resumed.totals).toEqual(legacyBilling.after_legacy_receipt.totals);
+    expect(resumed.totals).toMatchObject({ net: 70001, outstanding: 30000 });
+    expect(resumed.payers[0].movements).toHaveLength(2);
   });
   it("allocates exact remainder, rejects stale draft and issues once under a race", async () => {
     const { gameId } = await setup(3, { fee_mode: "COST_SHARING" });

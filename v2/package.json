@@ -3,11 +3,6 @@
   "version": "2.0.0-dev.1",
   "private": true,
   "type": "module",
-  "overrides": {
-    "@esbuild-kit/core-utils": {
-      "esbuild": "0.28.2"
-    }
-  },
   "engines": {
     "node": ">=22.12.0"
   },
@@ -21,12 +16,11 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "db:pull": "drizzle-kit pull"
+    "db:test:prepare": "node scripts/prepare-test-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "7.0.1",
     "@radix-ui/react-slot": "1.5.0",
-    "@tanstack/react-query": "5.105.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "drizzle-orm": "0.45.4",
@@ -51,9 +45,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "dotenv": "18.0.9",
-    "drizzle-kit": "0.31.11",
     "tailwindcss": "4.3.4",
-    "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   }

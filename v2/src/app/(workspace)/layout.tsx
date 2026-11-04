@@ -27,7 +27,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
       </nav>
       <div className="hidden lg:mt-auto lg:block"><p className="mb-3 truncate text-xs text-slate-300">{host.email}</p><form action={logout}><input type="hidden" name="csrf" value={csrf} /><button className="flex min-h-11 items-center gap-3 text-sm text-slate-100 hover:text-white"><LogOut className="size-4" aria-hidden="true" />Đăng xuất</button></form></div>
     </aside>
-    <header className="flex h-18 items-center justify-between border-b bg-white px-5 sm:px-8"><p className="text-sm font-semibold text-muted-foreground">Không gian quản lý CLB</p><form action={logout} className="lg:hidden"><input type="hidden" name="csrf" value={csrf} /><Button variant="ghost" size="icon" aria-label="Đăng xuất"><LogOut /></Button></form><span className="hidden max-w-60 truncate text-sm text-muted-foreground lg:inline">{host.email}</span></header>
+    <header className="flex h-18 items-center justify-between border-b bg-white px-5 sm:px-8"><p className="text-sm font-semibold text-muted-foreground">Không gian quản lý CLB</p><form action={logout} className="lg:hidden"><input type="hidden" name="csrf" value={csrf} /><Button variant="ghost" size="icon" aria-label="Đăng xuất"><LogOut /></Button></form><Link href="/me" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">Chế độ người chơi</Link></header>
     <main id="main" className="mx-auto max-w-7xl px-5 py-8 sm:px-8">{children}</main>
   </div>;
 }

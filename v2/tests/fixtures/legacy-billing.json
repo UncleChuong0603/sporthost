@@ -1,0 +1,157 @@
+{
+  "provenance": {
+    "description": "Synthetic results captured from the original Python finance service before source retirement. Only test IDs and synthetic player names; no production data.",
+    "legacy_finance_service_sha256": "03bec2a044c41a61765238ecb827f47f3dc59be1aa495581ea5c6ed4ca29a7da",
+    "legacy_booking_service_sha256": "0c8b7004ac3475e0f5fa99b8f92ea06516a85d585a7eba92e56c22e8fbd6e4f3"
+  },
+  "calculation": {
+    "fee_mode": "COST_SHARING",
+    "no_show_policy": "FREE",
+    "monthly_policy": "SESSION_FEE",
+    "people": [
+      {
+        "participant_id": 1280,
+        "booking_id": 801,
+        "name": "Người trả",
+        "payer_name": "Người trả",
+        "payer_participant_id": null,
+        "attendance": "CHECKED_IN",
+        "arrived_at": "2026-11-04T14:49:25.405Z",
+        "left_at": null,
+        "unit_price": 70000,
+        "discount": 0,
+        "adjustment_reason": "",
+        "exempt": false,
+        "explanation": "Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí",
+        "amount": 33334,
+        "base": 33334
+      },
+      {
+        "participant_id": 1281,
+        "booking_id": 801,
+        "name": "Bạn 0",
+        "payer_name": "Người trả",
+        "payer_participant_id": null,
+        "attendance": "CHECKED_IN",
+        "arrived_at": "2026-11-04T14:49:25.415Z",
+        "left_at": null,
+        "unit_price": 70000,
+        "discount": 0,
+        "adjustment_reason": "",
+        "exempt": false,
+        "explanation": "Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí",
+        "amount": 33334,
+        "base": 33334
+      },
+      {
+        "participant_id": 1282,
+        "booking_id": 801,
+        "name": "Bạn 1",
+        "payer_name": "Người trả",
+        "payer_participant_id": null,
+        "attendance": "CHECKED_IN",
+        "arrived_at": "2026-11-04T14:49:25.425Z",
+        "left_at": null,
+        "unit_price": 70000,
+        "discount": 0,
+        "adjustment_reason": "",
+        "exempt": false,
+        "explanation": "Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí",
+        "amount": 33333,
+        "base": 33333
+      }
+    ],
+    "expenses": [
+      {
+        "id": 103,
+        "title": "Tiền sân có dấu",
+        "amount": 100001,
+        "category": "COURT",
+        "allocated": true,
+        "note": "",
+        "created_by": 542,
+        "created_at": "2026-11-04T14:49:25.443Z"
+      }
+    ],
+    "total_expenses": 100001,
+    "allocated_expenses": 100001,
+    "excluded_expenses": 0,
+    "total_due": 100001,
+    "billable_count": 3,
+    "unmarked": 0,
+    "payment": {
+      "qr_key": null,
+      "bank_name": "",
+      "account_holder": "",
+      "account_number": "",
+      "payment_note": ""
+    },
+    "rounding": "EXACT_VND_STABLE_ID",
+    "unallocated_cost": 0,
+    "advances": [],
+    "total_advanced": 0
+  },
+  "canonical_json": "{\"advances\":[],\"allocated_expenses\":100001,\"billable_count\":3,\"excluded_expenses\":0,\"expenses\":[{\"allocated\":true,\"amount\":100001,\"category\":\"COURT\",\"created_at\":\"2026-11-04T14:49:25.443Z\",\"created_by\":542,\"id\":103,\"note\":\"\",\"title\":\"Tiền sân có dấu\"}],\"fee_mode\":\"COST_SHARING\",\"monthly_policy\":\"SESSION_FEE\",\"no_show_policy\":\"FREE\",\"payment\":{\"account_holder\":\"\",\"account_number\":\"\",\"bank_name\":\"\",\"payment_note\":\"\",\"qr_key\":null},\"people\":[{\"adjustment_reason\":\"\",\"amount\":33334,\"arrived_at\":\"2026-11-04T14:49:25.405Z\",\"attendance\":\"CHECKED_IN\",\"base\":33334,\"booking_id\":801,\"discount\":0,\"exempt\":false,\"explanation\":\"Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí\",\"left_at\":null,\"name\":\"Người trả\",\"participant_id\":1280,\"payer_name\":\"Người trả\",\"payer_participant_id\":null,\"unit_price\":70000},{\"adjustment_reason\":\"\",\"amount\":33334,\"arrived_at\":\"2026-11-04T14:49:25.415Z\",\"attendance\":\"CHECKED_IN\",\"base\":33334,\"booking_id\":801,\"discount\":0,\"exempt\":false,\"explanation\":\"Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí\",\"left_at\":null,\"name\":\"Bạn 0\",\"participant_id\":1281,\"payer_name\":\"Người trả\",\"payer_participant_id\":null,\"unit_price\":70000},{\"adjustment_reason\":\"\",\"amount\":33333,\"arrived_at\":\"2026-11-04T14:49:25.425Z\",\"attendance\":\"CHECKED_IN\",\"base\":33333,\"booking_id\":801,\"discount\":0,\"exempt\":false,\"explanation\":\"Chia đều tới 1đ; thứ tự ID nhận phần dư; đến muộn/về sớm không tự giảm phí\",\"left_at\":null,\"name\":\"Bạn 1\",\"participant_id\":1282,\"payer_name\":\"Người trả\",\"payer_participant_id\":null,\"unit_price\":70000}],\"rounding\":\"EXACT_VND_STABLE_ID\",\"total_advanced\":0,\"total_due\":100001,\"total_expenses\":100001,\"unallocated_cost\":0,\"unmarked\":0}",
+  "fingerprint": "cbe704af7f85abd123ef07e7cfa5e42af130f38937b0bdedf709b2bbcd143b99",
+  "token_valid": true,
+  "after_receipt": {
+    "totals": {
+      "amount": 100001,
+      "received": 60000,
+      "refunded": 0,
+      "net": 60000,
+      "outstanding": 40001,
+      "credit": 0
+    },
+    "payers": [
+      {
+        "booking_id": 801,
+        "payer_participant_id": null,
+        "name": "Người trả",
+        "amount": 100001,
+        "received": 60000,
+        "refunded": 0,
+        "net": 60000,
+        "outstanding": 40001,
+        "credit": 0,
+        "status": "Đã thu một phần"
+      }
+    ],
+    "booking_fee": 100001
+  },
+  "after_legacy_receipt": {
+    "totals": {
+      "amount": 100001,
+      "received": 70001,
+      "refunded": 0,
+      "net": 70001,
+      "outstanding": 30000,
+      "credit": 0
+    },
+    "payers": [
+      {
+        "booking_id": 801,
+        "payer_participant_id": null,
+        "name": "Người trả",
+        "amount": 100001,
+        "received": 70001,
+        "refunded": 0,
+        "net": 70001,
+        "outstanding": 30000,
+        "credit": 0,
+        "status": "Đã thu một phần"
+      }
+    ],
+    "legacy_receipt": {
+      "amount": 10001,
+      "kind": "RECEIVED",
+      "source": "CASH",
+      "reference": "",
+      "reason": "",
+      "occurred_at": "2026-11-04T14:49:30.774380+00:00",
+      "created_at": "2026-11-04T14:49:30.774380+00:00",
+      "proof_id": null,
+      "reverses_id": null
+    }
+  }
+}
