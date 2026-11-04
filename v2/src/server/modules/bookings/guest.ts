@@ -128,12 +128,13 @@ export async function guestDecision(key: PlayerBookingAccess, action: "cancel" |
     const db = drizzle(client); const { booking, game, member, club } = await guestContext(db, key, true);
     if (action !== "cancel" && member.kind !== "fixed") throw new AppError(403, "Chỉ thành viên cố định có thể RSVP.");
     if (game.isCancelled) throw new AppError(400, "Buổi chơi đã hủy.");
+    if (booking.status === "rejected") throw new AppError(409, "Đăng ký đã bị host từ chối. Vui lòng liên hệ host.");
     if ((action === "cancel" && booking.status === "cancelled") || (action === "yes" && booking.status === "confirmed")) return;
     let status: string;
     if (action === "yes") {
       if (!registrationOpen(game) || (game.rsvpDeadline && localNow() > game.rsvpDeadline)) throw new AppError(400, "Đã qua hạn RSVP hoặc đóng đăng ký. Vui lòng liên hệ host.");
       const party = await participants(db, booking.id);
-      if (booking.status === "rejected" || game.attendanceLocked || party.some(p => p.attendanceStatus !== "NOT_MARKED")) throw new AppError(409, "Đăng ký đã được host xử lý. Vui lòng liên hệ host.");
+      if (game.attendanceLocked || party.some(p => p.attendanceStatus !== "NOT_MARKED")) throw new AppError(409, "Đăng ký đã được host xử lý. Vui lòng liên hệ host.");
       status = await canFit(db, game, party.length ? party.map(p => p.gender) : [booking.genderAtBooking]) ? "confirmed" : "waitlist";
     } else { await allowGuestChange(db, booking, game, false); status = "cancelled"; }
     await db.update(bookings).set({ status }).where(eq(bookings.id, booking.id));

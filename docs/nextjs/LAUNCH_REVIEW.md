@@ -1,4 +1,4 @@
-# Pre-launch host/member review — 2026-11-04
+# Pre-launch host/member review — 2026-11-05
 
 This review covers the current Next.js application in `v2/`. It is a source and local acceptance review, not a production deployment or evidence of a real bank/payment-provider transaction.
 
@@ -7,7 +7,7 @@ This review covers the current Next.js application in `v2/`. It is a source and 
 - `/` now explains the product and provides distinct host and player entry points. Guest links remain usable without an account.
 - Owners get a three-step club setup guide: receiving-bank/QR details, member profiles and the first session. Receiving details should be set before inviting players because existing obligations retain their original payment snapshot.
 - Verified, owner-linked players can discover open sessions in their clubs at `/me/schedule` and register directly without waiting for a host invitation or entering contact details again. Host approval, gender prices, capacity, waitlists, recurrence priority and RSVP deadlines remain enforced. Repeated submissions open the original booking. Registration never creates an identity link or host permission.
-- Fixed members can respond again after declining while RSVP is open. Finished sessions and rejected registrations do not display an available RSVP. Direct requests cannot override host rejection or recorded attendance.
+- Fixed members can respond again after declining while RSVP is open. Finished sessions and rejected registrations do not display an available RSVP. Direct requests cannot override host rejection or recorded attendance. Rejected bookings cannot be changed to cancelled through player actions to bypass that rejection.
 - Password recovery preserves the member audience through the form, email link, reset and login result. Expired one-use links retain their HTTP error status and provide the appropriate recovery link. Anonymous member-resource errors point to member login.
 - Player payment details show the pre-issue amount/status or explicitly wait for cost sharing. Issued proof submissions select only payers with outstanding debt; zero/fully paid obligations cannot receive another proof. Issued debt remains payable after cancellation. Separate partial transfers remain supported, and uploading a proof never records received money.
 

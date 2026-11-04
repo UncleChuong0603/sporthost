@@ -224,6 +224,9 @@ describe("verified member portal boundaries and existing business rules", () => 
     await getPool().query("UPDATE clubhost.bookings SET status='rejected' WHERE id=$1",[access.bookingId]);
     expect((await guestBooking(access)).canRsvp).toBe(false);
     await expect(guestDecision(access,"yes")).rejects.toMatchObject({status:409});
+    // A rejected player cannot clear the rejection through cancel/no, then RSVP again.
+    for (const action of ["cancel", "no"] as const) await expect(guestDecision(access,action)).rejects.toMatchObject({status:409});
+    expect(await guestBooking(access)).toMatchObject({status:"rejected",cancellable:false});
   });
   it("hides paid payer changes and refuses proof uploads for free session/monthly obligations", async () => {
     const id = await game("Prepaid payer");

@@ -55,11 +55,11 @@ test("member onboarding, owner linkage, RSVP, dues, private uploads and revocati
     for (const path of [`/me/bookings/${foreignBookingId}`,`/me/bookings/${foreignBookingId}/qr`,`${clubPath}`,`/finance/export.csv?club_id=${clubId}`]) expect((await member.request.get(path)).status()).toBe(404);
     const flight = await member.request.get("/me/schedule?_rsc=portal",{headers:{RSC:"1"}}); expect(flight.status()).toBe(200); expect(await flight.text()).not.toContain(otherName);
 
-    await member.goto(`/me/bookings/${bookingId}`); await member.getByRole("button",{name:"Tôi tham gia",exact:true}).click(); await expect(member.getByRole("status")).toContainText("Đã cập nhật");
+    await member.goto(`/me/bookings/${bookingId}`); await member.getByRole("button",{name:"Tôi tham gia",exact:true}).click(); await expect(member.getByText("Đã xác nhận",{exact:true})).toBeVisible();
     expect((await pool.query("SELECT status FROM clubhost.bookings WHERE id=$1",[bookingId])).rows[0].status).toBe("confirmed");
     await member.goto("/me/payments"); await expect(member.getByRole("heading",{name:"Thanh toán của tôi",exact:true})).toBeVisible(); await expect(member.getByText("Phí tháng 2026-11",{exact:true})).toBeVisible();
     await member.goto(`/me/dues/${qrDue}`); expect((await member.request.get(`/me/dues/${qrDue}/qr`)).status()).toBe(200);
-    await member.getByLabel("Ảnh biên nhận",{exact:true}).setInputFiles({name:"proof.png",mimeType:"image/png",buffer:qrBuffer}); await member.getByRole("button",{name:"Gửi biên nhận",exact:true}).click(); await expect(member.getByRole("status")).toContainText("Đã lưu");
+    await member.getByLabel("Ảnh biên nhận",{exact:true}).setInputFiles({name:"proof.png",mimeType:"image/png",buffer:qrBuffer}); await member.getByRole("button",{name:"Gửi biên nhận",exact:true}).click(); await expect(member.getByText("Biên nhận chờ host đối soát",{exact:true})).toBeVisible();
     expect((await pool.query("SELECT paid,payment_status FROM clubhost.monthly_dues WHERE id=$1",[qrDue])).rows[0]).toEqual({paid:false,payment_status:"reported"});
     const badCsrf = await member.request.post(`/me/dues/${dueId}/proof`,{multipart:{csrf:"bad",proof:{name:"proof.png",mimeType:"image/png",buffer:qrBuffer}},headers:{Origin:origin}}); expect(badCsrf.status()).toBe(403);
     const ownCsrf = await csrf(member,`/me/bookings/${bookingId}`);

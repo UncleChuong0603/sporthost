@@ -17,6 +17,8 @@ The subsequent documentation/local cleanup removes 32 obsolete Markdown reports 
 
 Two obsolete distribution ZIPs were moved from `dist/` into the private retirement archive directory. Their bytes remain available; neither is part of the application build or the current release artifact.
 
+On 2026-11-05 the owner confirmed that payOS is being developed separately and requested repository cleanup only. Cleanup is complete; no production deployment is included. The final pass archived and removed 11 unreferenced screenshots belonging to the retired UX audit and the obsolete offline 0011 migration-review SQL. The applied baseline remains represented by the schema fixtures and compatibility references; neither current migration file was changed. Current payOS source, package files, migrations, payment/launch documentation and both active env files were preserved. Regenerated SMTP test certificates are disposable local test output and are not grounds to remove active configuration or repeatedly clean another session's test files.
+
 ## Preserved compatibility and tests
 
 Compatibility code in `src/server/compatibility/`, existing fixed-price behavior and legacy form routes are active product functionality, not dead code. The same applies to schema exports enumerated by readiness checks even when SQL operations use table names directly.

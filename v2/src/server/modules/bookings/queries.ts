@@ -48,7 +48,7 @@ export async function guestBooking(key: PlayerBookingAccess) {
   const db = getDb(); const { game, booking, member, club } = await guestContext(db, key);
   let editable = false, cancellable = false;
   try { await allowGuestChange(db, booking, game); editable = member.kind === "guest" && !["cancelled", "rejected", "invited"].includes(booking.status); } catch (error) { if (!(error instanceof AppError)) throw error; }
-  try { await allowGuestChange(db, booking, game, false); cancellable = booking.status !== "cancelled"; } catch (error) { if (!(error instanceof AppError)) throw error; }
+  try { await allowGuestChange(db, booking, game, false); cancellable = !["cancelled", "rejected"].includes(booking.status); } catch (error) { if (!(error instanceof AppError)) throw error; }
   const party = await participants(db, booking.id);
   const issued = !!await batchFor(db, game.id);
   const canRsvp = member.kind === "fixed" && !issued && !game.attendanceLocked && !["confirmed", "rejected"].includes(booking.status) && party.every(p => p.attendanceStatus === "NOT_MARKED") && registrationOpen(game) && (!game.rsvpDeadline || localNow() <= game.rsvpDeadline);
