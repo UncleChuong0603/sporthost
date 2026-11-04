@@ -1,6 +1,6 @@
 # Acceptance and parity tests
 
-This is a required executable test backlog, not a claim these v2 tests already exist. Every route in [ROUTE_PARITY.csv](ROUTE_PARITY.csv) starts `pending`. Each migrated route must link a concrete passing test/result. Reference assertions come from the generated [test inventory](INVENTORY.md), including every parametrized case, not only the examples below.
+This records the original migration acceptance backlog. Every route in [ROUTE_PARITY.csv](ROUTE_PARITY.csv) originally started `pending`; completed local/preview evidence is now recorded in the parent directory. Each migrated route must link a concrete passing test/result. Original reference assertions came from the complete generated test inventory, including every parametrized case; that completed inventory was privately archived during cleanup. See [current release evidence](../PROGRESS.md) for implementation status.
 
 | ID | Scope and required assertions | Test layer / legacy reference |
 | --- | --- | --- |

@@ -26,13 +26,13 @@ export async function accountAction(mode: "password" | "forgot" | "reset" | "ver
     }
     if (mode === "forgot") {
       await rateLimit(clientIdentity(h), "password-reset", 5, 3600);
-      await requestReset(String(form.get("email") || "")); return { success: "Nếu tài khoản phù hợp, liên kết khôi phục sẽ được gửi qua email." };
+      await requestReset(String(form.get("email") || ""), form.get("audience") === "member" ? "member" : "host"); return { success: "Nếu tài khoản phù hợp, liên kết khôi phục sẽ được gửi qua email." };
     }
     if (mode === "reset") {
       const password = String(form.get("password") || "");
       if (!validNewPassword(password) || password !== form.get("confirm_password")) throw new AppError(400, "Mật khẩu mới cần 10–256 ký tự và khớp phần xác nhận.");
       await consumeEmailToken(String(form.get("token") || ""), "reset", password);
-      (await cookies()).delete("clubhost"); destination = "/login?message=reset";
+      (await cookies()).delete("clubhost"); destination = form.get("audience") === "member" ? "/me/login?message=reset" : "/login?message=reset";
     } else if (mode === "verify") {
       await consumeEmailToken(String(form.get("token") || ""), "verify"); destination = form.get("audience") === "member" ? "/me/profile" : "/login?message=verified";
     } else throw new AppError(400, "Thao tác không hợp lệ.");

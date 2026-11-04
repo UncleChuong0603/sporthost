@@ -50,12 +50,12 @@ export async function consumeEmailToken(raw: string, purpose: Purpose, newPasswo
     return { id: host.id };
   });
 }
-export async function requestReset(email: string) {
+export async function requestReset(email: string, audience: "host" | "member" = "host") {
   if (!mailReady()) throw new AppError(503, "Email khôi phục đang được cấu hình. Vui lòng liên hệ quản trị.", "mail_unavailable");
   const [host] = await getDb().select({ id: hosts.id, email: hosts.email }).from(hosts).where(eq(hosts.email, email.trim().toLowerCase()));
   if (!host) return;
   const raw = await issueEmailToken(host.id, "reset");
-  await sendAccountMail(host.email, "Đặt lại mật khẩu SportHost", `Liên kết hết hạn sau 30 phút:\n${getConfig().origin}/reset-password?token=${raw}`);
+  await sendAccountMail(host.email, "Đặt lại mật khẩu SportHost", `Liên kết hết hạn sau 30 phút:\n${getConfig().origin}/reset-password?token=${raw}${audience === "member" ? "&audience=member" : ""}`);
 }
 export async function sendVerification(hostId: number, audience: "host" | "member" = "host") {
   if (!mailReady()) throw new AppError(503, "Email xác minh đang được cấu hình. Vui lòng liên hệ quản trị.", "mail_unavailable");

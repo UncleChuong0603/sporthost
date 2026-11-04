@@ -45,4 +45,4 @@ The six operator commands under `scripts/` handle database/media backups, local 
 - [Deployment and rollback](docs/nextjs/RELEASE_RUNBOOK.md)
 - [Cleanup scope and retained compatibility](docs/nextjs/CLEANUP.md)
 
-Earlier sprint reports and `docs/deployment/` are historical v1 evidence. Follow `docs/nextjs/` for current operations. Retired working-tree source was snapshotted privately before removal; immutable release images, backups, data, uploads and secrets were preserved.
+Follow `docs/nextjs/` for current operations. Obsolete v1 reports and completed migration plans were removed after private archival. The independent route contract and useful architecture, compatibility and acceptance references remain in `docs/nextjs/sprint-0/`. Immutable release images, backups, data, uploads and active private configuration were preserved.

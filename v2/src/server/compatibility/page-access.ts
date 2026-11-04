@@ -26,8 +26,8 @@ export async function pageAccess(url: URL, cookie: string) {
   if (/^\/admin(?:\/|$)/.test(path) && !host.isPlatformAdmin) throw new AppError(403, "Chỉ quản trị nền tảng được truy cập trang này.");
   const db = getDb();
   let club: number | null = null, capability: Capability = "view";
-  const clubMatch = /^\/clubs\/(\d+)(?:\/(settings|access|qr))?$/.exec(path);
-  if (clubMatch) { club = Number(clubMatch[1]); capability = clubMatch[2] === "qr" ? "manage_finance" : "view"; }
+  const clubMatch = /^\/clubs\/(\d+)(?:\/(settings|access|qr|subscription))?$/.exec(path);
+  if (clubMatch) { club = Number(clubMatch[1]); capability = clubMatch[2] === "qr" ? "manage_finance" : clubMatch[2] === "subscription" ? "owner" : "view"; }
   const gameMatch = /^\/games\/(\d+)(?:\/(billing|export\.csv))?$/.exec(path);
   if (gameMatch) {
     const [game] = await db.select({ club: sessions.clubId }).from(sessions).where(eq(sessions.id, Number(gameMatch[1])));

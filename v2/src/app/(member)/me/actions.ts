@@ -1,6 +1,8 @@
 "use server";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { registerPlayer } from "@/server/modules/member-portal/registration";
 import { requireHost } from "@/server/auth/service";
 import { ensureCsrf, sessionCookie } from "@/server/auth/session";
 import { ensureMutation, clientIdentity } from "@/server/http";
@@ -37,4 +39,16 @@ export async function memberVerification(_state: FormState, form: FormData): Pro
     await sendVerification(account.id, "member");
     return { success: "Đã gửi liên kết xác minh. Vui lòng kiểm tra email." };
   } catch (error) { return { error: safeError(error).message }; }
+}
+
+export async function memberRegister(gameId: number, memberId: number, _state: FormState, form: FormData): Promise<FormState> {
+  let bookingId: number;
+  try {
+    const h = await headers(); ensureMutation(h); ensureCsrf(String(form.get("csrf") || ""), await sessionCookie());
+    const account = await requireHost();
+    await rateLimit(clientIdentity(h), "member-booking:" + account.id, 120, 60);
+    bookingId = await registerPlayer(account.id, gameId, memberId);
+    revalidatePath("/me", "layout");
+  } catch (error) { return { error: safeError(error).message }; }
+  redirect(`/me/bookings/${bookingId}`);
 }

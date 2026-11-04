@@ -2,7 +2,7 @@
 
 SportHost v2 is live at <https://sporthost.online> on 2026-11-04. The existing Dokploy production Application now runs one full-stack Next.js application with normal writes enabled, the original PostgreSQL `clubhost` schema and signing key, private VPS uploads and SMTP. Its runtime contains Node, not Python/FastAPI. No destructive database migration or agent DNS edit was performed.
 
-Sprint 0 was completed before feature rewriting; its historical audit and acceptance backlog remain in `sprint-0/`. Current implementation is in `v2/`. The route backlog is historical; completed HTTP evidence is recorded separately below.
+Sprint 0 was completed before feature rewriting; its independent route contract and architecture, compatibility and acceptance references remain in `sprint-0/`. Completed inventory/audit/migration reports were privately archived and removed during cleanup. Current implementation is in `v2/`; completed HTTP evidence is recorded separately below.
 
 ## Current release: member portal, 2026-11-04
 
@@ -11,6 +11,16 @@ The member area is live at <https://sporthost.online/me>, with signup/login, ver
 188 Vitest cases, typecheck/build and all 24 desktop/mobile Playwright cases pass locally; all 24 browser cases also pass on the isolated preview without retries in the final runs. Updated HTTP evidence still covers all 89 original contracts, including two intentional email-disabled 503 cases. A fresh production backup was restored and the additive migration plus regression passed on the copy. The new table adds four link columns without changing any legacy table or Alembic revision. Readiness now checks 245 columns in total.
 
 Production deployment `UFyCxKLQvVbUZPMF9Rbha` completed on the same image as preview `i0SguO2Ch-iV8ZsBsjigN`: `sha256:f7289cbd43a1f583315eeb467f2973ade103e3b92245cbe60530296ff7b82681`. Source digest `a58ecd52cf87d23917a1df066d73386f01b3c9f2c55d5a502d8858378a8e67fd`; ZIP SHA256 `d755377355728acbed0673af6ab9ae218ebd5f4c47f89eb73991bfe58d88f1b8`. Current production has 23 tables. Post-release acceptance passed 36 HTTP/static/auth checks and 13 browser GET checks; all original 22 table hashes still match the fresh backup. SMTP, private media, normal writes and the original account remain intact. The previous Node image/source and private configuration are retained for rollback; leave the additive table in place during rollback.
+
+## Cleanup candidate and documentation retirement: 2026-11-04
+
+Code cleanup retired 133 files, including 78 Python files, and removed the unused TanStack Query, Drizzle Kit and tsx direct dependencies. The app and test suite run without Python; six optional backup/recovery/deployment operator commands remain outside the image. Independent captured auth/billing fixtures and the legacy route contract remain. See `CLEANUP.md` for the retained maintenance surface.
+
+The cleanup candidate passed 188 Vitest cases, strict typecheck, standalone build/artifact scan, fresh local Node database bootstrap, a fresh production-backup restore/regression and 24/24 desktop/mobile browser cases in each of local and isolated preview, with no failures, skips or retries. Both HTTP evidence CSVs cover 89 contracts. The fresh 23-table production backup has SHA256 `5849dc7d47fcf64e8952b42ee2472e4342ea29477928ebcbe1e10a933ecb8fa0`; restored original rows were preserved.
+
+Preview deployment `8BAyT-SgtbeDyBesr8nfi` completed with image `sha256:8e01b2d50ad1a6093913b4a9759c677ec7a4824bd0a42a83eeed6953df348698`. Source digest `b6cf4878666125a1051abaafd14a25032f905f30fca0e04bcb500bfc151b8b12`; ZIP SHA256 `ddcdc96bdeab4da84c05c0a0355a5e44e3ce56fe81b4a6af8a6faaae5294c595`. This candidate has **not** replaced production: concurrent payOS work changed application source after preview, so the exact-source deployment guard refused to proceed. Those local changes were preserved. Production remains on the member image above; current read-only HTTPS checks for `/health`, `/ready` and `/me/login` pass. No cleanup schema, DNS, production environment or mount change was made.
+
+The additional owner-requested documentation/local cleanup removed 32 obsolete Markdown reports/plans, the generated historical inventory JSON, a duplicate root `.env.local` and two generated localhost SMTP certificate files. All 36 files were archived privately first. `.env.dokploy.local` and `v2/.env.local` remain intact; test certificates regenerate automatically. Recovery archive integrity, removals and all surviving documentation links were verified. Active setup/release/member/agent/design and compatibility references remain. Private evidence and recovery material are under `.vercel/cleanup/`.
 
 The sections below retain the evidence and identities of the original full-stack cutover.
 

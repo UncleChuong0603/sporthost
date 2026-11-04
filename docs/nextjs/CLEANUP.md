@@ -6,12 +6,16 @@ On 2026-11-04, after the Next.js and member releases passed production acceptanc
 
 - The Python web application, Jinja templates, old static JavaScript/CSS, Python route/browser tests and Alembic implementation files.
 - The root Python Dockerfile/entry point, old Vercel runtime configuration and obsolete environment examples and dependency locks. Docker builds now explicitly use the single application in `v2/`.
-- One-time migration/audit/deployment probes and scripts that imported the retired Python application. Sprint 0 reports and the independent 89-route CSV remain historical evidence.
+- One-time migration/audit/deployment probes and scripts that imported the retired Python application. The independent 89-route CSV remains an active regression contract.
 - Unused TanStack Query, Drizzle Kit and tsx direct dependencies, the introspection configuration/generated draft, and the obsolete package override. Drizzle ORM remains the application's database layer.
 - Unused TypeScript imports/bindings. `noUnusedLocals` and `noUnusedParameters` now prevent their return.
 - The unused Blob-backup branch. Current backups require the verified Dokploy-volume manifest, paired with the same direct database endpoint.
 
 The reviewed removal list contains 133 files, including 78 Python files. Working-tree source was snapshotted before removal, including uncommitted edits; those private archives stay ignored under `.vercel/cleanup/`. Production records, upload volumes, credentials, database schema, DNS and immutable rollback releases were not deleted.
+
+The subsequent documentation/local cleanup removes 32 obsolete Markdown reports and plans, the unused generated audit inventory, the duplicate root `.env.local`, and two generated localhost SMTP certificate files. These 36 files were separately archived privately before removal. The root env held the same Dokploy and Resend keys as the retained active files, plus the old Vercel token; the private archive is retained for recovery. `.env.dokploy.local` and `v2/.env.local` remain active and were not altered. SMTP test certificates regenerate automatically. Current setup/release/member guides, agent instructions, design specifications, architecture/compatibility/acceptance references and the route contract remain.
+
+Two obsolete distribution ZIPs were moved from `dist/` into the private retirement archive directory. Their bytes remain available; neither is part of the application build or the current release artifact.
 
 ## Preserved compatibility and tests
 
@@ -42,4 +46,8 @@ For a restore drill, invoke `python -m scripts.verify_dokploy_backup` with `--ba
 
 ## Validation
 
-After retirement, all 188 Vitest cases and strict TypeScript checks pass. A restored production copy also passes the Node suite while preserving original business/auth/audit rows. Empty-schema Node bootstrap, standalone build, browser regression and deployment verification are recorded in `PROGRESS.md` when complete. Earlier reports describing a live Python oracle or Python fallback source in the working tree describe the pre-cleanup releases; rollback now uses retained immutable archives/images.
+After code retirement, all 188 Vitest cases, strict TypeScript checks, empty-schema Node bootstrap, standalone build and artifact scan passed. A freshly restored production copy also passed the Node suite while preserving original business/auth/audit rows. All 24 desktop/mobile browser cases passed both locally and on isolated preview, without failures, retries or skips; HTTP evidence covers all 89 independent contracts in both environments.
+
+The cleanup runtime candidate is accepted on preview, not yet deployed to production. Concurrent payOS development subsequently changed the working tree; those changes are retained and are outside the accepted cleanup artifact. The exact-source deployment guard correctly rejected the changed tree. Current production remains on the member release; HTTPS GET checks for `/health`, `/ready` and `/me/login` still pass. See `PROGRESS.md` for candidate identities. Documentation/local-file cleanup passed recovery-archive integrity, removal and surviving-link checks; it does not change the accepted application artifact.
+
+Earlier reports describing a live Python oracle or Python fallback source in the working tree describe the pre-cleanup releases; rollback now uses retained immutable archives/images.

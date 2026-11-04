@@ -55,7 +55,7 @@ describe("existing clubhost physical schema and reviewed Drizzle mapping", () =>
   });
   it("matches all 241 columns of the observed production baseline", async () => {
     const { rows } = await getPool().query(`SELECT table_name,column_name,data_type,is_nullable,column_default
-      FROM information_schema.columns WHERE table_schema='clubhost' AND table_name <> 'member_account_links' ORDER BY table_name,ordinal_position`);
+      FROM information_schema.columns WHERE table_schema='clubhost' AND table_name NOT IN ('member_account_links','payment_orders') ORDER BY table_name,ordinal_position`);
     expect(rows).toEqual(baseline.columns);
     let total = 0;
     for (const table of Object.values(schema).filter(value => value !== schema.clubhost)) {
@@ -75,10 +75,10 @@ describe("existing clubhost physical schema and reviewed Drizzle mapping", () =>
   it("retains existing foreign keys, check constraints, sequence and index definitions", async () => {
     const { rows } = await getPool().query(`SELECT c.relname AS table_name,k.conname AS name,k.contype AS type,pg_get_constraintdef(k.oid) AS definition
       FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname='clubhost' AND c.relname <> 'member_account_links' ORDER BY c.relname,k.conname`);
+      WHERE n.nspname='clubhost' AND c.relname NOT IN ('member_account_links','payment_orders') ORDER BY c.relname,k.conname`);
     const comparable = (values: typeof rows) => values.map(row => ({ ...row, definition: normalizePostgresDdl(row.definition) }));
     expect(comparable(rows)).toEqual(comparable(baseline.constraints));
-    const indexes = await getPool().query("SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='clubhost' AND tablename <> 'member_account_links' ORDER BY tablename,indexname");
+    const indexes = await getPool().query("SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='clubhost' AND tablename NOT IN ('member_account_links','payment_orders') ORDER BY tablename,indexname");
     expect(indexes.rows).toEqual(baseline.indexes);
   });
   it("rolls back failed writes and enforces real PostgreSQL read-only transactions", async () => {

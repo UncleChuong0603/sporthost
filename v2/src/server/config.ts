@@ -22,6 +22,9 @@ const configSchema = z.object({
   SMTP_TLS_CA_FILE: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAILS: z.string().default(""),
+  PAYOS_CLIENT_ID: z.string().optional(),
+  PAYOS_API_KEY: z.string().optional(),
+  PAYOS_CHECKSUM_KEY: z.string().optional(),
 });
 
 export function parseConfig(env: Record<string, string | undefined>) {

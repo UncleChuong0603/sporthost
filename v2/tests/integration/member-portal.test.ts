@@ -16,7 +16,9 @@ import { saveDue, duePage } from "@/server/modules/finance/club";
 import { attendanceCommand, lifecycle } from "@/server/modules/attendance/service";
 import { financeView } from "@/server/modules/finance/queries";
 import { issueCharges, hostRecordMoney, guestPayer, adjustCharge } from "@/server/modules/finance/service";
-import { reportBookingProof } from "@/server/modules/finance/proofs";
+import { reportBookingProof, reportDueProof, reviewProof } from "@/server/modules/finance/proofs";
+import { legacyBookingAction } from "@/server/compatibility/booking-actions";
+import { playerOpenSessions, registerPlayer } from "@/server/modules/member-portal/registration";
 import { linkMemberAccount, unlinkMemberAccount, playerProfiles, playerCalendar, playerPayments } from "@/server/modules/member-portal/service";
 import { deleteClub } from "@/server/modules/clubs/deletion";
 import { localNow } from "@/domain/session-policy";
@@ -147,16 +149,96 @@ describe("verified member portal boundaries and existing business rules", () => 
     expect(row.net).toBe(70000); expect(row.outstanding).toBe(70000); expect(row.credit).toBe(10000);
     const png = await sharp({create:{width:4,height:4,channels:3,background:"teal"}}).png().toBuffer();
     const moneyBefore = (await getPool().query("SELECT count(*) FROM clubhost.money_movements WHERE booking_id=$1",[bookingId])).rows;
-    await reportBookingProof(access,new File([new Uint8Array(png)],"receipt.png",{type:"image/png"}),{reportedAmount:70000,payerParticipantId:people[1].id});
+    const proof = await reportBookingProof(access,new File([new Uint8Array(png)],"receipt.png",{type:"image/png"}),{reportedAmount:70000,payerParticipantId:people[1].id});
     expect((await getPool().query("SELECT count(*) FROM clubhost.money_movements WHERE booking_id=$1",[bookingId])).rows).toEqual(moneyBefore);
     await expect(guestDecision(access,"cancel")).rejects.toMatchObject({ status:409 });
     const privateOther = { accountId:other,bookingId };
     await expect(reportBookingProof(privateOther,new File([new Uint8Array(png)],"other.png",{type:"image/png"}),{})).rejects.toMatchObject({ status:404 });
+    await expect(reportBookingProof(access,new File([new Uint8Array(png)],"settled.png",{type:"image/png"}),{reportedAmount:1,payerParticipantId:people[0].id})).rejects.toMatchObject({status:409});
+    await reviewProof(owner,proof.id,{action:"confirm",receivedAmount:30000});
+    expect((await guestFinance(access)).payers.find(p=>p.payerParticipantId===people[1].id)?.outstanding).toBe(40000);
+    // An issued obligation survives a later cancellation; the debtor can still pay it.
+    await getPool().query("UPDATE clubhost.game_sessions SET is_cancelled=true WHERE id=$1",[id]);
+    await getPool().query("UPDATE clubhost.bookings SET status='cancelled' WHERE id=$1",[bookingId]);
+    expect((await guestFinance(access)).canReport).toBe(true);
+    const blue = await sharp({create:{width:4,height:4,channels:3,background:"blue"}}).png().toBuffer();
+    const remainder = await reportBookingProof(access,new File([new Uint8Array(blue)],"remainder.png",{type:"image/png"}),{reportedAmount:40000,payerParticipantId:people[1].id});
+    await reviewProof(owner,remainder.id,{action:"confirm",receivedAmount:40000});
+    expect((await guestFinance(access)).canReport).toBe(false);
+    const paidRows = [...(await playerPayments(player)).rows,...(await playerPayments(player,2)).rows];
+    expect(paidRows.find(row=>row.type==="booking"&&row.id===bookingId)).toMatchObject({outstanding:0,credit:10000,net:140000});
   });
   it("revokes all portal reads when verification or a link is removed", async () => {
     await getPool().query("UPDATE clubhost.hosts SET email_verified=false WHERE id=$1",[player]);
     expect(await playerProfiles(player)).toEqual([]); expect((await playerPayments(player)).total).toBe(0);
     expect((await playerCalendar(player)).total).toBe(0);
     await getPool().query("UPDATE clubhost.hosts SET email_verified=true WHERE id=$1",[player]);
+  });
+  it("lists only open sessions in approved clubs and atomically registers the last seat without an invitation", async () => {
+    const id = await game("Direct last seat",1);
+    const listed = (await playerOpenSessions(player)).filter(row=>row.id===id);
+    expect(listed).toHaveLength(2); // This account has two approved member profiles in this club.
+    expect(JSON.stringify(listed)).not.toMatch(/token|password|phone|publicId/);
+    const [a,b] = await Promise.all([registerPlayer(player,id,fixed),registerPlayer(other,id,fixedOther)]);
+    const rows = (await getPool().query("SELECT id,status FROM clubhost.bookings WHERE session_id=$1",[id])).rows;
+    expect(rows.map(row=>row.status).sort()).toEqual(["confirmed","waitlist"]);
+    expect(await registerPlayer(player,id,fixed)).toBe(a);
+    expect((await getPool().query("SELECT count(*)::int AS count FROM clubhost.bookings WHERE session_id=$1",[id])).rows[0].count).toBe(2);
+    expect((await playerOpenSessions(player)).filter(row=>row.id===id&&row.memberId===fixed)).toEqual([]);
+    await expect(registerPlayer(player,id,fixedOther)).rejects.toMatchObject({status:404});
+    expect(a).not.toBe(b);
+  });
+  it("uses the linked guest profile, host approval and gender price; repeats never duplicate a booking", async () => {
+    const guest = await saveMember(owner,club,null,{name:"Approved guest",phone:"0901111555",kind:"guest",gender:"female"});
+    await linkMemberAccount(owner,club,guest.id,email("player"));
+    const result = await createSession(owner,club,{title:"Direct guest",starts_at:localNow(new Date(Date.now()+7*86400000)),capacity:4,guest_fee:90000,guest_fee_female:40000,approval_mode:"MANUAL_APPROVE"});
+    const id = result.gameId!;
+    expect((await playerOpenSessions(player)).find(row=>row.id===id&&row.memberId===guest.id)?.fee).toBe(40000);
+    const ids = await Promise.all([registerPlayer(player,id,guest.id),registerPlayer(player,id,guest.id)]);
+    expect(ids[0]).toBe(ids[1]);
+    expect(await guestBooking({accountId:player,bookingId:ids[0]})).toMatchObject({status:"pending",feeAmount:40000});
+    await unlinkMemberAccount(owner,club,guest.id);
+    await expect(registerPlayer(player,id,guest.id)).rejects.toMatchObject({status:404});
+  });
+  it("rejects closed sessions, expired RSVP, foreign clubs and unverified registrations", async () => {
+    const id = await game("Closed direct registration");
+    await getPool().query("UPDATE clubhost.game_sessions SET is_open=false WHERE id=$1",[id]);
+    expect((await playerOpenSessions(player)).filter(row=>row.id===id)).toEqual([]);
+    await expect(registerPlayer(player,id,fixed)).rejects.toMatchObject({status:409});
+    await getPool().query("UPDATE clubhost.game_sessions SET is_open=true,rsvp_deadline='2000-01-01T00:00' WHERE id=$1",[id]);
+    await expect(registerPlayer(player,id,fixed)).rejects.toMatchObject({status:409});
+    const foreign = (await createClub(owner,{name:prefix})).id; clubs.push(foreign);
+    const otherGame = await createSession(owner,foreign,{title:"Foreign club",starts_at:localNow(new Date(Date.now()+7*86400000)),capacity:4});
+    await expect(registerPlayer(player,otherGame.gameId!,fixed)).rejects.toMatchObject({status:404});
+    expect((await playerOpenSessions(player)).filter(row=>row.id===otherGame.gameId)).toEqual([]);
+    await getPool().query("UPDATE clubhost.hosts SET email_verified=false WHERE id=$1",[player]);
+    try { await expect(registerPlayer(player,id,fixed)).rejects.toMatchObject({status:404}); expect(await playerOpenSessions(player)).toEqual([]); }
+    finally { await getPool().query("UPDATE clubhost.hosts SET email_verified=true WHERE id=$1",[player]); }
+  });
+  it("allows a fixed member to rejoin before RSVP closes and hides responses after host rejection", async () => {
+    const id = await game("RSVP again"); await inviteFixed(owner,id);
+    const access = {accountId:player,bookingId:await bookingFor(id,fixed)};
+    expect((await guestBooking(access)).canRsvp).toBe(true);
+    await guestDecision(access,"no"); expect((await guestBooking(access)).canRsvp).toBe(true);
+    await guestDecision(access,"yes"); expect(await guestBooking(access)).toMatchObject({status:"confirmed",canRsvp:false});
+    await getPool().query("UPDATE clubhost.bookings SET status='rejected' WHERE id=$1",[access.bookingId]);
+    expect((await guestBooking(access)).canRsvp).toBe(false);
+    await expect(guestDecision(access,"yes")).rejects.toMatchObject({status:409});
+  });
+  it("hides paid payer changes and refuses proof uploads for free session/monthly obligations", async () => {
+    const id = await game("Prepaid payer");
+    const access = {accountId:player,bookingId:await registerPlayer(player,id,fixed)};
+    expect((await guestFinance(access)).canChoosePayer).toBe(true);
+    await legacyBookingAction(owner,id,access.bookingId,"paid");
+    expect(await guestFinance(access)).toMatchObject({canChoosePayer:false,canReport:false});
+    const due = await saveDue(owner,club,fixed,{period:"2030-01",amount:0});
+    expect((await duePage({accountId:player,dueId:due.id})).canReport).toBe(false);
+    const png = await sharp({create:{width:4,height:4,channels:3,background:"teal"}}).png().toBuffer();
+    const file = () => new File([new Uint8Array(png)],"free.png",{type:"image/png"});
+    await expect(reportDueProof({accountId:player,dueId:due.id},file())).rejects.toMatchObject({status:409});
+    const free = await createSession(owner,club,{title:"Free session",starts_at:localNow(new Date(Date.now()+7*86400000)),capacity:4,fixed_fee:0});
+    const freeAccess = {accountId:player,bookingId:await registerPlayer(player,free.gameId!,fixed)};
+    expect(await guestFinance(freeAccess)).toMatchObject({canReport:false,draft:{amount:0}});
+    await expect(reportBookingProof(freeAccess,file(),{})).rejects.toMatchObject({status:400});
   });
 });

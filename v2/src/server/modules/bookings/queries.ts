@@ -4,11 +4,11 @@ import { getDb } from "@/server/db/client";
 import { gameSessionsInClubhost as sessions, clubsInClubhost as clubs, bookingsInClubhost as bookings, membersInClubhost as members, paymentProofsInClubhost as proofs } from "@/server/db/schema";
 import { gameActor } from "@/server/modules/scheduling/service";
 import { guestContext, type GuestOwner } from "./guest";
-import { participants, seatCounts, bookedPolicy, allowGuestChange, type Game } from "./core";
+import { participants, seatCounts, bookedPolicy, allowGuestChange, memberFee, type Game } from "./core";
 import { guestToken } from "@/server/compatibility/guest-capability";
 import { getConfig } from "@/server/config";
 import { hasPermission } from "@/server/access/permissions";
-import { guestOpen, registrationOpen } from "@/domain/session-policy";
+import { guestOpen, registrationOpen, localNow } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
 import { balances, batchFor } from "@/server/modules/finance/queries";
 import type { BillingSnapshot } from "@/domain/billing";
@@ -51,20 +51,23 @@ export async function guestBooking(key: PlayerBookingAccess) {
   try { await allowGuestChange(db, booking, game, false); cancellable = booking.status !== "cancelled"; } catch (error) { if (!(error instanceof AppError)) throw error; }
   const party = await participants(db, booking.id);
   const issued = !!await batchFor(db, game.id);
+  const canRsvp = member.kind === "fixed" && !issued && !game.attendanceLocked && !["confirmed", "rejected"].includes(booking.status) && party.every(p => p.attendanceStatus === "NOT_MARKED") && registrationOpen(game) && (!game.rsvpDeadline || localNow() <= game.rsvpDeadline);
   const feeAmount = issued ? (await balances(db, game.id, booking.id)).reduce((sum, row) => sum + row.amount, 0) : booking.feeAmount ?? (member.kind === "fixed" ? game.fixedFee : game.guestFee);
-  return { ...publicGameFields(game), clubName: club.name, bookingId: booking.id, name: member.name, phone: member.phone, kind: member.kind, status: booking.status, issued, feeAmount, paymentStatus: booking.paymentStatus, paid: booking.paid, payerMode: booking.payerMode, editable, cancellable, policy: bookedPolicy(booking, game), participants: party.map(p => ({ id: p.id, name: p.name, gender: p.gender, level: p.level, attendanceStatus: p.attendanceStatus })) };
+  return { ...publicGameFields(game), clubName: club.name, bookingId: booking.id, name: member.name, phone: member.phone, kind: member.kind, status: booking.status, issued, canRsvp, feeAmount, paymentStatus: booking.paymentStatus, paid: booking.paid, payerMode: booking.payerMode, editable, cancellable, policy: bookedPolicy(booking, game), participants: party.map(p => ({ id: p.id, name: p.name, gender: p.gender, level: p.level, attendanceStatus: p.attendanceStatus })) };
 }
 
 export async function guestFinance(key: PlayerBookingAccess) {
-  const db = getDb(); const { booking, game, club } = await guestContext(db, key);
+  const db = getDb(); const { booking, game, club, member } = await guestContext(db, key);
   const batch = await batchFor(db, game.id);
   const saved = JSON.parse(booking.paymentSnapshot || "{}");
   const payment: BillingSnapshot["payment"] = batch ? JSON.parse(batch.snapshot).payment : Object.keys(saved).length ? saved : booking.qrKey && booking.qrKey !== club.qrKey ? { qr_key: null, bank_name: "", account_holder: "", account_number: "", payment_note: "" } : { qr_key: club.qrKey, bank_name: club.bankName, account_holder: club.accountHolder, account_number: club.accountNumber, payment_note: club.paymentNote };
   const rows = batch ? await balances(db, game.id, booking.id) : [];
-  const reports = await db.select({ id: proofs.id, status: proofs.status, note: proofs.note, createdAt: proofs.createdAt }).from(proofs).where(eq(proofs.bookingId, booking.id));
-  const canReport = !game.isCancelled && booking.status === "confirmed" && (!!batch || (game.feeMode !== "COST_SHARING" && !booking.paid && booking.paymentStatus !== "refunded" && !reports.some(report => report.status === "reported")));
-  return { issued: !!batch, payerMode: booking.payerMode, canChoosePayer: !batch && !game.isCancelled && !game.attendanceLocked && booking.status === "confirmed",
-    canReport, reports,
+  const reports = await db.select({ id: proofs.id, status: proofs.status, note: proofs.note, createdAt: proofs.createdAt, payerParticipantId: proofs.payerParticipantId }).from(proofs).where(eq(proofs.bookingId, booking.id));
+  const payablePayers = rows.filter(row => row.outstanding > 0).map(row => row.payer_participant_id);
+  const amount = game.feeMode === "COST_SHARING" ? null : booking.feeAmount ?? memberFee(game, member);
+  const canReport = batch ? payablePayers.length > 0 : !game.isCancelled && booking.status === "confirmed" && amount !== null && amount > 0 && !booking.paid && booking.paymentStatus !== "refunded" && !reports.some(report => report.status === "reported");
+  return { issued: !!batch, payerMode: booking.payerMode, canChoosePayer: !batch && !booking.paid && !game.isCancelled && !game.attendanceLocked && booking.status === "confirmed",
+    canReport, reports, payablePayers, draft: { amount, paid: booking.paid, status: booking.paymentStatus },
     payment: { bankName: payment.bank_name, accountHolder: payment.account_holder, accountNumber: payment.account_number, note: payment.payment_note, qrAvailable: !!payment.qr_key },
     payers: rows.map(row => ({ name: row.name, amount: row.amount, net: row.net, outstanding: row.outstanding, credit: row.credit, status: row.status, payerParticipantId: row.payer_participant_id,
       people: row.people.map(person => ({ name: person.name, amount: person.amount, explanation: person.explanation })),

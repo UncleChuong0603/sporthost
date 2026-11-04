@@ -3,8 +3,9 @@ import type { PoolClient } from "pg";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import * as schema from "./db/schema";
 import { memberAccountLinks } from "./db/member-schema";
+import { paymentOrders } from "./db/payment-schema";
 
-const expected = [...Object.values(schema).filter(value => value !== schema.clubhost), memberAccountLinks].flatMap(table => {
+const expected = [...Object.values(schema).filter(value => value !== schema.clubhost), memberAccountLinks, paymentOrders].flatMap(table => {
   const config = getTableConfig(table as Parameters<typeof getTableConfig>[0]);
   return config.columns.map(column => config.name + "." + column.name);
 });

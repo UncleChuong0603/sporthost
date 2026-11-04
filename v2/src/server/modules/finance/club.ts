@@ -112,5 +112,5 @@ export async function dueContext(db: NodePgDatabase, key: PlayerDueAccess, lock 
 export async function duePage(key: PlayerDueAccess) {
   const db = getDb(); const { due, member, club } = await dueContext(db, key);
   const [reported] = await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.dueId, due.id), eq(proofs.status, "reported"))).limit(1);
-  return { id: due.id, name: member.name, clubName: club.name, period: due.period, amount: due.amount, status: due.paymentStatus, paid: due.paid, canReport: !due.paid && !reported, payment: targetPayment(due, club) };
+  return { id: due.id, name: member.name, clubName: club.name, period: due.period, amount: due.amount, status: due.paymentStatus, paid: due.paid, canReport: due.amount > 0 && !due.paid && !reported, payment: targetPayment(due, club) };
 }

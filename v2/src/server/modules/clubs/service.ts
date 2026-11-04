@@ -8,6 +8,7 @@ import { requireClubAccess, capabilities, hasPermission } from "@/server/access/
 import { sports } from "@/domain/catalog";
 import { isVietnamProvince } from "@/domain/vietnam-provinces";
 import { AppError } from "@/server/errors";
+import { PRO_TRIAL_DAYS, subscriptionState } from "@/domain/subscription";
 
 export const clubSchema = z.object({
   name: z.string().trim().min(1, "Vui lòng nhập tên CLB.").max(100), location: z.string().trim().max(180).default(""),
@@ -40,7 +41,7 @@ export async function createClub(hostId: number, raw: unknown) {
   const values = parsedSettings(raw);
   return transaction(async client => {
     const db = drizzle(client);
-    const [club] = await db.insert(clubs).values({ ...asColumns(values), ownerId: hostId, trialEndsAt: new Date(Date.now() + 30 * 86400000).toISOString() }).returning({ id: clubs.id });
+    const [club] = await db.insert(clubs).values({ ...asColumns(values), ownerId: hostId, trialEndsAt: new Date(Date.now() + PRO_TRIAL_DAYS * 86400000).toISOString() }).returning({ id: clubs.id });
     await db.insert(audit).values({ clubId: club.id, hostId, action: "Tạo CLB", details: JSON.stringify({ before: null, after: values }), createdAt: new Date().toISOString() });
     return club;
   });
@@ -48,12 +49,12 @@ export async function createClub(hostId: number, raw: unknown) {
 
 export async function clubSettings(hostId: number, clubId: number) {
   const { club, owner, rights } = await requireClubAccess(getDb(), hostId, clubId);
-  return { id: club.id, ...settingsOf(club), owner, canEdit: hasPermission(owner, rights, "edit_club_settings"), canContacts: hasPermission(owner, rights, "contacts"), canFinance: hasPermission(owner, rights, "manage_finance") };
+  return { id: club.id, ...settingsOf(club), subscription: subscriptionState(club), owner, canEdit: hasPermission(owner, rights, "edit_club_settings"), canContacts: hasPermission(owner, rights, "contacts"), canFinance: hasPermission(owner, rights, "manage_finance") };
 }
 
 export async function sessionDefaults(hostId: number, clubId: number) {
-  const { club } = await requireClubAccess(getDb(), hostId, clubId, "manage_session");
-  return { id: club.id, ...settingsOf(club), fixed_fee: club.fixedFee, fixed_fee_male: club.fixedFeeMale, fixed_fee_female: club.fixedFeeFemale };
+  const { club, owner } = await requireClubAccess(getDb(), hostId, clubId, "manage_session");
+  return { id: club.id, ...settingsOf(club), proActive: subscriptionState(club).active, proOwner: owner, fixed_fee: club.fixedFee, fixed_fee_male: club.fixedFeeMale, fixed_fee_female: club.fixedFeeFemale };
 }
 
 export async function updateClub(hostId: number, clubId: number, raw: Record<string, unknown>) {

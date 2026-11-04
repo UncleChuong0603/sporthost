@@ -5,6 +5,7 @@ import { getDb, transaction } from "@/server/db/client";
 import { hostsInClubhost as hosts, clubAccessInClubhost as access, auditLogsInClubhost as audit, clubsInClubhost as clubs } from "@/server/db/schema";
 import { requireClubAccess, capabilities, permissionLabels } from "@/server/access/permissions";
 import { AppError } from "@/server/errors";
+import { requirePro } from "@/server/modules/subscriptions/entitlements";
 
 export async function clubAccessDetails(hostId: number, clubId: number) {
   const { owner } = await requireClubAccess(getDb(), hostId, clubId);
@@ -20,6 +21,7 @@ export async function grantAccess(hostId: number, clubId: number, email: string,
     const db = drizzle(client);
     await db.select({ id: clubs.id }).from(clubs).where(eq(clubs.id, clubId)).for("update");
     const { club } = await requireClubAccess(db, hostId, clubId, "owner");
+    requirePro(club);
     const [person] = await db.select({ id: hosts.id }).from(hosts).where(eq(hosts.email, email.trim().toLowerCase()));
     if (!person) throw new AppError(400, "Đồng quản lý cần đăng ký tài khoản SportHost trước.");
     if (person.id === club.ownerId) throw new AppError(400, "Chủ câu lạc bộ đã có toàn quyền.");

@@ -9,6 +9,7 @@ import { listClubs } from "@/server/modules/clubs/service";
 import { sessionSchema, addWeeks, localNow, type SessionInput } from "@/domain/session-policy";
 import { createBooking, auditChange, seatCounts, type Game, type Club } from "@/server/modules/bookings/core";
 import { AppError } from "@/server/errors";
+import { requirePro } from "@/server/modules/subscriptions/entitlements";
 
 function policy(value: SessionInput, club: Club) {
   return { approval_mode: value.approval_mode, sport_snapshot: club.sportType, skill_guidance: value.skill_guidance, venue_instructions: value.venue_instructions, cancellation_policy: value.cancellation_policy, participation_conditions: value.participation_conditions, maps_url: value.maps_url, registration_deadline: value.registration_deadline, cancellation_deadline: value.cancellation_deadline, fee_mode: value.fee_mode, no_show_policy: value.no_show_policy, monthly_policy: value.monthly_policy };
@@ -56,6 +57,7 @@ export async function generateRule(db: NodePgDatabase, ruleId: number) {
   const [rule] = await db.select().from(rules).where(eq(rules.id, ruleId)).for("update");
   if (!rule || !rule.active) throw new AppError(400, "Lịch lặp đã dừng.");
   const [club] = await db.select().from(clubs).where(eq(clubs.id, rule.clubId));
+  requirePro(club);
   const fixed = await db.select().from(members).where(and(eq(members.clubId, rule.clubId), eq(members.kind, "fixed"))).orderBy(asc(members.id));
   const existing = new Set((await db.select({ startsAt: sessions.startsAt }).from(sessions).where(eq(sessions.recurringRuleId, rule.id))).map(g => g.startsAt));
   const saved = JSON.parse(rule.policyJson || "{}"); let count = 0;

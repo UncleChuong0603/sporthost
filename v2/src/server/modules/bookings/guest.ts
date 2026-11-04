@@ -133,6 +133,7 @@ export async function guestDecision(key: PlayerBookingAccess, action: "cancel" |
     if (action === "yes") {
       if (!registrationOpen(game) || (game.rsvpDeadline && localNow() > game.rsvpDeadline)) throw new AppError(400, "Đã qua hạn RSVP hoặc đóng đăng ký. Vui lòng liên hệ host.");
       const party = await participants(db, booking.id);
+      if (booking.status === "rejected" || game.attendanceLocked || party.some(p => p.attendanceStatus !== "NOT_MARKED")) throw new AppError(409, "Đăng ký đã được host xử lý. Vui lòng liên hệ host.");
       status = await canFit(db, game, party.length ? party.map(p => p.gender) : [booking.genderAtBooking]) ? "confirmed" : "waitlist";
     } else { await allowGuestChange(db, booking, game, false); status = "cancelled"; }
     await db.update(bookings).set({ status }).where(eq(bookings.id, booking.id));

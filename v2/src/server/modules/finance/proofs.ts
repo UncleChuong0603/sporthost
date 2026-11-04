@@ -8,7 +8,7 @@ import { sanitizeImage, putImage, deleteImage, readImage } from "@/server/infras
 import { requireClubAccess } from "@/server/access/permissions";
 import { guestContext } from "@/server/modules/bookings/guest";
 import { gameActor } from "@/server/modules/scheduling/service";
-import { auditChange, paymentSnapshot } from "@/server/modules/bookings/core";
+import { auditChange, paymentSnapshot, memberFee } from "@/server/modules/bookings/core";
 import { dueContext, targetPayment, bankSchema } from "./club";
 import { batchFor, balances } from "./queries";
 import { recordMoney, scopedBooking } from "./service";
@@ -48,9 +48,9 @@ export async function updateBankWithQr(hostId: number, clubId: number, raw: unkn
 }
 export async function reportBookingProof(key: PlayerBookingAccess, upload: File, raw: { reportedAmount?: unknown; payerParticipantId?: number | null }) {
   return uploadTransaction(upload, "proof", async (db, save) => {
-    const { booking, game, club } = await guestContext(db, key, true);
+    const { booking, game, club, member } = await guestContext(db, key, true);
     const batch = await batchFor(db, game.id);
-    if (game.isCancelled || booking.status !== "confirmed" || (!batch && (booking.paid || booking.paymentStatus === "refunded"))) throw new AppError(400, "Chỉ gửi biên nhận cho đăng ký đã xác nhận và chưa thanh toán.");
+    if (!batch && (game.isCancelled || booking.status !== "confirmed" || booking.paid || booking.paymentStatus === "refunded" || (booking.feeAmount ?? memberFee(game, member)) <= 0)) throw new AppError(400, "Chỉ gửi biên nhận cho đăng ký đã xác nhận và chưa thanh toán.");
     if (!batch && game.feeMode === "COST_SHARING") throw new AppError(409, "Chờ host phát hành tiền sau khi chia đều trước khi báo chuyển.");
     if (!batch && (await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.bookingId, booking.id), eq(proofs.status, "reported"))).limit(1)).length) throw new AppError(409, "Biên nhận đang chờ host đối chiếu.");
     let amount: number | null = null, payer: number | null = null;
@@ -58,7 +58,9 @@ export async function reportBookingProof(key: PlayerBookingAccess, upload: File,
       const parsed = moneySchema.safeParse(raw.reportedAmount);
       if (!parsed.success || !parsed.data) throw new AppError(400, "Cần số tiền đã báo chuyển.");
       amount = parsed.data; payer = raw.payerParticipantId ?? null;
-      if (!(await balances(db, game.id, booking.id)).some(row => row.payer_participant_id === payer)) throw new AppError(400, "Người thanh toán không thuộc lượt đăng ký.");
+      const balance = (await balances(db, game.id, booking.id)).find(row => row.payer_participant_id === payer);
+      if (!balance) throw new AppError(400, "Người thanh toán không thuộc lượt đăng ký.");
+      if (balance.outstanding <= 0) throw new AppError(409, "Người thanh toán này không còn khoản cần đóng.");
     }
     const asset = await save(club.id);
     if ((await db.select({ id: proofs.id }).from(proofs).innerJoin(assets, eq(assets.id, proofs.assetId)).where(and(eq(proofs.bookingId, booking.id), eq(assets.sha256, asset.sha256))).limit(1)).length) throw new AppError(409, "Ảnh này đã được gửi cho lượt đăng ký. Không cần tải lại.");
@@ -70,7 +72,7 @@ export async function reportBookingProof(key: PlayerBookingAccess, upload: File,
 export async function reportDueProof(key: PlayerDueAccess, upload: File) {
   return uploadTransaction(upload, "proof", async (db, save) => {
     const { due, club } = await dueContext(db, key, true);
-    if (due.paid || (await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.dueId, due.id), eq(proofs.status, "reported"))).limit(1)).length) throw new AppError(409, "Khoản thu đã xử lý hoặc đang chờ duyệt.");
+    if (due.paid || due.amount <= 0 || (await db.select({ id: proofs.id }).from(proofs).where(and(eq(proofs.dueId, due.id), eq(proofs.status, "reported"))).limit(1)).length) throw new AppError(409, "Khoản thu không cần đóng, đã xử lý hoặc đang chờ duyệt.");
     const asset = await save(club.id);
     const [proof] = await db.insert(proofs).values({ dueId: due.id, assetId: asset.id, status: "reported", note: "", createdAt: now() }).returning({ id: proofs.id });
     await db.update(dues).set({ paymentStatus: "reported" }).where(eq(dues.id, due.id));
