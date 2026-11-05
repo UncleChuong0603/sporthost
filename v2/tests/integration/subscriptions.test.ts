@@ -17,6 +17,7 @@ const remote = new Map<number, PaymentLink>();
 const sdk = new PayOS({ clientId: "synthetic-client", apiKey: "synthetic-api", checksumKey: "synthetic-checksum", logLevel: "off" });
 let owner: number, other: number, cohost: number;
 const create = vi.spyOn(sdk.paymentRequests, "create").mockImplementation(async input => {
+  if (input.description.length > 9) throw Error("Provider rejects descriptions longer than nine characters for unlinked banks");
   if (!remote.has(input.orderCode)) remote.set(input.orderCode, { id: "link-" + input.orderCode, orderCode: input.orderCode, amount: input.amount, amountPaid: 0, amountRemaining: input.amount, status: "PENDING", createdAt: new Date().toISOString(), canceledAt: null, cancellationReason: null, transactions: [] });
   const payment = remote.get(input.orderCode)!;
   return { amount: input.amount, orderCode: input.orderCode, paymentLinkId: payment.id, currency: "VND", status: "PENDING", checkoutUrl: `https://pay.payos.vn/web/${payment.id}`, bin: "970422", accountName: "SYNTHETIC", accountNumber: "123", description: input.description, qrCode: "synthetic" };
@@ -71,6 +72,9 @@ describe("payOS orders, activation and safety", () => {
     const details = await subscriptionDetails(owner, id);
     expect(details.orders).toHaveLength(1);
     expect(details.orders[0]).toMatchObject({ amount: 49000, originalAmount: 99000, periodDays: 30, status: "PENDING" });
+    const providerRequests = create.mock.calls.filter(([input]) => input.orderCode === details.orders[0].orderCode);
+    expect(providerRequests.length).toBeGreaterThan(0);
+    expect(providerRequests.every(([input]) => input.description.length <= 9)).toBe(true);
     await expect(refreshPayment(other, id, details.orders[0].orderCode)).rejects.toMatchObject({ status: 404 });
   });
   it("never activates from partial, mismatched or fabricated payment data", async () => {

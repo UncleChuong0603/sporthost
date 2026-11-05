@@ -6,7 +6,7 @@ The member area is part of the existing full-stack Next.js application. It uses 
 
 1. A player opens `/me/signup`, creates an email/password account, then opens `/me/profile` to request and complete email verification. Existing accounts can sign in at `/me/login` with their existing password.
 2. The club owner opens **Members**, expands **Player account** for the correct member, enters the player's verified account email and explicitly links it. A manager/finance/check-in cohost cannot make identity links.
-3. The player opens `/me` to see their connected clubs, upcoming sessions, invitations and payments. A single account can have explicitly approved profiles in several clubs. No phone-number or name-based automatic matching occurs.
+3. The player opens `/me` to see their connected clubs, upcoming sessions, invitations and payments. At `/me/schedule`, they can also register directly for an open session in a linked club using the approved profile. A single account can have explicitly approved profiles in several clubs. No phone-number or name-based automatic matching occurs.
 4. The owner can remove the link immediately. Changing an already linked identity requires unlinking first; it cannot silently replace an account. Link/unlink operations are audited.
 
 An unverified or unlinked account sees onboarding, not another player's data. Existing guest links and registration without login are preserved.
@@ -14,7 +14,7 @@ An unverified or unlinked account sees onboarding, not another player's data. Ex
 ## UI and behavior
 
 - `/me`: personal overview, upcoming sessions, invitations, debt and linked clubs.
-- `/me/schedule`: upcoming and historical registrations, including cancellations, with pagination.
+- `/me/schedule`: upcoming and historical registrations, including cancellations, with pagination; open sessions in linked clubs support direct registration with the existing capacity, waitlist, approval and deadline rules. Retries open the same booking.
 - `/me/bookings/:id`: own group/attendance status, fixed-member RSVP, permitted guest-group edits/cancellation, payer mode, issued charges, adjustments, recorded movements, QR and proof upload.
 - `/me/payments`: session and monthly obligations with pagination. Summary totals cover all pages. Separate payer credit never cancels another payer's debt. Draft cost-sharing amounts remain unknown until the host issues them.
 - `/me/dues/:id`: own monthly payment instructions/QR and receipt submission.

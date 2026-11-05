@@ -1,0 +1,18 @@
+{
+  "capturedAt": "2026-11-04T18:07:42.833Z",
+  "origin": "http://127.0.0.1:3217",
+  "syntheticData": true,
+  "viewport": {
+    "width": 520,
+    "height": 940
+  },
+  "screens": [
+    "members",
+    "schedule",
+    "attendance",
+    "dashboard",
+    "finance",
+    "payment"
+  ],
+  "privateLinksPersisted": false
+}

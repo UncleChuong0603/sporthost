@@ -105,9 +105,10 @@ def verify(args):
         with target.connect() as con:
             restored_revision = con.scalar(text(f'SELECT version_num FROM "{schema}".alembic_version'))
         if restored_revision != manifest['revision']:raise RuntimeError('Restored revision mismatch')
-        # Apply only the reviewed additive table on this disposable restored copy.
+        # Apply reviewed additive tables only on this disposable restored copy.
         with target.connect().execution_options(isolation_level='AUTOCOMMIT') as con:
-            con.exec_driver_sql((workspace/'v2/migrations/0001_member_accounts.sql').read_text(encoding='utf8'))
+            for migration in ('0001_member_accounts.sql', '0002_payos_orders.sql'):
+                con.exec_driver_sql((workspace/'v2/migrations'/migration).read_text(encoding='utf8'))
         compare_original_columns()
         expired_pruned = 0
         if args.run_tests:
@@ -132,7 +133,8 @@ def verify(args):
                 expired_pruned = len(removed)
         summary = {'restored_revision':restored_revision, 'verified_revision':restored_revision,
                    'tables':len(manifest['tables']), 'restore_rows_verified':True,
-                   'additive_member_schema_verified':True, 'legacy_business_rows_preserved':True,
+                   'additive_member_schema_verified':True, 'additive_payment_schema_verified':True,
+                   'legacy_business_rows_preserved':True,
                    'media_archive_verified':True, 'media_files':len(manifest['media']),
                    'nextjs_regression_passed':bool(args.run_tests), 'expired_operational_counters_pruned':expired_pruned,
                    'production_database_modified':False}

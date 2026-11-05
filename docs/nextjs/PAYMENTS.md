@@ -6,6 +6,10 @@ the original 99,000 VND (save 50,000 VND, approximately 51%). There is no automa
 renewal and no invented deadline or countdown. Pricing is centralized in
 `v2/src/domain/subscription.ts`; every order snapshots its price and duration.
 
+Checkout uses `SPORTHOST` as its nine-character transfer description so it also
+works with the stricter limit for bank accounts without a direct payOS link.
+See the `description` field in the [official API contract](https://payos.vn/docs/api/).
+
 Core sessions, members, attendance, finance and existing records remain available
 after expiry. Creating/generating/extending recurring schedules and granting or
 updating cohost access require active trial/Pro at the server boundary. Existing

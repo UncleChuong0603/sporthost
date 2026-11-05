@@ -16,4 +16,6 @@ The player area starts at `/me` (signup/login at `/me/signup` and `/me/login`). 
 
 Uploads are private. Both QR and bank text are snapshotted for existing obligations, and new images are removed if their database transaction fails. Uploaded payment screenshots remain reports until an authorized host explicitly reviews real received money. Issued charge snapshots are immutable; later changes use versioned adjustments and append-only money movements.
 
+The latest [pre-launch host/member review](../docs/nextjs/LAUNCH_REVIEW.md) records the public entry page, club setup guide, direct member registration, account recovery and payment acceptance coverage. Authentication remains self-hosted email/password; Google sign-in is not required.
+
 SportHost Pro uses payOS for per-club purchases: 7-day trial for new clubs, launch price 49,000 VND / 30 days (original 99,000 VND), verified automatic activation and cumulative renewal. Apply the additive `migrations/0002_payos_orders.sql` explicitly before deploying, configure server-only payOS keys, then register the public webhook. See [payment setup and recovery](../docs/nextjs/PAYMENTS.md). Local env keys are not automatically copied to production.

@@ -4,6 +4,14 @@ SportHost v2 is live at <https://sporthost.online> on 2026-11-04. The existing D
 
 Sprint 0 was completed before feature rewriting; its independent route contract and architecture, compatibility and acceptance references remain in `sprint-0/`. Completed inventory/audit/migration reports were privately archived and removed during cleanup. Current implementation is in `v2/`; completed HTTP evidence is recorded separately below.
 
+## Local pre-launch candidate: 2026-11-05
+
+The host/member review added a public entry page, owner setup guidance, direct registration for linked players, member-aware account recovery and payment-state/RSVP hardening. Player actions cannot clear a host rejection to register again. Pro checkout now respects payOS's stricter nine-character bank description limit. See `LAUNCH_REVIEW.md` for the full flow coverage and release boundaries.
+
+Final local evidence: 210/210 Vitest cases pass; the fresh production build, TypeScript and standalone artifact scan pass; the isolated desktop/mobile suite passes 28/28 with no retries or skips. The final transfer-description correction was checked afterward by all 210 cases and a fresh build. This is local acceptance only. Production migration `0002_payos_orders.sql`, runtime payment configuration/webhook and an operator-controlled real settlement still require release validation; this review did not deploy or create live transactions.
+
+Release preparation then froze 214 source files and deployed that exact ZIP to the isolated preview: deployment `gY8o9nmWOcbyAcblDQA9c`, image `sha256:ee70ce8971340c383cedb358988312a38391810fcd9296e9b9a4c1d151748cbd`. Its payment migration, restricted grants, actual runtime configuration and HTTP preflight pass. The full HTTPS desktop/mobile suite passes 28/28 without retries/skips. A fresh 23-table production backup plus its complete 1.77 MB image was restored locally; both migrations and the full regression suite passed while preserving original business rows. Nineteen additional operator tests pass. Final production row hashes still match the backup; production remains on the member image with payment migration/configuration pending. See `LAUNCH_RELEASE.md` for immutable source/archive hashes, private evidence locations and remaining activation steps. No live payOS order or financial transaction was created.
+
 ## Current release: member portal, 2026-11-04
 
 The member area is live at <https://sporthost.online/me>, with signup/login, verified email plus owner-approved member linkage, a personal overview, upcoming/history views, scoped session/monthly payments, QR/proof uploads and profile/password management. Existing guest links continue to work. See `MEMBER_PORTAL.md` for onboarding and the security model.

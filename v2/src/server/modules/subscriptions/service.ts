@@ -99,7 +99,8 @@ export async function checkoutPro(hostId: number, clubId: number) {
   }
   const origin = getConfig().origin;
   try {
-    const result = await provider.paymentRequests.create({ orderCode: order.orderCode, amount: order.amount, description: "SPORTHOST PRO",
+    // Keep within payOS's nine-character limit for bank accounts without a direct link.
+    const result = await provider.paymentRequests.create({ orderCode: order.orderCode, amount: order.amount, description: "SPORTHOST",
       items: [{ name: `SportHost Pro ${order.periodDays} ngày`, quantity: 1, price: order.amount }],
       returnUrl: `${origin}${path}?payment=return&orderCode=${order.orderCode}`,
       cancelUrl: `${origin}${path}?payment=cancel&orderCode=${order.orderCode}`, expiredAt: Math.floor(Date.parse(order.expiresAt) / 1000) });

@@ -14,7 +14,7 @@ npm ci
 npm run dev
 ```
 
-Never overwrite an existing private env file. The production database retains schema `clubhost` and the reviewed legacy revision `0011_fixed_member_fees`; the additive member-account table is applied explicitly by an operator. Application startup never migrates.
+Never overwrite an existing private env file. The production database retains schema `clubhost` and the reviewed legacy revision `0011_fixed_member_fees`; additive member-account and payment tables are applied explicitly by an operator before the corresponding release. Application startup never migrates.
 
 ## Verification
 
@@ -29,7 +29,7 @@ npm run build
 npm run test:e2e
 ```
 
-`db:test:prepare` initializes only an empty local test schema from a checked-in schema-only fixture, then adds the reviewed member table. It refuses remote/non-test targets and never replaces existing business tables. Tests require OpenSSL 3+ for a short-lived localhost SMTP certificate; Git for Windows' bundled OpenSSL is detected automatically, or set `SPORTHOST_OPENSSL`. Browser tests use installed Microsoft Edge. No real email is sent by tests.
+`db:test:prepare` initializes only an empty local test schema from a checked-in schema-only fixture, then adds the reviewed member and payment tables. It refuses remote/non-test targets and never replaces existing business tables. Tests require OpenSSL 3+ for a short-lived localhost SMTP certificate; Git for Windows' bundled OpenSSL is detected automatically, or set `SPORTHOST_OPENSSL`. Browser tests use installed Microsoft Edge. No real email is sent by tests.
 
 Compatibility checks use independently captured Python password/session and billing fixtures. They no longer start Python or import the retired application. Existing guest URLs, native form POSTs and fixed-price bookings remain active product contracts.
 
@@ -37,12 +37,13 @@ Compatibility checks use independently captured Python password/session and bill
 
 Build from `v2/`, for example `docker build --tag sporthost:v2 v2` from the repository root. Existing Dokploy production uses port 8000 and a private writable `/data/uploads` volume owned by UID/GID 10001. Keep the database URL, session signing key and persistent media across releases. Do not edit production DNS or run destructive migrations without approval.
 
-The six operator commands under `scripts/` handle database/media backups, local restore verification, the reviewed additive schema change, Dokploy access and HTTP evidence. They are outside the application image. If needed, use Python 3.11+ to install their separate operator dependencies with `python -m pip install -r scripts/requirements.txt`; FastAPI, SQLAlchemy application models, Alembic and the old web runtime are not required. Backup tools use native PostgreSQL clients and a verified VPS-volume inventory.
+The operator tools under `scripts/` handle database/media backups, local restore verification, explicit additive schema changes, Dokploy access and HTTP evidence. `check_nextjs_release.mjs --target production` inspects deployment/payment prerequisites without writes; `prepare_nextjs_release.py` freezes and verifies source archives without private configuration. They are outside the application image. If needed, use Python 3.11+ in a private virtual environment to install their separate operator dependencies from `scripts/requirements.txt`; FastAPI, SQLAlchemy application models, Alembic and the old web runtime are not required. Backup tools use native PostgreSQL clients and a verified VPS-volume inventory.
 
 - [Application setup](v2/README.md)
 - [Member onboarding and permissions](docs/nextjs/MEMBER_PORTAL.md)
 - [Current release evidence](docs/nextjs/PROGRESS.md)
 - [Deployment and rollback](docs/nextjs/RELEASE_RUNBOOK.md)
+- [Current launch candidate and release checks](docs/nextjs/LAUNCH_RELEASE.md)
 - [Cleanup scope and retained compatibility](docs/nextjs/CLEANUP.md)
 
 Follow `docs/nextjs/` for current operations. Obsolete v1 reports and completed migration plans were removed after private archival. The independent route contract and useful architecture, compatibility and acceptance references remain in `docs/nextjs/sprint-0/`. Immutable release images, backups, data, uploads and active private configuration were preserved.

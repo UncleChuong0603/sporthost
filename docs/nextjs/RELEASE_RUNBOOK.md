@@ -2,6 +2,8 @@
 
 This procedure was executed on 2026-11-04; production now serves Next.js with normal writes enabled. Follow `PROGRESS.md` for test and preservation evidence. No destructive schema migration or DNS change was required for the reviewed 0011 database.
 
+For the current host/member and payment candidate, use [LAUNCH_RELEASE.md](LAUNCH_RELEASE.md) for the frozen source identity, fresh restore drill, explicit payment migration and preview results. The execution records below describe earlier releases.
+
 ## Fixed identities
 
 | Resource | Identity |
