@@ -1,0 +1,3 @@
+export function PageLoading() {
+  return <div role="status" aria-label="Đang tải nội dung" className="space-y-6"><span className="sr-only">Đang tải nội dung…</span><div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse"><div className="h-8 w-48 rounded-lg bg-slate-200" /><div className="h-4 w-2/3 rounded bg-slate-200" /><div className="grid gap-4 sm:grid-cols-2">{[0, 1].map(i => <div key={i} className="space-y-4 rounded-2xl border bg-white p-6"><div className="h-5 w-1/2 rounded bg-muted" /><div className="h-20 rounded-xl bg-muted" /><div className="h-4 w-3/4 rounded bg-muted" /></div>)}</div></div></div>;
+}

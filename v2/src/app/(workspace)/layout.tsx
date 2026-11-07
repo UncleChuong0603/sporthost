@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Activity, LayoutDashboard, LogOut, UsersRound, ContactRound, UserRound, CalendarDays, Wallet } from "lucide-react";
+import { Activity, LogOut, ArrowUpRight } from "lucide-react";
+import { WorkspaceNavigation } from "@/features/shared/workspace-navigation";
 import { currentHost } from "@/server/auth/service";
 import { makeCsrf, sessionCookie } from "@/server/auth/session";
 import { logout } from "@/app/(auth)/actions";
@@ -11,23 +12,13 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const host = await currentHost();
   if (!host) redirect("/login");
   const csrf = makeCsrf(await sessionCookie());
-  const links = [
-    { href: "/dashboard", name: "Tổng quan", Icon: LayoutDashboard },
-    { href: "/clubs", name: "Câu lạc bộ", Icon: UsersRound },
-    { href: "/schedule", name: "Lịch chơi", Icon: CalendarDays },
-    { href: "/members", name: "Thành viên", Icon: ContactRound },
-    { href: "/finance", name: "Thu chi", Icon: Wallet },
-    { href: "/account", name: "Tài khoản", Icon: UserRound },
-  ];
-  return <div className="min-h-dvh lg:pl-62">
-    <aside className="flex bg-[#142d35] px-4 py-4 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-62 lg:flex-col lg:p-6">
-      <Link href="/dashboard" aria-label="SportHost" className="flex min-h-11 items-center gap-3 text-xl font-bold"><Activity className="size-7 text-teal-200" aria-hidden="true" /><span className="hidden lg:inline">SportHost</span></Link>
-      <nav aria-label="Điều hướng chính" className="ml-auto flex gap-1 lg:ml-0 lg:mt-10 lg:flex-col lg:gap-2">
-        {links.map(({ href, name, Icon }) => <Link key={href} href={href} className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-100 hover:bg-white/10"><Icon className="size-5" aria-hidden="true" /><span className="hidden lg:inline">{name}</span><span className="sr-only lg:hidden">{name}</span></Link>)}
-      </nav>
+  return <div className="min-h-dvh lg:pl-64">
+    <aside className="bg-sidebar text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-64 lg:flex-col lg:overflow-y-auto lg:p-5">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 lg:border-0 lg:p-2"><Link href="/dashboard" aria-label="SportHost" className="flex min-h-11 items-center gap-3 text-xl font-bold"><span className="flex size-10 items-center justify-center rounded-xl bg-primary"><Activity className="size-6" aria-hidden="true" /></span><span>SportHost<span className="block text-[10px] font-medium uppercase tracking-[.16em] text-slate-300">Không gian của host</span></span></Link><form action={logout} className="lg:hidden"><input type="hidden" name="csrf" value={csrf} /><Button variant="ghost" size="icon" className="text-white hover:bg-white/10" aria-label="Đăng xuất"><LogOut /></Button></form></div>
+      <WorkspaceNavigation admin={host.isPlatformAdmin} />
       <div className="hidden lg:mt-auto lg:block"><p className="mb-3 truncate text-xs text-slate-300">{host.email}</p><form action={logout}><input type="hidden" name="csrf" value={csrf} /><button className="flex min-h-11 items-center gap-3 text-sm text-slate-100 hover:text-white"><LogOut className="size-4" aria-hidden="true" />Đăng xuất</button></form></div>
     </aside>
-    <header className="flex h-18 items-center justify-between border-b bg-white px-5 sm:px-8"><p className="text-sm font-semibold text-muted-foreground">Không gian quản lý CLB</p><form action={logout} className="lg:hidden"><input type="hidden" name="csrf" value={csrf} /><Button variant="ghost" size="icon" aria-label="Đăng xuất"><LogOut /></Button></form><Link href="/me" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">Chế độ người chơi</Link></header>
-    <main id="main" className="mx-auto max-w-7xl px-5 py-8 sm:px-8">{children}</main>
+    <header className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 border-b bg-white px-4 sm:px-8"><p className="text-xs font-medium text-muted-foreground sm:text-sm">Quản lý CLB · Giờ Việt Nam (UTC+7)</p><Link href="/me" className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary">Chế độ người chơi<ArrowUpRight className="size-4" aria-hidden="true" /></Link></header>
+    <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-5 py-7 outline-none sm:px-8 sm:py-9">{children}</main>
   </div>;
 }

@@ -16,7 +16,7 @@ describe("player decision and session information", () => {
   });
   it("shows venue instructions, policy and deadlines with the timezone", () => {
     const html = renderToStaticMarkup(<SessionDetails game={{ ...details, venueInstructions: "Cổng sau", cancellationPolicy: "Hủy trước 12 giờ", cancellationDeadline: "2026-11-08T17:00", rsvpDeadline: "2026-11-07T19:00", mapsUrl: "https://maps.app.goo.gl/example" }} />);
-    for (const text of ["Cổng sau", "Hủy trước 12 giờ", "2026-11-08 · 17:00", "Hạn trả lời lời mời", "UTC+7", "Mở bản đồ đến sân"]) expect(html).toContain(text);
+    for (const text of ["Cổng sau", "Hủy trước 12 giờ", "17:00 08/11/2026", "Hạn trả lời lời mời", "UTC+7", "Mở bản đồ đến sân"]) expect(html).toContain(text);
     expect(html).toContain('rel="noopener noreferrer"');
   });
   it("omits empty details and unsafe map URLs from legacy data", () => {
@@ -25,8 +25,8 @@ describe("player decision and session information", () => {
   });
   it("displays the accepted cancellation snapshot after the host changes session defaults", () => {
     const html = renderToStaticMarkup(<SessionDetails game={{ ...details, startsAt: "2026-11-08T19:00", cancellationPolicy: "New policy", cancellationDeadline: "2026-11-08T15:00", policy: { cancellation_policy: "Accepted policy", cancellation_deadline: "2026-11-08T17:00" } }} />);
-    expect(html).toContain("Accepted policy"); expect(html).toContain("2026-11-08 · 17:00");
+    expect(html).toContain("Accepted policy"); expect(html).toContain("17:00 08/11/2026");
     expect(html).not.toContain("New policy"); expect(html).not.toContain("15:00");
-    expect(renderToStaticMarkup(<SessionDetails game={{ ...details, startsAt: "2026-11-08T19:00" }} />)).toContain("2026-11-08 · 19:00");
+    expect(renderToStaticMarkup(<SessionDetails game={{ ...details, startsAt: "2026-11-08T19:00" }} />)).toContain("19:00 08/11/2026");
   });
 });

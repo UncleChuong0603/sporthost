@@ -56,6 +56,7 @@ test("check-in cohost cannot read contacts, finance, capabilities, CSV or privat
     const forbiddenWrite = await checker.request.post(gamePath + "/walk-ins", { form: { csrf: checkerToken, name: "Forbidden", phone: "0901234098" }, headers: { Origin: origin } }); expect(forbiddenWrite.status()).toBe(403);
     await page.goto(`/clubs/${club}/access`);
     await page.getByRole("button", { name: "Thu hồi quyền", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(page.getByText("Chưa có đồng quản lý.", { exact: true })).toBeVisible();
     expect((await checker.request.get(gamePath)).status()).toBe(404);
     expect((await checker.request.get(gamePath+"/calendar.ics")).status()).toBe(404);

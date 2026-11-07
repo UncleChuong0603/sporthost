@@ -45,5 +45,9 @@ The operator tools under `scripts/` handle database/media backups, local restore
 - [Deployment and rollback](docs/nextjs/RELEASE_RUNBOOK.md)
 - [Current launch candidate and release checks](docs/nextjs/LAUNCH_RELEASE.md)
 - [Cleanup scope and retained compatibility](docs/nextjs/CLEANUP.md)
+- [UI/UX audit and route inventory](docs/UI_UX_AUDIT.md)
+- [Current design system](docs/DESIGN_SYSTEM.md)
+- [UI/UX verification evidence](docs/UI_UX_QA_REPORT.md)
+- [UI/UX launch checklist](docs/LAUNCH_UI_UX_CHECKLIST.md)
 
 Follow `docs/nextjs/` for current operations. Obsolete v1 reports and completed migration plans were removed after private archival. The independent route contract and useful architecture, compatibility and acceptance references remain in `docs/nextjs/sprint-0/`. Immutable release images, backups, data, uploads and active private configuration were preserved.

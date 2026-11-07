@@ -1,7 +1,12 @@
 # SportHost design system
 
 Audience: Vietnamese badminton club hosts managing schedules, players and money, often on a phone.
-Stack: FastAPI, Jinja2, semantic HTML, plain CSS and progressive JavaScript.
+Stack: Next.js App Router, React, TypeScript, Tailwind CSS and PostgreSQL.
+
+The current implementation and component contract are documented in
+[`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md). That document supersedes
+the historical decisions below where they differ (including primary color and
+mobile navigation).
 
 UI UX Pro Max was installed from nextlevelbuilder/ui-ux-pro-max-skill. Its generated
 results for sports and SaaS suggested marketing heroes, so those layouts were rejected.

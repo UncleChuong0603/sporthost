@@ -47,6 +47,7 @@ test("15 players retain whole groups and reconcile proof, partial bank, cash, re
     await page.getByRole("button", { name: "Kết thúc chơi", exact: true }).click();
     await page.getByRole("link", { name: "Thu chi và phát hành tiền cần đóng", exact: true }).click();
     await page.getByRole("button", { name: "Phát hành tiền cần đóng", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     const payer = page.getByRole("region", { name: "Người thanh toán" }).getByRole("article").filter({ has: page.getByRole("heading", { name: "Group 1", exact: true }) });
     await expect(payer.getByText(/Phải đóng 350\.000đ/)).toBeVisible();
     const first = guests[0]; await first.reload();
@@ -54,12 +55,13 @@ test("15 players retain whole groups and reconcile proof, partial bank, cash, re
     await first.getByLabel("Ảnh biên nhận", { exact: true }).setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: await sharp({ create: { width: 16, height: 16, channels: 3, background: "green" } }).png().toBuffer() });
     await first.getByLabel("Số tiền đã chuyển (đ)", { exact: true }).fill("300000");
     await first.getByRole("button", { name: "Gửi biên nhận", exact: true }).click();
-    await expect(first.getByRole("status")).toContainText("Đã lưu");
+    await expect(first.getByRole("status")).toContainText("Đã gửi biên nhận");
     await expect(first.getByText(/#\d+ · Đang chờ đối soát/)).toBeVisible();
     await expect(first.getByRole("region", { name: "Thanh toán của bạn" }).getByText("Chưa thu", { exact: true })).toBeVisible();
     await page.goto(`/payments/review?club_id=${clubId}`);
     await page.getByLabel("Số tiền thực nhận (đ)", { exact: true }).fill("300000");
     await page.getByRole("button", { name: "Host xác nhận tiền đã vào", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(page.getByText("Không có biên nhận đang chờ đối soát.", { exact: true })).toBeVisible();
     await page.goto(gamePath + "/billing");
     await payer.getByText("Ghi nhận tiền thực tế", { exact: true }).click();

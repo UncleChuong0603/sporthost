@@ -112,7 +112,7 @@ test("zero to member registration, host approval, proof rejection/retry, payment
       if (reject) {
         await host.getByLabel("Lý do từ chối",{exact:true}).fill("Chưa thấy tiền vào");
         await host.getByRole("button",{name:"Từ chối biên nhận",exact:true}).click();
-      } else await host.getByRole("button",{name:"Host xác nhận tiền đã vào",exact:true}).click();
+      } else { await host.getByRole("button",{name:"Host xác nhận tiền đã vào",exact:true}).click(); await host.getByRole("dialog").getByRole("button",{name:"Xác nhận",exact:true}).click(); }
       await expect(host.getByText("Không có biên nhận đang chờ đối soát.",{exact:true})).toBeVisible();
       await member.goto(bookingPath);
       await expect(finance.getByText(reject ? "Chưa thấy tiền vào" : "Host đã ghi nhận thanh toán trước.",{exact:true})).toBeVisible();
@@ -121,6 +121,15 @@ test("zero to member registration, host approval, proof rejection/retry, payment
     expect((await pool.query("SELECT paid,payment_status FROM clubhost.bookings WHERE id=$1",[bookingId])).rows[0]).toEqual({paid:true,payment_status:"confirmed"});
     await expect(finance.getByText("Gửi biên nhận để host đối soát",{exact:true})).toHaveCount(0);
     await member.screenshot({path:`test-results/launch-paid-${info.project.name}.png`,fullPage:true});
+    for (const width of [360,390,430,768,1024,1440]) {
+      await member.setViewportSize({width,height:900});
+      for (const path of ["/me", "/me/schedule", "/me/payments", "/me/profile", bookingPath]) {
+        await member.goto(path);
+        expect(await member.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+        await expect(member.getByRole("navigation",{name:"Điều hướng người chơi"}).locator('[aria-current="page"]')).toHaveCount(1);
+      }
+      await member.screenshot({path:info.outputPath(`member-booking-${width}.png`),fullPage:true});
+    }
 
     const reset = await token("reset");
     await member.goto(`/reset-password?token=${reset}&audience=member`);

@@ -1,3 +1,4 @@
+import { dateTimeText } from "@/domain/format";
 type SessionDetailsProps = {
   game: {
     skillGuidance: string;
@@ -37,7 +38,7 @@ export function SessionDetails({ game }: SessionDetailsProps) {
   return <section aria-label="Thông tin tham gia" className="mt-5 rounded-2xl border bg-white p-5 sm:p-6">
     <h2 className="text-lg font-bold">Thông tin tham gia</h2>
     {maps && <a href={maps} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary">Mở bản đồ đến sân</a>}
-    {deadlines.length > 0 && <><dl className="mt-4 space-y-3 text-sm">{deadlines.map(([label, value]) => <div key={label} className="flex flex-wrap justify-between gap-2"><dt>{label}</dt><dd className="font-semibold">{value!.replace("T", " · ")}</dd></div>)}</dl><p className="mt-2 text-xs text-muted-foreground">Các mốc giờ theo Việt Nam (UTC+7).</p></>}
+    {deadlines.length > 0 && <><dl className="mt-4 space-y-3 text-sm">{deadlines.map(([label, value]) => <div key={label} className="flex flex-wrap justify-between gap-2"><dt>{label}</dt><dd className="font-semibold">{dateTimeText(value!)}</dd></div>)}</dl><p className="mt-2 text-xs text-muted-foreground">Các mốc giờ theo Việt Nam (UTC+7).</p></>}
     {notes.map(([label, value]) => <div key={label} className="mt-4"><h3 className="text-sm font-semibold">{label}</h3><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">{value}</p></div>)}
   </section>;
 }

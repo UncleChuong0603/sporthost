@@ -64,7 +64,7 @@ test("member onboarding, owner linkage, RSVP, dues, private uploads and revocati
     const badCsrf = await member.request.post(`/me/dues/${dueId}/proof`,{multipart:{csrf:"bad",proof:{name:"proof.png",mimeType:"image/png",buffer:qrBuffer}},headers:{Origin:origin}}); expect(badCsrf.status()).toBe(403);
     const ownCsrf = await csrf(member,`/me/bookings/${bookingId}`);
     const foreignUpload = await member.request.post(`/me/bookings/${foreignBookingId}/proof`,{multipart:{csrf:ownCsrf,proof:{name:"proof.png",mimeType:"image/png",buffer:qrBuffer}},headers:{Origin:origin}}); expect(foreignUpload.status()).toBe(404);
-    await member.getByText("Hủy tham gia",{exact:true}).click(); await member.getByRole("button",{name:"Xác nhận hủy cả nhóm",exact:true}).click();
+    await member.getByText("Hủy tham gia",{exact:true}).click(); await member.getByRole("button",{name:"Xác nhận hủy cả nhóm",exact:true}).click(); await member.getByRole("dialog").getByRole("button",{name:"Xác nhận",exact:true}).click();
     await expect(member.getByText("Đã hủy",{exact:true})).toBeVisible();
     await member.goto("/me/schedule?tab=history"); await expect(member.getByRole("heading",{name:"Hẹn sân của tôi",exact:true})).toBeVisible();
 
@@ -81,7 +81,7 @@ test("member onboarding, owner linkage, RSVP, dues, private uploads and revocati
     expect(await member.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await member.screenshot({path:`test-results/member-portal-${info.project.name}.png`,fullPage:true});
     await owner.reload(); const linkedRow = owner.getByRole("listitem").filter({has:owner.getByText(playerName,{exact:true})});
-    await linkedRow.getByText(`Tài khoản người chơi ${playerName}`,{exact:true}).click(); await linkedRow.getByRole("button",{name:"Gỡ liên kết tài khoản",exact:true}).click(); await expect(linkedRow.getByLabel("Email tài khoản thành viên",{exact:true})).toBeVisible();
+    await linkedRow.getByText(`Tài khoản người chơi ${playerName}`,{exact:true}).click(); await linkedRow.getByRole("button",{name:"Gỡ liên kết tài khoản",exact:true}).click(); await owner.getByRole("dialog").getByRole("button",{name:"Xác nhận",exact:true}).click(); await expect(linkedRow.getByLabel("Email tài khoản thành viên",{exact:true})).toBeVisible();
     expect((await member.request.get(`/me/bookings/${bookingId}`)).status()).toBe(404); expect((await member.request.get(`/me/dues/${qrDue}/qr`)).status()).toBe(404);
     await member.goto("/me/payments"); await expect(member.getByRole("heading",{name:"Chưa có khoản thanh toán",exact:true})).toBeVisible();
     expect(pageErrors).toEqual([]);

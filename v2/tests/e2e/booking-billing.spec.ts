@@ -52,6 +52,7 @@ test("group guest to attendance, exact sharing, receipt and close with debt", as
     await expect(page.getByText("50.001đ", { exact: true })).toBeVisible();
     await expect(page.getByText("50.000đ", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Phát hành tiền cần đóng", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Thu tiền và đối soát", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await guest.reload();

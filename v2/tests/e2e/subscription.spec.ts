@@ -15,12 +15,15 @@ test("owner sees trial, promotion and verified payment state on desktop and mobi
     await page.getByRole("button", { name: "Tạo câu lạc bộ", exact: true }).click();
     await expect(page).toHaveURL(/\/clubs\/\d+$/);
     clubId = Number(new URL(page.url()).pathname.split("/").at(-1));
-    await expect(page.getByRole("heading", { name: "Pro trial · còn 7 ngày" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dùng thử Pro · còn 7 ngày" })).toBeVisible();
     await page.getByRole("link", { name: "Gói Pro & thanh toán" }).click();
     await expect(page.getByRole("heading", { name: "Bạn đang dùng thử Pro" })).toBeVisible();
     await expect(page.getByText("Ưu đãi ra mắt · giảm 51%", { exact: true })).toBeVisible();
     await expect(page.locator("s")).toHaveText("99.000đ");
-    await expect(page.getByRole("button", { name: "Kích hoạt Pro · 49.000đ", exact: true })).toBeVisible();
+    if (process.env.SPORTHOST_TEST_PAYMENTS_DISABLED === "true") {
+      await expect(page.getByRole("status")).toContainText("Thanh toán đang được cấu hình");
+      await expect(page.getByRole("button", { name: "Kích hoạt Pro · 49.000đ", exact: true })).toHaveCount(0);
+    } else await expect(page.getByRole("button", { name: "Kích hoạt Pro · 49.000đ", exact: true })).toBeVisible();
     await expect(page.getByText("Tiết kiệm 50.000đ mỗi kỳ", { exact: true })).toBeVisible();
     await expect(page.getByText("Chưa có giao dịch.", { exact: false })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
