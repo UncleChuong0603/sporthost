@@ -41,6 +41,9 @@ test("check-in cohost cannot read contacts, finance, capabilities, CSV or privat
         const body = await response.text(); for (const value of forbidden) expect(body, path).not.toContain(value);
       }
     }
+    const calendar = await checker.request.get(gamePath+"/calendar.ics"); expect(calendar.status()).toBe(200);
+    expect(calendar.headers()["cache-control"]).toContain("no-store");
+    for (const value of forbidden) expect(await calendar.text()).not.toContain(value);
     for (const path of [gamePath + "/billing", gamePath + "/export.csv", `/finance?club_id=${club}`, `/finance/export.csv?club_id=${club}`, `/members?club_id=${club}`, `/clubs/${club}/qr`, `/payments/review?club_id=${club}`, proofPath]) {
       const result = await checker.request.get(path); expect(result.status(), path).toBe(403);
       expect(result.headers()["cache-control"]).toContain("no-store");
@@ -55,6 +58,7 @@ test("check-in cohost cannot read contacts, finance, capabilities, CSV or privat
     await page.getByRole("button", { name: "Thu hồi quyền", exact: true }).click();
     await expect(page.getByText("Chưa có đồng quản lý.", { exact: true })).toBeVisible();
     expect((await checker.request.get(gamePath)).status()).toBe(404);
+    expect((await checker.request.get(gamePath+"/calendar.ics")).status()).toBe(404);
     const denied = await checker.request.post(gamePath + "/toggle-open", { form: { csrf: checkerToken }, headers: { Origin: origin } }); expect(denied.status()).toBe(404);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally { await Promise.allSettled([checkerContext.close(), guestContext.close()]); }

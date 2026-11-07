@@ -12,7 +12,7 @@ import { dueContext } from "@/server/modules/finance/club";
 // Services repeat authorization at the data boundary; this is an HTTP compatibility guard only.
 export async function pageAccess(url: URL, cookie: string) {
   const path = url.pathname;
-  const playerResource = /^\/me\/(bookings|dues)\/([1-9]\d*)(?:\/(?:qr|proof))?$/.exec(path);
+  const playerResource = /^\/me\/(bookings|dues)\/([1-9]\d*)(?:\/(?:qr|proof|calendar\.ics))?$/.exec(path);
   if (playerResource) {
     const account = await findCurrentHost(cookie); if (!account) throw new AppError(401, "Vui lòng đăng nhập để tiếp tục.");
     const id = Number(playerResource[2]); if (!Number.isSafeInteger(id) || id > 2147483647) throw new AppError(404, "Không tìm thấy thông tin.");
@@ -28,10 +28,10 @@ export async function pageAccess(url: URL, cookie: string) {
   let club: number | null = null, capability: Capability = "view";
   const clubMatch = /^\/clubs\/(\d+)(?:\/(settings|access|qr|subscription))?$/.exec(path);
   if (clubMatch) { club = Number(clubMatch[1]); capability = clubMatch[2] === "qr" ? "manage_finance" : clubMatch[2] === "subscription" ? "owner" : "view"; }
-  const gameMatch = /^\/games\/(\d+)(?:\/(billing|export\.csv))?$/.exec(path);
+  const gameMatch = /^\/games\/(\d+)(?:\/(billing|export\.csv|calendar\.ics))?$/.exec(path);
   if (gameMatch) {
     const [game] = await db.select({ club: sessions.clubId }).from(sessions).where(eq(sessions.id, Number(gameMatch[1])));
-    if (!game) throw new AppError(404, "Không tìm thấy buổi chơi."); club = game.club; capability = gameMatch[2] ? "manage_finance" : "view";
+    if (!game) throw new AppError(404, "Không tìm thấy buổi chơi."); club = game.club; capability = ["billing", "export.csv"].includes(gameMatch[2]) ? "manage_finance" : "view";
   }
   const proofMatch = /^\/proofs\/(\d+)\/image$/.exec(path);
   if (proofMatch) {

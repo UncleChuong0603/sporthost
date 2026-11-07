@@ -20,6 +20,9 @@ test("legacy and current guest keys preserve identity through edits, decisions, 
     await post(visitor.request, publicPath, publicCsrf, { name: "Link guest", phone: "0901122334", gender: "male", channel: "facebook_link" });
     await visitor.goto(publicPath); await visitor.getByRole("link", { name: "Xem đăng ký & thanh toán của tôi" }).click(); await expect(visitor).toHaveURL(/\/attend\/[^/]+$/);
     const currentPath = new URL(visitor.url()).pathname; const currentKey = currentPath.split("/").at(-1)!;
+    const calendar = await visitor.request.get(currentPath + "/calendar.ics"); expect(calendar.status()).toBe(200);
+    expect(calendar.headers()["cache-control"]).toContain("no-store");
+    expect(await calendar.text()).not.toContain(currentKey);
     const booking = (await pool.query("SELECT b.id,b.channel,b.fee_amount,b.token_digest,b.token_expires_at FROM clubhost.bookings b JOIN clubhost.game_sessions s ON s.id=b.session_id WHERE s.id=$1 AND s.club_id=$2", [gameId, club])).rows[0]; expect(booking.channel).toBe("facebook_link");
     const legacy = randomBytes(24).toString("base64url");
     await pool.query("UPDATE clubhost.bookings SET access_key=$1,legacy_token_digest=$2 WHERE id=$3 AND session_id=$4", [legacy, createHash("sha256").update(legacy).digest("hex"), booking.id, gameId]);
@@ -39,12 +42,14 @@ test("legacy and current guest keys preserve identity through edits, decisions, 
     expect((await pool.query("SELECT fee_amount FROM clubhost.bookings WHERE id=$1", [booking.id])).rows[0].fee_amount).toBe(before);
     await post(page.request, path + "/private-link/rotate", csrf);
     expect((await visitor.request.get(currentPath)).status()).toBe(404); expect((await visitor.request.get(`/attend/${legacy}`)).status()).toBe(404);
+    expect((await visitor.request.get(currentPath+"/calendar.ics")).status()).toBe(404);
     await page.goto(gamePath); await page.getByText("Liên kết riêng của người chơi", { exact: true }).click(); const rotatedPath = (await page.getByRole("link", { name: "Mở đăng ký & thanh toán", exact: true }).getAttribute("href"))!;
     expect(rotatedPath).not.toBe(currentPath); expect((await visitor.request.get(rotatedPath)).status()).toBe(200);
     await post(page.request, path + "/private-link/revoke", csrf); expect((await visitor.request.get(rotatedPath)).status()).toBe(404);
     await post(page.request, path + "/private-link/rotate", csrf);
     await pool.query("UPDATE clubhost.bookings SET token_digest=$1,token_expires_at=$2 WHERE id=$3 AND session_id=$4", [createHash("sha256").update(currentKey).digest("hex"), new Date(Date.now() - 86400000).toISOString(), booking.id, gameId]);
     expect((await visitor.request.get(currentPath)).status()).toBe(404);
+    expect((await visitor.request.get(currentPath+"/calendar.ics")).status()).toBe(404);
     await post(page.request, gamePath + "/cancel", csrf); await page.goto(gamePath); await expect(page.getByText("Đã hủy", { exact: true }).first()).toBeVisible();
     expect((await pool.query("SELECT fee_amount FROM clubhost.bookings WHERE id=$1", [booking.id])).rows[0].fee_amount).toBe(before);
   } finally { await Promise.allSettled([visitorContext.close(), pool.end()]); }

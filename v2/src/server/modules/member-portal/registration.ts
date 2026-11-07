@@ -25,6 +25,9 @@ export async function playerOpenSessions(accountId: number) {
     capacity: game.capacity, confirmed: Object.values(await seatCounts(db, game.id)).reduce((a,b) => a+b, 0),
     fee: game.feeMode === "COST_SHARING" ? null : memberFee(game, { kind, gender }),
     cancellationPolicy: game.cancellationPolicy, participationConditions: game.participationConditions,
+    skillGuidance: game.skillGuidance, venueInstructions: game.venueInstructions, mapsUrl: game.mapsUrl,
+    registrationDeadline: game.registrationDeadline, cancellationDeadline: game.cancellationDeadline,
+    rsvpDeadline: kind === "fixed" ? game.rsvpDeadline : null,
     approval: kind === "fixed" || game.approvalMode === "AUTO_APPROVE" ? "Tự động xác nhận nếu còn chỗ" : "Host duyệt đăng ký",
   })));
 }

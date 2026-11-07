@@ -53,7 +53,7 @@ export async function guestBooking(key: PlayerBookingAccess) {
   const issued = !!await batchFor(db, game.id);
   const canRsvp = member.kind === "fixed" && !issued && !game.attendanceLocked && !["confirmed", "rejected"].includes(booking.status) && party.every(p => p.attendanceStatus === "NOT_MARKED") && registrationOpen(game) && (!game.rsvpDeadline || localNow() <= game.rsvpDeadline);
   const feeAmount = issued ? (await balances(db, game.id, booking.id)).reduce((sum, row) => sum + row.amount, 0) : booking.feeAmount ?? (member.kind === "fixed" ? game.fixedFee : game.guestFee);
-  return { ...publicGameFields(game), clubName: club.name, bookingId: booking.id, name: member.name, phone: member.phone, kind: member.kind, status: booking.status, issued, canRsvp, feeAmount, paymentStatus: booking.paymentStatus, paid: booking.paid, payerMode: booking.payerMode, editable, cancellable, policy: bookedPolicy(booking, game), participants: party.map(p => ({ id: p.id, name: p.name, gender: p.gender, level: p.level, attendanceStatus: p.attendanceStatus })) };
+  return { ...publicGameFields(game), clubName: club.name, bookingId: booking.id, name: member.name, phone: member.phone, kind: member.kind, status: booking.status, decisionReason: booking.decisionReason, rsvpDeadline: member.kind === "fixed" ? game.rsvpDeadline : null, issued, canRsvp, feeAmount, paymentStatus: booking.paymentStatus, paid: booking.paid, payerMode: booking.payerMode, editable, cancellable, policy: bookedPolicy(booking, game), participants: party.map(p => ({ id: p.id, name: p.name, gender: p.gender, level: p.level, attendanceStatus: p.attendanceStatus })) };
 }
 
 export async function guestFinance(key: PlayerBookingAccess) {

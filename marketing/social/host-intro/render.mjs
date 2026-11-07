@@ -1,0 +1,46 @@
+import {chromium} from '../../remotion/node_modules/@playwright/test/index.mjs';
+import {mkdir, writeFile} from 'node:fs/promises';
+import {fileURLToPath, pathToFileURL} from 'node:url';
+import path from 'node:path';
+
+const dir = path.dirname(fileURLToPath(import.meta.url));
+await mkdir(dir, {recursive: true});
+const logo = `<span class="logo-icon"><svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><span>SportHost</span>`;
+const arrow = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg>`;
+const screens = [
+  {file:'02-lich-choi', image:'schedule', n:'01', label:'Lịch chơi', title:'Rõ lịch hẹn.\nSẵn sàng lên sân.', desc:'Tạo buổi chơi, chọn giờ, sân và theo dõi người tham gia.'},
+  {file:'03-thanh-vien', image:'members', n:'02', label:'Thành viên', title:'Thành viên CLB,\ngọn trong một nơi.', desc:'Theo dõi danh sách thành viên cố định và vãng lai.'},
+  {file:'04-thu-chi', image:'finance', n:'03', label:'Thu chi', title:'Từng khoản đóng.\nRõ ràng hơn.', desc:'Theo dõi khoản đã ghi nhận, còn cần thu và chi phí của CLB.'},
+];
+const css = `
+@font-face{font-family:Manrope;src:url('../../remotion/public/fonts/manrope-latin.woff2');font-weight:200 800}
+@font-face{font-family:Manrope;src:url('../../remotion/public/fonts/manrope-vietnamese.woff2');font-weight:200 800;unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}
+*{box-sizing:border-box}html,body{margin:0;width:1200px;height:1500px;overflow:hidden}body{font-family:Manrope,Arial,sans-serif;color:#f7fbf8;background:#142d35;-webkit-font-smoothing:antialiased}
+.art{position:relative;width:1200px;height:1500px;padding:62px 64px;background:radial-gradient(ellipse at 100% 40%,#246151 0%,#142d35 64%);overflow:hidden}
+.art:before{content:'';position:absolute;width:620px;height:920px;border:1px solid #b8e6d926;right:-320px;top:220px;transform:rotate(35deg);pointer-events:none}
+header{display:flex;align-items:center;justify-content:space-between;position:relative}.logo{display:flex;gap:15px;align-items:center;font:bold 38px Arial,sans-serif;letter-spacing:-1px}.logo-icon{width:58px;height:58px;border-radius:15px;display:grid;place-items:center;background:#087f6b}.tag{font-size:17px;letter-spacing:2px;font-weight:750;color:#b8e6d9}.eyebrow{color:#d7ff8a;font-size:22px;letter-spacing:3px;font-weight:750;margin:66px 0 20px}
+h1{font-size:88px;line-height:1.18;letter-spacing:-4px;font-weight:800;margin:0;position:relative}.accent{color:#b8e6d9}.intro{font-size:27px;line-height:1.6;color:#d2e2df;max-width:950px;margin:26px 0 0}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;position:relative;margin-top:46px}.card{background:#edf4f2;border-radius:24px;overflow:hidden;color:#142d35;box-shadow:0 22px 45px #061c263d;height:575px;padding:0 12px 12px;border:1px solid #b8e6d955}.card-top{height:75px;display:flex;align-items:center;gap:12px;padding:0 10px;font-size:24px;font-weight:800}.num{font-size:15px;color:#087f6b;background:#d8eae3;border-radius:50%;width:30px;height:30px;display:grid;place-items:center}.window{background:#f3f6f8;border-radius:12px;overflow:hidden;height:474px;border:1px solid #d9e3e2}.window img{display:block;width:100%;height:auto}
+.features{display:flex;gap:13px;align-items:center;margin-top:38px;color:#b8e6d9;font-size:24px;font-weight:650}.dot{width:7px;height:7px;background:#d7ff8a;border-radius:50%;margin:0 3px}
+footer{position:absolute;left:64px;right:64px;bottom:48px;border-top:1px solid #b8e6d93d;padding-top:27px;display:flex;align-items:center;justify-content:space-between}.cta-label{font-size:20px;color:#b8e6d9;margin-bottom:5px}.url{font-size:35px;font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:14px}.note{font-size:17px;color:#b8e6d9;text-align:right;line-height:1.7}
+.detail{background:#edf5f0;color:#142d35}.detail:before{border-color:#087f6b22}.detail .tag{color:#087f6b}.detail .eyebrow{margin:46px 0 19px;color:#087f6b}.detail h1{font-size:70px;letter-spacing:-3px;line-height:1.2}.detail .intro{font-size:24px;color:#536570;margin:20px 0 0;max-width:1000px}.detail footer{border-color:#087f6b33}.detail .cta-label,.detail .note{color:#536570}.detail .url{color:#087f6b}.detail .product{position:relative;margin:35px auto 0;width:700px;height:828px;border-radius:26px;background:#f3f6f8;box-shadow:0 22px 50px #142d3526;border:1px solid #142d3526;overflow:hidden}.detail .product-bar{height:49px;display:flex;align-items:center;gap:7px;padding:0 20px;background:#142d35;color:#d6e8e0;font-size:15px}.detail .product-bar i{width:7px;height:7px;border-radius:50%;background:#b8e6d9;opacity:.65}.detail .product-bar span{margin-left:15px}.detail .product img{width:100%;height:auto;display:block}.detail .product.finance{width:620px}.detail .product.members{width:620px}
+`;
+function footer(){return `<footer><div><div class="cta-label">Khám phá SportHost</div><div class="url">sporthost.online ${arrow}</div></div><div class="note">Giao diện SportHost<br>Dữ liệu minh họa</div></footer>`;}
+function head(){return `<header><div class="logo">${logo}</div><div class="tag">DÀNH CHO HOST CẦU LÔNG</div></header>`;}
+function document(body){return `<!doctype html><html lang="vi"><meta charset="utf-8"><title>SportHost · Giới thiệu cho host</title><style>${css}</style><body>${body}</body></html>`;}
+const cover = document(`<main class="art">${head()}<p class="eyebrow">QUẢN LÝ CLB CẦU LÔNG</p><h1>Bớt việc quản lý.<br><span class="accent">Thêm giờ lên sân.</span></h1><p class="intro">Lịch chơi, thành viên, điểm danh và thu chi.<br>Gọn trong một nơi, dễ theo dõi hơn.</p><section class="cards">${screens.map(s=>`<div class="card"><div class="card-top"><span class="num">${s.n}</span>${s.label}</div><div class="window"><img src="../../remotion/public/screens/${s.image}.png" alt="Giao diện ${s.label} với dữ liệu demo"></div></div>`).join('')}</section><div class="features">Lên lịch<span class="dot"></span>Quản lý thành viên<span class="dot"></span>Điểm danh<span class="dot"></span>Thu chi</div>${footer()}</main>`);
+const pages=[{file:'01-sporthost-gioi-thieu',html:cover},...screens.map(s=>({file:s.file,html:document(`<main class="art detail">${head()}<p class="eyebrow">${s.n} / ${s.label.toLocaleUpperCase('vi-VN')}</p><h1>${s.title.replace('\n','<br>')}</h1><p class="intro">${s.desc}</p><div class="product ${s.image}"><div class="product-bar"><i></i><i></i><i></i><span>SportHost / ${s.label}</span></div><img src="../../remotion/public/screens/${s.image}.png" alt="Giao diện ${s.label} với dữ liệu demo"></div>${footer()}</main>`)}))];
+const browser=await chromium.launch({headless:true,executablePath:process.env.REMOTION_BROWSER_EXECUTABLE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
+try{
+  const page=await browser.newPage({viewport:{width:1200,height:1500},deviceScaleFactor:1});
+  for(const item of pages){
+    const htmlPath=path.join(dir,`${item.file}.html`);
+    await writeFile(htmlPath,item.html,'utf8');
+    await page.goto(pathToFileURL(htmlPath).href);
+    await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(img=>img.decode()));});
+    const layout=await page.evaluate(()=>({width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,images:[...document.images].every(img=>img.naturalWidth>0)}));
+    if(layout.width!==1200||layout.height!==1500||!layout.images) throw Error(`Invalid artwork: ${JSON.stringify(layout)}`);
+    await page.screenshot({path:path.join(dir,`${item.file}.png`),animations:'disabled'});
+    console.log(`Saved ${item.file}.png (1200 × 1500)`);
+  }
+}finally{await browser.close();}
