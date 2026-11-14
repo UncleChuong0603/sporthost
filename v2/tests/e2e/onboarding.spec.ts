@@ -117,8 +117,17 @@ test("missing target, keyboard pause, CSRF rejection and responsive normal usage
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const box = await tooltip.boundingBox(); expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     }
+    const network = await page.context().newCDPSession(page);
+    await network.send("Network.enable");
+    await network.send("Network.emulateNetworkConditions", { offline: false, latency: 350, downloadThroughput: -1, uploadThroughput: -1 });
     await page.keyboard.press("Escape"); await expect(tooltip).toBeHidden();
     await expect(page.getByRole("button", { name: "Hướng dẫn", exact: true })).toBeFocused();
+    // Reload immediately: the pause must survive page unload, rather than rely
+    // on the local overlay being hidden or on a localhost-speed response.
+    await page.reload();
+    await expect.poll(async () => (await (await page.request.get("/api/onboarding")).json()).status).toBe("paused");
+    await network.send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    await network.detach();
     await page.reload(); await expect(tooltip).toBeHidden();
     const snapshot = await (await page.request.get("/api/onboarding")).json();
     expect(snapshot.status).toBe("paused"); expect(snapshot.progress.some((p: { done: boolean }) => p.done)).toBe(false);

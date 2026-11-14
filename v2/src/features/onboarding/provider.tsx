@@ -40,7 +40,9 @@ export function OnboardingProvider({ csrf, children }: { csrf: string; children:
     if (!current) { await load(); return null; }
     inFlight.current = true; ++getGeneration.current; setBusy(true); setError("");
     try {
-      const response = await fetch("/api/onboarding", { method: "POST", signal: AbortSignal.timeout(15000), headers: { "Content-Type": "application/json", "x-csrf-token": csrf }, body: JSON.stringify({ ...command, revision: current.revision, clubId: command.clubId === undefined ? current.context.clubId : command.clubId }) });
+      // Escape dismisses immediately. Keep the small authenticated pause request
+      // alive if the host reloads/navigates before its response arrives.
+      const response = await fetch("/api/onboarding", { method: "POST", keepalive: command.action === "pause", signal: AbortSignal.timeout(15000), headers: { "Content-Type": "application/json", "x-csrf-token": csrf }, body: JSON.stringify({ ...command, revision: current.revision, clubId: command.clubId === undefined ? current.context.clubId : command.clubId }) });
       const result = await response.json();
       if (!response.ok) { if (response.status === 409 || response.status === 403 || response.status === 404) { inFlight.current = false; await load(); } throw Error(result.error || "Chưa lưu được hướng dẫn."); }
       if (["start", "resume", "restart", "select"].includes(command.action)) setLocallyPaused(false);
