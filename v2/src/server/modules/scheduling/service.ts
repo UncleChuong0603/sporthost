@@ -94,8 +94,9 @@ export async function inviteFixed(hostId: number, gameId: number) {
     if (game.lifecycleStatus !== "OPEN") throw new AppError(409, "Chỉ tạo lời mời trước khi bắt đầu buổi chơi.");
     const existing = new Set((await db.select({ memberId: bookings.memberId }).from(bookings).where(eq(bookings.sessionId, gameId))).map(b => b.memberId));
     const fixed = await db.select().from(members).where(and(eq(members.clubId, club.id), eq(members.kind, "fixed")));
-    for (const member of fixed) if (!existing.has(member.id)) await createBooking(db, game, club, member, "invited");
-    await auditChange(db, club.id, hostId, "Tạo link RSVP cho thành viên", null, { game_id: game.id });
+    let created = 0;
+    for (const member of fixed) if (!existing.has(member.id)) { await createBooking(db, game, club, member, "invited"); created++; }
+    await auditChange(db, club.id, hostId, "Tạo link RSVP cho thành viên", null, { game_id: game.id, created });
   });
 }
 

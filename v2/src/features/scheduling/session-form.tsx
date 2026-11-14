@@ -32,7 +32,7 @@ export function SessionForm({ action, csrf, clubs }: { action: (s: FormState, f:
     <fieldset className="space-y-4"><legend className="mb-4 text-lg font-bold">Thông tin buổi chơi</legend>
       <div className="grid gap-5 sm:grid-cols-2">
         <label className={field}><span className="block">Câu lạc bộ</span><select className={select} name="club_id" value={clubId} onChange={changeClub}>{clubs.map(club => <option key={club.id} value={club.id}>{club.name}</option>)}</select></label>
-        <label className={field}><span className="block">Tên buổi chơi</span><Input name="title" maxLength={150} required /></label>
+        <label className={field}><span className="block">Tên buổi chơi</span><Input data-tour="session-title" name="title" maxLength={150} required /></label>
         <label className={field}><span className="block">Địa điểm</span><Input name="venue" maxLength={180} /></label>
         <label className={field}><span className="block">Giờ bắt đầu</span><Input type="datetime-local" name="starts_at" required /></label>
         <label className={field}><span className="block">Sức chứa</span><Input type="number" name="capacity" min={1} max={200} defaultValue={first.default_capacity} required /></label>
@@ -56,7 +56,7 @@ export function SessionForm({ action, csrf, clubs }: { action: (s: FormState, f:
         </div><p className="mt-3 text-sm text-muted-foreground">Mức nam/nữ để trống dùng mức chung; nhập 0 nếu miễn phí.</p>
       </details>
     </fieldset>
-    <details className="rounded-xl border p-4"><summary className="min-h-11 cursor-pointer content-center font-semibold">Lặp lịch hàng tuần · Pro</summary>
+    <details className="rounded-xl border p-4"><summary data-tour="session-recurrence" className="min-h-11 cursor-pointer content-center font-semibold">Lặp lịch hàng tuần · Pro</summary>
       <p className="my-3 text-sm text-muted-foreground">Tạo trước nhiều tuần với cùng giờ và chính sách. Buổi lẻ luôn miễn phí.{!first.proActive && (first.proOwner ? <> <Link href={`/clubs/${first.id}/subscription`} className="inline-flex min-h-11 items-center font-semibold text-primary underline">Nâng cấp Pro</Link></> : " Liên hệ chủ CLB để kích hoạt Pro.")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={field}><span className="block">Số tuần (1 là buổi lẻ)</span><Input type="number" name="weeks" min={1} max={first.proActive ? 12 : 1} defaultValue={1} /></label>

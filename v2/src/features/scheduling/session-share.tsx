@@ -5,7 +5,7 @@ import { Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function SessionShare({ publicPath, title, startsAt, venue }: { publicPath: string; title: string; startsAt: string; venue: string | null }) {
+export function SessionShare({ publicPath, title, startsAt, venue, sessionId, clubId }: { publicPath: string; title: string; startsAt: string; venue: string | null; sessionId: number; clubId: number }) {
   const [url, setUrl] = useState(publicPath);
   const [canShare, setCanShare] = useState(false);
   const [message, setMessage] = useState("");
@@ -19,6 +19,7 @@ export function SessionShare({ publicPath, title, startsAt, venue }: { publicPat
     try {
       await navigator.clipboard.writeText(text);
       setMessage(success);
+      window.dispatchEvent(new CustomEvent("sporthost:share-success", { detail: { sessionId, clubId } }));
     } catch {
       input.current?.focus();
       input.current?.select();
@@ -29,7 +30,7 @@ export function SessionShare({ publicPath, title, startsAt, venue }: { publicPat
     const text = [title, startsAt.replace("T", " · "), venue || "", "Đăng ký tham gia tại:"].filter(Boolean).join("\n");
     setMessage(""); setBusy(true);
     try {
-      if (canShare) await navigator.share({ title, text, url });
+      if (canShare) { await navigator.share({ title, text, url }); window.dispatchEvent(new CustomEvent("sporthost:share-success", { detail: { sessionId, clubId } })); }
       else await copy(text + "\n" + url, "Đã sao chép lời mời. Bạn có thể dán vào nhóm chat của CLB.");
     } catch (error) {
       if (!(error instanceof Error && error.name === "AbortError")) setMessage("Chưa chia sẻ được. Bạn có thể sao chép liên kết để gửi lời mời.");
@@ -40,7 +41,7 @@ export function SessionShare({ publicPath, title, startsAt, venue }: { publicPat
     <p className="mt-2 text-sm text-muted-foreground">Gửi liên kết vào nhóm chat. Người chơi đăng ký trực tiếp, không cần tài khoản.</p>
     <label className="mt-4 block space-y-2 text-sm font-semibold"><span className="block">Liên kết đăng ký công khai</span><Input ref={input} readOnly value={url} onFocus={event => event.currentTarget.select()} /></label>
     <div className="mt-3 flex flex-wrap gap-3">
-      <Button variant="outline" type="button" onClick={() => { setMessage(""); void copy(url, "Đã sao chép liên kết đăng ký."); }}><Copy aria-hidden="true" className="size-4" />Sao chép liên kết</Button>
+      <Button data-tour="session-share" variant="outline" type="button" onClick={() => { setMessage(""); void copy(url, "Đã sao chép liên kết đăng ký."); }}><Copy aria-hidden="true" className="size-4" />Sao chép liên kết</Button>
       <Button variant="outline" type="button" disabled={busy} onClick={() => void share()}><Share2 aria-hidden="true" className="size-4" />{busy ? "Đang chia sẻ…" : canShare ? "Chia sẻ lời mời" : "Sao chép lời mời"}</Button>
     </div>
     <p role="status" className="mt-3 text-sm text-primary">{message}</p>

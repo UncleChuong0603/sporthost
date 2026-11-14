@@ -12,6 +12,7 @@ export function useRetainedAction(action: (state: FormState, form: FormData) => 
     try {
       const result = await action(previous, form);
       failed.current = !!result.error;
+      if (result.success) window.dispatchEvent(new Event("sporthost:mutation-success"));
       return result;
     } catch (error) {
       if (error instanceof Error && "digest" in error) throw error;

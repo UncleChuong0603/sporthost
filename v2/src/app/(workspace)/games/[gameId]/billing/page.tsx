@@ -24,7 +24,7 @@ export default async function Billing({ params }: { params: Promise<{ gameId: st
   const { game, calculation, batch, payers, totals } = view; const csrf = makeCsrf(await sessionCookie());
   return <><SessionClubScope clubId={game.clubId} />
     <Link href={`/games/${gameId}`} className="mb-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary">← Danh sách và điểm danh</Link>
-    <p className="mb-2 text-sm font-semibold text-primary">{game.clubName}</p><h1 className="text-3xl font-bold">Thu chi · {game.title}</h1>
+    <p className="mb-2 text-sm font-semibold text-primary">{game.clubName}</p><h1 data-tour="session-billing" tabIndex={-1} className="text-3xl font-bold">Thu chi · {game.title}</h1>
     <p className="mb-7 mt-3 text-sm text-muted-foreground">{batch ? `Đã phát hành · phiên bản ${batch.version}${batch.closedAt ? " · đã chốt sổ" : ""}` : "Bản nháp · kiểm tra điểm danh và chi phí trước khi phát hành"}</p>
     <div className="mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[
       ["Tổng phải đóng", batch ? totals.amount : calculation.total_due], ["Chi phí", calculation.total_expenses],
