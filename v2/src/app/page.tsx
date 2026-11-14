@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Activity, ArrowRight, CalendarDays, UsersRound, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { socialMetadata } from "@/lib/site-metadata";
+export const metadata = { alternates: { canonical: "https://sporthost.online/" }, openGraph: { ...socialMetadata.openGraph, url: "https://sporthost.online/" } };
 export const dynamic = "force-dynamic";
 export default function Home() {
   return <>
