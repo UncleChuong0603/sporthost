@@ -40,6 +40,8 @@ Build from `v2/`, for example `docker build --tag sporthost:v2 v2` from the repo
 The operator tools under `scripts/` handle database/media backups, local restore verification, explicit additive schema changes, Dokploy access and HTTP evidence. `check_nextjs_release.mjs --target production` inspects deployment/payment prerequisites without writes; `prepare_nextjs_release.py` freezes and verifies source archives without private configuration. They are outside the application image. If needed, use Python 3.11+ in a private virtual environment to install their separate operator dependencies from `scripts/requirements.txt`; FastAPI, SQLAlchemy application models, Alembic and the old web runtime are not required. Backup tools use native PostgreSQL clients and a verified VPS-volume inventory.
 
 - [Application setup](v2/README.md)
+- [Free Excel exports and Pro monthly reminders](docs/nextjs/EXCEL_MONTHLY_REMINDERS.md)
+- [Vietnamese step-by-step user guide](docs/nextjs/USER_GUIDE.md)
 - [Member onboarding and permissions](docs/nextjs/MEMBER_PORTAL.md)
 - [Super Admin dashboard, migration and secure setup](docs/admin-dashboard.md)
 - [Current release evidence](docs/nextjs/PROGRESS.md)

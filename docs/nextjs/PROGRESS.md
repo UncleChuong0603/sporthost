@@ -2,6 +2,12 @@
 
 SportHost v2 is live at <https://sporthost.online> on 2026-11-04. The existing Dokploy production Application now runs one full-stack Next.js application with normal writes enabled, the original PostgreSQL `clubhost` schema and signing key, private VPS uploads and SMTP. Its runtime contains Node, not Python/FastAPI. No destructive database migration or agent DNS edit was performed.
 
+## Latest feature release: Excel and monthly reminders, 2026-11-15
+
+Free `.xlsx` exports now cover members, attendance, session finance and filtered club finance. Pro owners can configure monthly-dues reminders with separate verified/linked player consent; all new switches remain disabled by default. The 43-article Vietnamese guide and interactive tutorial copy reflect these flows. An onboarding pause/unload race found on preview is also fixed. See [Excel and monthly reminders](EXCEL_MONTHLY_REMINDERS.md) for the feature inventory, walkthrough, permissions, limits, QA and full release/rollback evidence.
+
+Commits `ebbec11` and `392cedf` are pushed. Production deployment `liTZQ6rdqLwZtVut67txx` is healthy on the exact preview-tested image `sha256:085362df5e3100ee92ad9d100f909da589b8819efd2e10499664f1574f8f9530`; all 344 deployed files match the immutable manifest. Validation passed 320 unit/integration cases, 19 operator tests, TypeScript/build/artifact scan, 16 distinct desktop/mobile preview scenarios across the broad and final focused runs, 22 production HTTP checks and 10 authenticated read-only page checks. The 35-table backup restored safely; migration 0008 and post-release comparison preserve original business rows and legacy revision. Runtime settings/media volume are unchanged. The existing 15-minute cron completed an authenticated scan with zero eligible records; no synthetic production transactions were created.
+
 Sprint 0 was completed before feature rewriting; its independent route contract and architecture, compatibility and acceptance references remain in `sprint-0/`. Completed inventory/audit/migration reports were privately archived and removed during cleanup. Current implementation is in `v2/`; completed HTTP evidence is recorded separately below.
 
 ## Local pre-launch candidate: 2026-11-05
