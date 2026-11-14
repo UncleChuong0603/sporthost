@@ -16,7 +16,6 @@ test("group guest to attendance, exact sharing, receipt and close with debt", as
   await page.getByLabel("Tên buổi chơi").fill("Chơi và chia phí");
   await page.getByLabel("Giờ bắt đầu").fill(localNow(new Date(Date.now() + 7 * 86400000)));
   await page.getByLabel("Sức chứa", { exact: true }).fill("3");
-  await page.getByText("Lịch lặp, giới hạn và chính sách nâng cao", { exact: true }).click();
   await page.getByRole("combobox", { name: "Cách tính phí", exact: true }).selectOption("COST_SHARING");
   await page.getByRole("button", { name: "Tạo buổi chơi", exact: true }).click();
   await expect(page).toHaveURL(/\/games\/\d+$/);

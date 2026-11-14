@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { isAbsolute } from "node:path";
+import { PRO_TRIAL_DAYS, PRO_PERIOD_DAYS, PRO_PRICE, PRO_ORIGINAL_PRICE } from "@/domain/subscription";
 
 const bool = z.enum(["true", "false"]).transform(v => v === "true");
 const configSchema = z.object({
@@ -25,12 +26,17 @@ const configSchema = z.object({
   PAYOS_CLIENT_ID: z.string().optional(),
   PAYOS_API_KEY: z.string().optional(),
   PAYOS_CHECKSUM_KEY: z.string().optional(),
+  SUBSCRIPTION_TRIAL_DAYS: z.coerce.number().int().min(1).max(365).default(PRO_TRIAL_DAYS),
+  SUBSCRIPTION_PERIOD_DAYS: z.coerce.number().int().min(1).max(365).default(PRO_PERIOD_DAYS),
+  SUBSCRIPTION_PRICE_VND: z.coerce.number().int().min(1000).max(100000000).default(PRO_PRICE),
+  SUBSCRIPTION_ORIGINAL_PRICE_VND: z.coerce.number().int().min(1000).max(100000000).default(PRO_ORIGINAL_PRICE),
 });
 
 export function parseConfig(env: Record<string, string | undefined>) {
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) throw new Error(`Invalid server configuration: ${[...new Set(parsed.error.issues.map(i => i.path[0]))].join(", ")}`);
   const value = parsed.data;
+  if (value.SUBSCRIPTION_ORIGINAL_PRICE_VND < value.SUBSCRIPTION_PRICE_VND) throw new Error("SUBSCRIPTION_ORIGINAL_PRICE_VND must cover SUBSCRIPTION_PRICE_VND");
   const origin = new URL(value.APP_URL);
   if (origin.username || origin.password || origin.search || origin.hash || origin.pathname !== "/") throw new Error("APP_URL must be an origin");
   const hosts = value.ALLOWED_HOSTS.split(",").map(v => v.trim()).filter(Boolean);

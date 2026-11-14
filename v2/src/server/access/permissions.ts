@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { clubsInClubhost as clubs, clubAccessInClubhost as access } from "@/server/db/schema";
 import { AppError } from "@/server/errors";
+import { requireActiveAccount } from "@/server/auth/account-status";
 
 export const permissionLabels = { manage_session: "Quản lý buổi chơi", manage_bookings: "Quản lý người chơi", check_in: "Điểm danh tại sân", manage_finance: "Quản lý thu chi", edit_club_settings: "Sửa cài đặt CLB" } as const;
 export type Permission = keyof typeof permissionLabels;
@@ -21,6 +22,7 @@ export function hasPermission(owner: boolean, rights: Permission[], capability: 
   return rights.includes(capability);
 }
 export async function requireClubAccess(db: NodePgDatabase, hostId: number, clubId: number, capability: Capability = "view") {
+  await requireActiveAccount(db, hostId);
   const [row] = await db.select({ club: clubs, access }).from(clubs).leftJoin(access, and(eq(access.clubId, clubs.id), eq(access.hostId, hostId))).where(eq(clubs.id, clubId));
   if (!row || (row.club.ownerId !== hostId && !row.access)) throw new AppError(404, "Không tìm thấy câu lạc bộ.");
   const owner = row.club.ownerId === hostId;

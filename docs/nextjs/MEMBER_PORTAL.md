@@ -11,6 +11,8 @@ The member area is part of the existing full-stack Next.js application. It uses 
 
 An unverified or unlinked account sees onboarding, not another player's data. Existing guest links and registration without login are preserved.
 
+The local UX round 2 also adds a Free invitation/request path: owners share `/connect/:code`, verified players submit requests at `/me/connect`, and owners choose the correct existing member profile before approval. See [Club connection requests](CLUB_CONNECTIONS.md) for behavior and the required additive `0004_club_connections.sql` migration. The release record below describes the earlier member portal deployment, not deployment of this new flow.
+
 ## UI and behavior
 
 - `/me`: personal overview, upcoming sessions, invitations, debt and linked clubs.

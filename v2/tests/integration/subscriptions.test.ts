@@ -8,14 +8,14 @@ import { grantAccess } from "@/server/modules/clubs/access";
 import { deleteClub } from "@/server/modules/clubs/deletion";
 import { getPool, closePool } from "@/server/db/client";
 import * as payos from "@/server/infrastructure/payos";
-import { checkoutPro, refreshPayment, cancelPayment, receivePaymentWebhook, subscriptionDetails } from "@/server/modules/subscriptions/service";
+import { checkoutPro, refreshPayment, cancelPayment, receivePaymentWebhook, subscriptionDetails, adminRefreshPayment } from "@/server/modules/subscriptions/service";
 import { POST } from "@/app/api/webhooks/payos/route";
 
 const prefix = "payment-test-" + randomBytes(6).toString("hex");
 const clubs: number[] = []; const hosts: number[] = [];
 const remote = new Map<number, PaymentLink>();
 const sdk = new PayOS({ clientId: "synthetic-client", apiKey: "synthetic-api", checksumKey: "synthetic-checksum", logLevel: "off" });
-let owner: number, other: number, cohost: number;
+let owner: number, other: number, cohost: number, admin: number;
 const create = vi.spyOn(sdk.paymentRequests, "create").mockImplementation(async input => {
   if (input.description.length > 9) throw Error("Provider rejects descriptions longer than nine characters for unlinked banks");
   if (!remote.has(input.orderCode)) remote.set(input.orderCode, { id: "link-" + input.orderCode, orderCode: input.orderCode, amount: input.amount, amountPaid: 0, amountRemaining: input.amount, status: "PENDING", createdAt: new Date().toISOString(), canceledAt: null, cancellationReason: null, transactions: [] });
@@ -40,13 +40,15 @@ beforeAll(async () => {
   installTestEnv();
   vi.stubEnv("PAYOS_CLIENT_ID", "synthetic-client"); vi.stubEnv("PAYOS_API_KEY", "synthetic-api"); vi.stubEnv("PAYOS_CHECKSUM_KEY", "synthetic-checksum");
   vi.spyOn(payos, "getPayOS").mockReturnValue(sdk);
-  for (const role of ["owner", "other", "cohost"]) hosts.push((await signup(prefix + role + "@example.com", "synthetic-password-123")).id);
-  [owner, other, cohost] = hosts;
+  for (const role of ["owner", "other", "cohost", "admin"]) hosts.push((await signup(prefix + role + "@example.com", "synthetic-password-123")).id);
+  [owner, other, cohost, admin] = hosts;
+  await getPool().query("UPDATE clubhost.hosts SET is_platform_admin=true WHERE id=$1",[admin]);
 });
 afterAll(async () => {
   if (hosts.length) {
     await getPool().query("DELETE FROM clubhost.platform_ledger_entries WHERE created_by=ANY($1::int[])", [hosts]);
     await getPool().query("DELETE FROM clubhost.audit_logs WHERE host_id=ANY($1::int[])", [hosts]);
+    await getPool().query("DELETE FROM clubhost.admin_audit_events WHERE actor_id=ANY($1::int[])", [hosts]);
     await getPool().query("DELETE FROM clubhost.payment_orders WHERE host_id=ANY($1::int[])", [hosts]);
     await getPool().query("DELETE FROM clubhost.club_access WHERE club_id=ANY($1::int[])", [clubs]);
     await getPool().query("DELETE FROM clubhost.clubs WHERE id=ANY($1::int[])", [clubs]);
@@ -55,6 +57,19 @@ afterAll(async () => {
   vi.restoreAllMocks(); vi.unstubAllEnvs(); await closePool();
 });
 describe("payOS orders, activation and safety", () => {
+  it("allows administrators to verify provider funds with transactional activation and audit, never a manual PAID override",async()=>{
+    const id=await club();await checkoutPro(owner,id);const order=await latest(id);
+    await expect(adminRefreshPayment(other,id,order.orderCode,"Reviewed provider payment")).rejects.toMatchObject({status:403});
+    await expect(adminRefreshPayment(admin,id,order.orderCode+1,"Reviewed provider payment")).rejects.toMatchObject({status:404});
+    await expect(adminRefreshPayment(admin,id,order.orderCode,"Reviewed provider payment")).rejects.toMatchObject({status:409});
+    expect((await subscriptionDetails(owner,id)).club.proEndsAt).toBeNull();
+    paid(order.orderCode);await adminRefreshPayment(admin,id,order.orderCode,"Reviewed provider payment");
+    const before=(await subscriptionDetails(owner,id)).club.proEndsAt;
+    await adminRefreshPayment(admin,id,order.orderCode,"Idempotent verification retry");
+    expect((await subscriptionDetails(owner,id)).club.proEndsAt).toBe(before);
+    const logs=(await getPool().query("SELECT changes,reason FROM clubhost.admin_audit_events WHERE actor_id=$1 AND target_id=$2 AND action='verify_payment'",[admin,id])).rows;
+    expect(logs).toHaveLength(1);expect(logs[0]).toMatchObject({reason:"Reviewed provider payment",changes:{after:{order_status:"PAID",amount:49000},verification:"payOS server API"}});
+  });
   it("grants exactly seven days to new clubs and restricts billing to owners", async () => {
     const id = await club(); const details = await subscriptionDetails(owner, id);
     expect(details.state).toMatchObject({ kind: "TRIAL", daysLeft: 7 });

@@ -12,7 +12,9 @@ import { getPayOS, safeCheckoutUrl } from "@/server/infrastructure/payos";
 import { requireClubAccess } from "@/server/access/permissions";
 import { auditChange } from "@/server/modules/bookings/core";
 import { AppError } from "@/server/errors";
-import { PRO_PRICE, PRO_ORIGINAL_PRICE, PRO_PERIOD_DAYS, extendedProEnd, subscriptionState } from "@/domain/subscription";
+import { extendedProEnd, subscriptionState } from "@/domain/subscription";
+import { getSubscriptionPolicy } from "./policy";
+import { assertAdmin } from "@/server/modules/admin/service";
 
 type Order = typeof orders.$inferSelect;
 const active = ["CREATING", "PENDING"];
@@ -35,7 +37,7 @@ async function ownedOrder(hostId: number, clubId: number, orderCode: number) {
 
 // All entry points (webhook, return polling, manual refresh and cancel) converge
 // here. Lock club before order; never hold a database lock during provider I/O.
-async function applyProviderPayment(order: Order, payment: PaymentLink) {
+async function applyProviderPayment(order: Order, payment: PaymentLink, adminContext?: { actorId: number; reason: string }) {
   if (payment.orderCode !== order.orderCode || payment.amount !== order.amount || !payment.id || (order.paymentLinkId && payment.id !== order.paymentLinkId)) {
     throw new AppError(409, "Thông tin giao dịch không khớp đơn thanh toán.", "payment_mismatch");
   }
@@ -44,6 +46,10 @@ async function applyProviderPayment(order: Order, payment: PaymentLink) {
   }
   return transaction(async client => {
     const db = drizzle(client);
+    if (adminContext) {
+      await client.query("SELECT pg_advisory_xact_lock(84621031)");
+      await assertAdmin(adminContext.actorId, client, true);
+    }
     const [club] = order.clubId === null ? [] : await db.select().from(clubs).where(eq(clubs.id, order.clubId)).for("update");
     const [current] = await db.select().from(orders).where(eq(orders.orderCode, order.orderCode)).for("update");
     if (!current) throw new AppError(404, "Không tìm thấy đơn thanh toán.");
@@ -58,6 +64,8 @@ async function applyProviderPayment(order: Order, payment: PaymentLink) {
         note: `payOS #${current.orderCode} · ${current.clubName} · ${current.periodDays} ngày${club ? "" : " · CLB đã xóa, cần hỗ trợ"}`, createdBy: current.hostId, createdAt: now.toISOString(), version: 0, requestKey: `payos:${current.orderCode}` });
       await auditChange(db, club?.id ?? null, current.hostId, club ? "Kích hoạt SportHost Pro" : "Thanh toán Pro cho CLB đã xóa", null,
         { order_code: current.orderCode, amount: current.amount, period_days: current.periodDays, pro_ends_at: activatedUntil });
+      if (adminContext && club) await client.query("INSERT INTO clubhost.admin_audit_events(actor_id,action,target_type,target_id,reason,changes) VALUES($1,'verify_payment','club',$2,$3,$4)", [adminContext.actorId, club.id, adminContext.reason,
+        JSON.stringify({ before: { order_status: current.status, pro_ends_at: club.proEndsAt }, after: { order_code: current.orderCode, order_status: "PAID", amount: current.amount, pro_ends_at: activatedUntil }, verification: "payOS server API" })]);
       return updated;
     }
     // A delayed PENDING response must never undo cancellation/expiry or payment.
@@ -66,6 +74,17 @@ async function applyProviderPayment(order: Order, payment: PaymentLink) {
     const [updated] = await db.update(orders).set({ status, paymentLinkId: payment.id, checkoutUrl: safeCheckoutUrl(`https://pay.payos.vn/web/${encodeURIComponent(payment.id)}`) }).where(eq(orders.orderCode, current.orderCode)).returning();
     return updated;
   });
+}
+
+// Admin can only re-check an existing provider order. No manual PAID override or screenshot activation.
+export async function adminRefreshPayment(actorId: number, clubId: number, orderCode: number, reason: string) {
+  await assertAdmin(actorId);
+  if (![clubId, orderCode].every(v => Number.isSafeInteger(v) && v > 0) || reason.trim().length < 5 || reason.length > 500) throw new AppError(400, "Cần mã đơn và lý do hợp lệ.");
+  const [order] = await getDb().select().from(orders).where(and(eq(orders.clubId, clubId), eq(orders.orderCode, orderCode)));
+  if (!order) throw new AppError(404, "Đơn thanh toán không thuộc CLB này.");
+  const result = await applyProviderPayment(order, await fetchPayment(order), { actorId, reason: reason.trim() });
+  if (result.status !== "PAID") throw new AppError(409, "payOS chưa xác nhận đã nhận đủ tiền. Chưa kích hoạt Pro.");
+  return result;
 }
 
 async function fetchPayment(order: Order) {
@@ -81,6 +100,7 @@ export async function refreshPayment(hostId: number, clubId: number, orderCode: 
 
 export async function checkoutPro(hostId: number, clubId: number) {
   const provider = getPayOS();
+  const policy = getSubscriptionPolicy();
   const order = await transaction(async client => {
     const db = drizzle(client);
     await db.select({ id: clubs.id }).from(clubs).where(eq(clubs.id, clubId)).for("update");
@@ -89,7 +109,7 @@ export async function checkoutPro(hostId: number, clubId: number) {
     if (existing) return existing;
     // 15 digits, safely within the payOS/JavaScript integer range; no timestamp collisions.
     const [created] = await db.insert(orders).values({ orderCode: randomInt(100_000_000_000_000, 281_474_976_710_655), clubId, hostId, clubName: club.name,
-      amount: PRO_PRICE, originalAmount: PRO_ORIGINAL_PRICE, periodDays: PRO_PERIOD_DAYS, status: "CREATING", expiresAt: new Date(Date.now() + 15 * 60000).toISOString() }).returning();
+      amount: policy.price, originalAmount: policy.originalPrice, periodDays: policy.periodDays, status: "CREATING", expiresAt: new Date(Date.now() + 15 * 60000).toISOString() }).returning();
     return created;
   });
   const path = subscriptionPath(clubId);

@@ -25,7 +25,7 @@ test("native one-use account links and persisted admin ledger keep legacy contra
     await pool.query("UPDATE clubhost.hosts SET is_platform_admin=true WHERE id=$1 AND email=$2", [hostId, email]);
     expect((await page.request.get("/admin")).status()).toBe(200); expect((await page.request.get("/admin/platform-ledger")).status()).toBe(200);
     const clubResponse = await post(page.request, "/clubs", csrf, { name: "Admin parity isolated club" }); const club = clubResponse.headers().location.match(/\/clubs\/(\d+)/)![1];
-    await post(page.request, `/admin/clubs/${club}/trial`, csrf, { days: "30" });
+    await post(page.request, `/admin/clubs/${club}/trial`, csrf, { days: "30", confirmed: "yes", reason: "Reviewed native trial extension" });
     const requestKey = randomBytes(20).toString("hex"); const entry = { entry_date: localNow().slice(0, 10), direction: "INCOME", category: "Native parity " + requestKey, amount: "99000", note: "Independent platform entry", request_key: requestKey };
     await post(page.request, "/admin/platform-ledger", csrf, entry); await post(page.request, "/admin/platform-ledger", csrf, entry);
     const entries = (await pool.query("SELECT id,amount,version FROM clubhost.platform_ledger_entries WHERE request_key=$1 AND created_by=$2", [requestKey, hostId])).rows; expect(entries).toHaveLength(1);

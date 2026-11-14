@@ -8,7 +8,9 @@ import { requireClubAccess, capabilities, hasPermission } from "@/server/access/
 import { sports } from "@/domain/catalog";
 import { isVietnamProvince } from "@/domain/vietnam-provinces";
 import { AppError } from "@/server/errors";
-import { PRO_TRIAL_DAYS, subscriptionState } from "@/domain/subscription";
+import { subscriptionState } from "@/domain/subscription";
+import { getSubscriptionPolicy } from "@/server/modules/subscriptions/policy";
+import { requireActiveAccount } from "@/server/auth/account-status";
 
 export const clubSchema = z.object({
   name: z.string().trim().min(1, "Vui lòng nhập tên CLB.").max(100), location: z.string().trim().max(180).default(""),
@@ -33,6 +35,7 @@ function parsedSettings(raw: unknown, previousLocation?: string) {
 }
 
 export async function listClubs(hostId: number) {
+  await requireActiveAccount(getDb(), hostId);
   const rows = await getDb().select({ id: clubs.id, name: clubs.name, location: clubs.location, sportType: clubs.sportType, defaultCapacity: clubs.defaultCapacity, ownerId: clubs.ownerId, role: access.role, permissions: access.permissions }).from(clubs).leftJoin(access, and(eq(access.clubId, clubs.id), eq(access.hostId, hostId))).where(or(eq(clubs.ownerId, hostId), eq(access.hostId, hostId))).orderBy(desc(clubs.id));
   return rows.map(({ ownerId, role, permissions, ...club }) => ({ ...club, owner: ownerId === hostId, rights: ownerId === hostId ? ["manage_session", "manage_bookings", "check_in", "manage_finance", "edit_club_settings"] : capabilities(role ? { role, permissions } : null) }));
 }
@@ -41,7 +44,8 @@ export async function createClub(hostId: number, raw: unknown) {
   const values = parsedSettings(raw);
   return transaction(async client => {
     const db = drizzle(client);
-    const [club] = await db.insert(clubs).values({ ...asColumns(values), ownerId: hostId, trialEndsAt: new Date(Date.now() + PRO_TRIAL_DAYS * 86400000).toISOString() }).returning({ id: clubs.id });
+    await requireActiveAccount(db, hostId);
+    const [club] = await db.insert(clubs).values({ ...asColumns(values), ownerId: hostId, trialEndsAt: new Date(Date.now() + getSubscriptionPolicy().trialDays * 86400000).toISOString() }).returning({ id: clubs.id });
     await db.insert(audit).values({ clubId: club.id, hostId, action: "Tạo CLB", details: JSON.stringify({ before: null, after: values }), createdAt: new Date().toISOString() });
     return club;
   });

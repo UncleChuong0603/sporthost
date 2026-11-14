@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, desc, like, isNull, inArray } from "drizzle-orm";
+import { and, eq, desc, like, isNull, inArray, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 import { getDb, transaction } from "@/server/db/client";
@@ -8,9 +8,10 @@ import { auditChange } from "@/server/modules/bookings/core";
 import { periodSchema } from "@/server/modules/finance/club";
 import { moneySchema } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
+import { adminCommand } from "@/server/modules/admin/service";
 
 async function admin(db: NodePgDatabase, hostId: number, lock = false) {
-  const query = db.select({ id: hosts.id, admin: hosts.isPlatformAdmin }).from(hosts).where(eq(hosts.id, hostId));
+  const query = db.select({ id: hosts.id, admin: hosts.isPlatformAdmin }).from(hosts).where(and(eq(hosts.id, hostId), sql`NOT EXISTS (SELECT 1 FROM clubhost.account_controls ac WHERE ac.account_id=${hosts.id} AND ac.suspended)`));
   const [host] = await (lock ? query.for("update") : query);
   if (!host?.admin) throw new AppError(403, "Chỉ quản trị nền tảng được thực hiện thao tác này.");
 }
@@ -52,14 +53,9 @@ export async function platformOverview(hostId: number) {
     hosts: await db.select({ id: hosts.id, email: hosts.email, emailVerified: hosts.emailVerified, isPlatformAdmin: hosts.isPlatformAdmin }).from(hosts).orderBy(desc(hosts.id)),
     logs: await db.select({ id: logs.id, action: logs.action, details: logs.details, createdAt: logs.createdAt }).from(logs).where(isNull(logs.clubId)).orderBy(desc(logs.id)).limit(60) };
 }
-export async function extendTrial(hostId: number, clubId: number, days: number) {
-  if (!Number.isInteger(days) || days < 1 || days > 365) throw new AppError(400, "Gia hạn từ 1 đến 365 ngày.");
-  return transaction(async client => {
-    const db = drizzle(client); await admin(db, hostId);
-    const [club] = await db.select({ id: clubs.id, trialEndsAt: clubs.trialEndsAt }).from(clubs).where(eq(clubs.id, clubId)).for("update");
-    if (!club) throw new AppError(404, "Không tìm thấy CLB.");
-    const trialEndsAt = new Date(Date.now() + days * 86400000).toISOString();
-    await db.update(clubs).set({ trialEndsAt }).where(eq(clubs.id, clubId));
-    await auditChange(db, clubId, hostId, "Gia hạn Pro trial miễn phí", { trial_ends_at: club.trialEndsAt }, { trial_ends_at: trialEndsAt, days });
-  });
+export async function extendTrial(hostId: number, clubId: number, days: number, reason = "") {
+  const db = getDb(); await admin(db, hostId);
+  const [club] = await db.select({ trialEndsAt: clubs.trialEndsAt, proEndsAt: clubs.proEndsAt }).from(clubs).where(eq(clubs.id, clubId));
+  if (!club) throw new AppError(404, "Không tìm thấy CLB.");
+  return adminCommand(hostId, { action: "extend_trial", targetId: clubId, days, reason, confirmed: true, version: `${club.trialEndsAt || ""}|${club.proEndsAt || ""}` });
 }

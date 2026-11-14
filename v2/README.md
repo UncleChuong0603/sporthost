@@ -14,8 +14,14 @@ SMTP is configurable through `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWO
 
 The player area starts at `/me` (signup/login at `/me/signup` and `/me/login`). It shares authentication but requires a verified email and explicit club-owner linkage to a member profile. Read `../docs/nextjs/MEMBER_PORTAL.md` for onboarding, authorization and the operator-applied additive migration `migrations/0001_member_accounts.sql`. Apply it to a disposable development/test database as well; the original 241-column baseline is preserved and readiness also checks the four new link columns. Startup never applies it.
 
+Free club invitation/request onboarding is implemented at `/connect/:code`, `/me/connect` and `/clubs/:id/connections`. Apply the additive `migrations/0004_club_connections.sql` before deploying this source; see [Club connection requests](../docs/nextjs/CLUB_CONNECTIONS.md) for authorization, behavior and rollout. This local change has not been deployed.
+
 Uploads are private. Both QR and bank text are snapshotted for existing obligations, and new images are removed if their database transaction fails. Uploaded payment screenshots remain reports until an authorized host explicitly reviews real received money. Issued charge snapshots are immutable; later changes use versioned adjustments and append-only money movements.
 
 The latest [pre-launch host/member review](../docs/nextjs/LAUNCH_REVIEW.md) records the public entry page, club setup guide, direct member registration, account recovery and payment acceptance coverage. Authentication remains self-hosted email/password; Google sign-in is not required.
 
 SportHost Pro uses payOS for per-club purchases: 7-day trial for new clubs, launch price 49,000 VND / 30 days (original 99,000 VND), verified automatic activation and cumulative renewal. Apply the additive `migrations/0002_payos_orders.sql` explicitly before deploying, configure server-only payOS keys, then register the public webhook. See [payment setup and recovery](../docs/nextjs/PAYMENTS.md). Local env keys are not automatically copied to production.
+
+## Super Admin operations
+
+The separate `/admin` area uses the existing authentication and persisted platform administrator flag. Apply the reviewed additive admin migration before releasing this code; public registration and email verification never grant administrative privileges. See [Admin dashboard operations](../docs/admin-dashboard.md) for migration grants, KPI definitions, subscription policy, initial trusted-account setup and verification.

@@ -8,9 +8,10 @@ import { ensureCsrf, sessionCookie, setSession } from "@/server/auth/session";
 import { ensureMutation, clientIdentity } from "@/server/http";
 import { rateLimit } from "@/server/infrastructure/rate-limit";
 import { safeError } from "@/server/errors";
+import { authDestination } from "@/domain/auth-destination";
 
 export type AuthResult = { error?: string; fields?: Record<string, string> };
-export async function authenticate(mode: "login" | "signup", input: { email: string; password: string; csrf: string }, destination: "/dashboard" | "/me" = "/dashboard"): Promise<AuthResult> {
+export async function authenticate(mode: "login" | "signup", input: { email: string; password: string; csrf: string }, destination: string = "/dashboard"): Promise<AuthResult> {
   try {
     const requestHeaders = await headers();
     ensureMutation(requestHeaders);
@@ -21,7 +22,7 @@ export async function authenticate(mode: "login" | "signup", input: { email: str
     const host = mode === "signup" ? await signup(parsed.data.email, parsed.data.password) : await login(parsed.data.email, parsed.data.password);
     await setSession(host);
   } catch (error) { return { error: safeError(error).message }; }
-  redirect(destination === "/me" ? "/me" : "/dashboard");
+  redirect(authDestination(destination, "/dashboard"));
 }
 
 export async function logout(form: FormData) {

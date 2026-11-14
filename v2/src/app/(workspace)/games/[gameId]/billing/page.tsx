@@ -1,3 +1,4 @@
+import { SessionClubScope } from "@/features/clubs/workspace-scope";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { randomBytes } from "node:crypto";
@@ -18,7 +19,7 @@ export default async function Billing({ params }: { params: Promise<{ gameId: st
   const host = await requireHost();
   const view = await financeView(host.id, gameId).catch(error => { if (error instanceof AppError && error.status === 404) notFound(); throw error; });
   const { game, calculation, batch, payers, totals } = view; const csrf = makeCsrf(await sessionCookie());
-  return <>
+  return <><SessionClubScope clubId={game.clubId} />
     <Link href={`/games/${gameId}`} className="mb-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary">← Danh sách và điểm danh</Link>
     <p className="mb-2 text-sm font-semibold text-primary">{game.clubName}</p><h1 className="text-3xl font-bold">Thu chi · {game.title}</h1>
     <p className="mb-7 mt-3 text-sm text-muted-foreground">{batch ? `Đã phát hành · phiên bản ${batch.version}${batch.closedAt ? " · đã chốt sổ" : ""}` : "Bản nháp · kiểm tra điểm danh và chi phí trước khi phát hành"}</p>

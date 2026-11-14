@@ -41,6 +41,7 @@ The operator tools under `scripts/` handle database/media backups, local restore
 
 - [Application setup](v2/README.md)
 - [Member onboarding and permissions](docs/nextjs/MEMBER_PORTAL.md)
+- [Super Admin dashboard, migration and secure setup](docs/admin-dashboard.md)
 - [Current release evidence](docs/nextjs/PROGRESS.md)
 - [Deployment and rollback](docs/nextjs/RELEASE_RUNBOOK.md)
 - [Current launch candidate and release checks](docs/nextjs/LAUNCH_RELEASE.md)

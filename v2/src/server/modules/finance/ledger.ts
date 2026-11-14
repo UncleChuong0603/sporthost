@@ -10,6 +10,7 @@ import { AppError } from "@/server/errors";
 import { genderLabels } from "@/domain/catalog";
 
 export type LedgerRow = { type: "money" | "receivable" | "booking" | "due" | "expense"; id: number; gameId?: number; clubId: number; title: string; description: string; period: string; date: string; amount: number; paid: boolean; status: string; cancelled: boolean; direction: "income" | "expense" };
+export type CreditRow = { gameId: number; clubId: number; bookingId: number; payerId: number | null; name: string; gameTitle: string; amount: number; period: string };
 export function ledgerTotals(rows: LedgerRow[]) {
   return { received: rows.filter(row => row.direction === "income" && row.paid).reduce((sum, row) => sum + row.amount, 0), outstanding: rows.filter(row => row.direction === "income" && !row.paid && !row.cancelled).reduce((sum, row) => sum + row.amount, 0), expenses: rows.filter(row => row.direction === "expense").reduce((sum, row) => sum + row.amount, 0) };
 }
@@ -18,13 +19,14 @@ export async function financeLedger(hostId: number, clubId?: number, period?: st
   if (clubId !== undefined) await requireClubAccess(getDb(), hostId, clubId, "manage_finance");
   const clubs = (await listClubs(hostId)).filter(club => club.owner || club.rights.includes("manage_finance"));
   const ids = clubs.filter(club => clubId === undefined || club.id === clubId).map(club => club.id);
-  const db = getDb(), rows: LedgerRow[] = [];
+  const db = getDb(), rows: LedgerRow[] = [], credits: CreditRow[] = [];
   if (ids.length) {
     const games = await db.select().from(sessions).where(inArray(sessions.clubId, ids)).orderBy(desc(sessions.startsAt));
     for (const game of games) {
       const base = { gameId: game.id, clubId: game.clubId, period: game.startsAt.slice(0, 7), date: game.startsAt.slice(0, 10), direction: "income" as const };
       if (await batchFor(db, game.id)) {
         for (const payer of await balances(db, game.id)) {
+          if (payer.credit) credits.push({ gameId: game.id, clubId: game.clubId, bookingId: payer.booking_id, payerId: payer.payer_participant_id, name: payer.name, gameTitle: game.title, amount: payer.credit, period: base.period });
           if (payer.net) rows.push({ ...base, type: "money", id: payer.booking_id, title: payer.name, description: game.title + " · thực nhận sau hoàn", amount: payer.net, paid: true, status: "confirmed", cancelled: false });
           if (payer.outstanding) rows.push({ ...base, type: "receivable", id: payer.booking_id, title: payer.name, description: game.title + " · còn nợ đã phát hành", amount: payer.outstanding, paid: false, status: "unpaid", cancelled: false });
         }
@@ -42,7 +44,7 @@ export async function financeLedger(hostId: number, clubId?: number, period?: st
   const selected = rows.filter(row => !period || row.period === period).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
   const totals = ledgerTotals(selected);
   const filtered = selected.filter(row => status === "unpaid" ? row.direction === "income" && !row.paid && !row.cancelled : status === "paid" ? row.direction === "income" && row.paid : status === "expense" ? row.direction === "expense" : true);
-  return { clubs, rows: filtered, totals };
+  return { clubs, rows: filtered, totals, credits: credits.filter(row => !period || row.period === period) };
 }
 // Quote all cells and neutralize spreadsheet formula execution in user-controlled text.
 export function csv(rows: unknown[][]) {

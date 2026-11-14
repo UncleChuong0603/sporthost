@@ -42,8 +42,8 @@ export async function consumeEmailToken(raw: string, purpose: Purpose, newPasswo
     if (purpose === "reset") {
       await db.update(hosts).set({ passwordHash, sessionVersion: host.sessionVersion + 1 }).where(eq(hosts.id, host.id));
     } else {
-      const allowlist = getConfig().ADMIN_EMAILS.split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
-      await db.update(hosts).set({ emailVerified: true, isPlatformAdmin: host.isPlatformAdmin || allowlist.includes(host.email) }).where(eq(hosts.id, host.id));
+      // Email verification never grants platform privileges, including legacy ADMIN_EMAILS entries.
+      await db.update(hosts).set({ emailVerified: true }).where(eq(hosts.id, host.id));
     }
     await db.update(tokens).set({ used: true }).where(eq(tokens.id, entry.id));
     await db.insert(audit).values({ hostId: host.id, action: purpose === "reset" ? "Đặt lại mật khẩu" : "Xác minh email", details: "Xử lý liên kết một lần", createdAt: new Date().toISOString() });

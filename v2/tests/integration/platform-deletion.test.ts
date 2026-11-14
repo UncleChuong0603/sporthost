@@ -42,6 +42,7 @@ afterAll(async () => {
     if (ownedGuestAuditIds.length) await client.query("DELETE FROM clubhost.audit_logs WHERE id=ANY($1::int[])", [ownedGuestAuditIds]);
     await client.query("DELETE FROM clubhost.platform_ledger_entries WHERE created_by=$1", [admin]);
     await client.query("DELETE FROM clubhost.audit_logs WHERE host_id=ANY($1::int[])", [[owner, other, admin]]);
+    await client.query("DELETE FROM clubhost.admin_audit_events WHERE actor_id=$1", [admin]);
     await client.query("DELETE FROM clubhost.hosts WHERE id=ANY($1::int[])", [[owner, other, admin]]);
   }); await closePool();
 });
@@ -59,7 +60,7 @@ describe("platform ledger stays independent from club money", () => {
     expect(JSON.parse(log.details)).toMatchObject({ before: { amount: 99000 }, after: { amount: 90000 }, reason: "Sửa ghi nhầm" });
     expect((await financeView(owner, gameId)).totals).toMatchObject({ amount: 70000, net: 0, outstanding: 70000 });
     await expect(extendTrial(owner, club, 30)).rejects.toMatchObject({ status: 403 });
-    await extendTrial(admin, club, 30);
+    await extendTrial(admin, club, 30, "Reviewed isolated legacy trial extension");
     expect((await getPool().query("SELECT trial_ends_at FROM clubhost.clubs WHERE id=$1", [club])).rows[0].trial_ends_at).toBeTruthy();
   });
   it("reconciles received net once in the club ledger and preserves original CSV columns safely", async () => {

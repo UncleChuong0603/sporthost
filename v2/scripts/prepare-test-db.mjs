@@ -26,5 +26,7 @@ try {
   if (revision.length !== 1 || revision[0].version_num !== "0011_fixed_member_fees") throw Error("Unexpected legacy baseline; no automatic upgrade is supported");
   await client.query(readFileSync("migrations/0001_member_accounts.sql", "utf8"));
   await client.query(readFileSync("migrations/0002_payos_orders.sql", "utf8"));
+  await client.query(readFileSync("migrations/0003_admin_dashboard.sql", "utf8"));
+  await client.query(readFileSync("migrations/0004_club_connections.sql", "utf8"));
   console.log(JSON.stringify({ ready: true, local_test_database: true, initialized_empty_schema: !existing, legacy_revision: revision[0].version_num }));
 } finally { await client.end(); }

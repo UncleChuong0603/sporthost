@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
     }
     const host = await requireHost();
     if (parts[0] === "admin") {
-      if (parts[1] === "clubs") { await extendTrial(host.id, routeId(2), text("days") ? number("days") : 30); return done("/admin"); }
+      if (parts[1] === "clubs") {
+        if (text("confirmed") !== "yes") throw new AppError(400, "Cần xác nhận thao tác quản trị.");
+        await rateLimit(String(host.id), "admin-write", 20);
+        await extendTrial(host.id, routeId(2), text("days") ? number("days") : 30, text("reason")); return done("/admin");
+      }
       const values = { entryDate: text("entry_date"), direction: text("direction"), category: text("category"), amount: form.get("amount"), note: text("note") };
       if (parts[2]) await editPlatformEntry(host.id, routeId(2), values, number("version"), text("reason"));
       else await createPlatformEntry(host.id, values, text("request_key"));

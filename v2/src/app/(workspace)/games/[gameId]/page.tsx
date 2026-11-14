@@ -1,5 +1,8 @@
+import { SessionClubScope } from "@/features/clubs/workspace-scope";
 import Link from "next/link";
 import { SessionEditor } from "@/features/scheduling/session-editor";
+import { SessionProgress } from "@/features/scheduling/session-progress";
+import { SessionShare } from "@/features/scheduling/session-share";
 import { AttendanceTools } from "@/features/scheduling/attendance-tools";
 import { LegacyMoney } from "@/features/finance/legacy-money";
 import { notFound } from "next/navigation";
@@ -16,7 +19,9 @@ export default async function GamePage({ params }: { params: Promise<{ gameId: s
   const id = Number((await params).gameId); if (!Number.isSafeInteger(id) || id < 1) notFound();
   const host = await requireHost(); const game = await hostSession(host.id, id).catch(error => { if (error instanceof AppError && error.status === 404) notFound(); throw error; });
   const csrf = makeCsrf(await sessionCookie()); const editable = !game.attendanceLocked && !game.isCancelled && game.lifecycleStatus !== "SETTLED";
-  return <><Link className="mb-4 inline-flex min-h-11 items-center text-sm font-semibold text-primary" href="/schedule">← Lịch chơi</Link><div className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-sm font-semibold text-primary">{game.clubName}</p><h1 className="text-3xl font-bold">{game.title}</h1><p className="mt-3 text-sm text-muted-foreground">{game.startsAt.replace("T", " · ")} · {game.venue || "Chưa có địa điểm"}</p></div><div className="rounded-xl border bg-white px-5 py-3"><p className="font-semibold">{game.confirmed}/{game.capacity} chỗ</p><p className="mt-1 text-sm text-muted-foreground">{lifecycleLabels[game.lifecycleStatus]}</p></div></div>
+  return <><SessionClubScope clubId={game.clubId} /><Link className="mb-4 inline-flex min-h-11 items-center text-sm font-semibold text-primary" href={`/schedule?club_id=${game.clubId}`}>← Lịch chơi</Link><div className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-sm font-semibold text-primary">{game.clubName}</p><h1 className="text-3xl font-bold">{game.title}</h1><p className="mt-3 text-sm text-muted-foreground">{game.startsAt.replace("T", " · ")} · {game.venue || "Chưa có địa điểm"}</p></div><div className="rounded-xl border bg-white px-5 py-3"><p className="font-semibold">{game.confirmed}/{game.capacity} chỗ</p><p className="mt-1 text-sm text-muted-foreground">{lifecycleLabels[game.lifecycleStatus]}</p></div></div>
+    <SessionProgress game={game} />
+    {game.lifecycleStatus === "OPEN" && !game.isCancelled && (game.canSession || game.canBookings) && <SessionShare publicPath={`/join/${game.publicId}`} title={game.title} startsAt={game.startsAt} venue={game.venue} />}
     {game.canFinance && <Link className="mb-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-white" href={`/games/${id}/billing`}>Thu chi và phát hành tiền cần đóng</Link>}
     <section className="mb-6 flex flex-wrap items-start gap-3 rounded-2xl border bg-white p-5">
       <Link className="inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-semibold text-primary" href={`/join/${game.publicId}`}>Mở trang đăng ký công khai</Link>

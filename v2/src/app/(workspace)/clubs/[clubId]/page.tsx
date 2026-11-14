@@ -1,3 +1,4 @@
+import { OwnerConnectionEntry } from "@/features/member-portal/connection-entry";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireHost } from "@/server/auth/service";
@@ -19,6 +20,7 @@ export default async function ClubPage({ params }: { params: Promise<{ clubId: s
     <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">{sports[club.sport_type]}</p>
     <h1 className="text-3xl font-bold">{club.name}</h1><p className="mb-8 mt-2 text-muted-foreground">{club.location || "Chưa cập nhật khu vực"}</p>
     {club.owner && <LaunchSteps hostId={host.id} clubId={club.id} />}
+    {club.owner && <OwnerConnectionEntry clubs={[club]} />}
     <nav aria-label="Quản lý câu lạc bộ" className="mb-6 flex flex-wrap gap-3">
       {club.canContacts && <Link className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 font-semibold text-primary" href={`/members?club_id=${club.id}`}>Thành viên</Link>}
       {club.owner && <Link className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 font-semibold text-primary" href={`/clubs/${club.id}/access`}>Quyền đồng quản lý</Link>}

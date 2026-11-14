@@ -42,7 +42,8 @@ export async function hostSession(hostId: number, gameId: number) {
   }));
   const fixed = manage ? await db.select({ id: members.id, name: members.name }).from(members).where(and(eq(members.clubId, club.id), eq(members.kind, "fixed"))).orderBy(asc(members.name)) : [];
   const publicFields = publicGameFields(game);
-  return { ...publicFields, fixedFee: finance ? game.fixedFee : null, guestFee: finance ? game.guestFee : null, fixedFeeMale: finance ? game.fixedFeeMale : null, fixedFeeFemale: finance ? game.fixedFeeFemale : null, guestFeeMale: finance ? game.guestFeeMale : null, guestFeeFemale: finance ? game.guestFeeFemale : null, clubId: club.id, clubName: club.name, owner, rights, canFinance: finance, canBookings: manage, canCheckIn: hasPermission(owner, rights, "check_in"), canSession: hasPermission(owner, rights, "manage_session"), isOpen: game.isOpen, roster, fixed, confirmed: Object.values(await seatCounts(db, game.id)).reduce((a, b) => a + b, 0) };
+  const billing = finance ? { issued, outstanding: accounts.reduce((sum, account) => sum + account.outstanding, 0) } : null;
+  return { ...publicFields, fixedFee: finance ? game.fixedFee : null, guestFee: finance ? game.guestFee : null, fixedFeeMale: finance ? game.fixedFeeMale : null, fixedFeeFemale: finance ? game.fixedFeeFemale : null, guestFeeMale: finance ? game.guestFeeMale : null, guestFeeFemale: finance ? game.guestFeeFemale : null, clubId: club.id, clubName: club.name, owner, rights, canFinance: finance, canBookings: manage, canCheckIn: hasPermission(owner, rights, "check_in"), canSession: hasPermission(owner, rights, "manage_session"), isOpen: game.isOpen, billing, roster, fixed, confirmed: Object.values(await seatCounts(db, game.id)).reduce((a, b) => a + b, 0) };
 }
 export async function guestBooking(key: PlayerBookingAccess) {
   const db = getDb(); const { game, booking, member, club } = await guestContext(db, key);

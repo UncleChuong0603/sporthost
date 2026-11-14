@@ -9,6 +9,12 @@ describe("validated runtime configuration", () => {
     expect(settings.databaseUrl).toBe(valid.DATABASE_URL);
     expect(settings.APP_READ_ONLY).toBe(false);
   });
+  it("preserves current pricing by default and validates configurable new-purchase policies", () => {
+    expect(parseConfig(valid)).toMatchObject({ SUBSCRIPTION_TRIAL_DAYS: 7, SUBSCRIPTION_PERIOD_DAYS: 30, SUBSCRIPTION_PRICE_VND: 49000 });
+    expect(parseConfig({ ...valid, SUBSCRIPTION_TRIAL_DAYS: "30", SUBSCRIPTION_PRICE_VND: "100000", SUBSCRIPTION_ORIGINAL_PRICE_VND: "100000" })).toMatchObject({ SUBSCRIPTION_TRIAL_DAYS: 30, SUBSCRIPTION_PRICE_VND: 100000 });
+    expect(() => parseConfig({ ...valid, SUBSCRIPTION_TRIAL_DAYS: "0" })).toThrow();
+    expect(() => parseConfig({ ...valid, SUBSCRIPTION_PRICE_VND: "100000" })).toThrow("SUBSCRIPTION_ORIGINAL_PRICE_VND");
+  });
   it.each([{ DB_SCHEMA: "public" }, { SECRET_KEY: "[SENSITIVE]" }, { APP_URL: "https://example.com/path" }, { APP_READ_ONLY: "yes" }, { ALLOWED_HOSTS: "*" }, { DATABASE_URL: "sqlite:///local.db" }])("refuses invalid settings %j", bad => {
     expect(() => parseConfig({ ...valid, ...bad })).toThrow();
   });

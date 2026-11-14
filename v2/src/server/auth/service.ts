@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getDb, transaction } from "@/server/db/client";
 import { hostsInClubhost as hosts, auditLogsInClubhost as audit } from "@/server/db/schema";
@@ -14,7 +14,7 @@ export async function findCurrentHost(raw: string): Promise<HostIdentity | null>
   if (!raw) return null;
   let payload;
   try { payload = readSession(raw); } catch { return null; }
-  const [host] = await getDb().select(hostFields).from(hosts).where(eq(hosts.id, payload.id)).limit(1);
+  const [host] = await getDb().select(hostFields).from(hosts).where(and(eq(hosts.id, payload.id), sql`NOT EXISTS (SELECT 1 FROM clubhost.account_controls ac WHERE ac.account_id=${hosts.id} AND ac.suspended)`)).limit(1);
   return host && host.sessionVersion === payload.v ? host : null;
 }
 export async function currentHost() { return findCurrentHost(await sessionCookie()); }
@@ -28,6 +28,8 @@ export async function login(email: string, password: string) {
   const [stored] = await getDb().select().from(hosts).where(eq(hosts.email, email.trim().toLowerCase())).limit(1);
   const valid = await verifyPassword(password, stored?.passwordHash);
   if (!stored || !valid) throw new AppError(400, "Email hoặc mật khẩu không đúng.", "invalid_credentials");
+  const suspended = await getDb().execute(sql`SELECT 1 FROM clubhost.account_controls WHERE account_id=${stored.id} AND suspended`);
+  if (suspended.rows.length) throw new AppError(403, "Tài khoản đã bị đình chỉ. Vui lòng liên hệ SportHost.", "account_suspended");
   return { id: stored.id, session_version: stored.sessionVersion };
 }
 

@@ -6,7 +6,7 @@ import { makeCsrf, sessionCookie } from "@/server/auth/session";
 import { subscriptionDetails } from "@/server/modules/subscriptions/service";
 import { payosReady } from "@/server/infrastructure/payos";
 import { AppError } from "@/server/errors";
-import { PRO_PRICE, PRO_ORIGINAL_PRICE, PRO_SAVING, PRO_DISCOUNT_PERCENT, PRO_TRIAL_DAYS, PRO_PERIOD_DAYS } from "@/domain/subscription";
+import { getSubscriptionPolicy } from "@/server/modules/subscriptions/policy";
 import { ActionForm } from "@/features/shared/action-form";
 import { PaymentWatcher } from "@/features/subscriptions/payment-watcher";
 import { buyPro, paymentCommand } from "./actions";
@@ -15,6 +15,7 @@ const money = (amount: number) => new Intl.NumberFormat("vi-VN").format(amount) 
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(value)) : "—";
 const labels: Record<string, string> = { CREATING: "Đang tạo liên kết", PENDING: "Chờ thanh toán", PAID: "Đã thanh toán", CANCELLED: "Đã hủy", EXPIRED: "Đã hết hạn" };
 export default async function SubscriptionPage({ params, searchParams }: { params: Promise<{ clubId: string }>; searchParams: Promise<{ payment?: string; orderCode?: string }> }) {
+  const { price: PRO_PRICE, originalPrice: PRO_ORIGINAL_PRICE, savings: PRO_SAVING, discountPercent: PRO_DISCOUNT_PERCENT, trialDays: PRO_TRIAL_DAYS, periodDays: PRO_PERIOD_DAYS } = getSubscriptionPolicy();
   const { clubId } = await params; const query = await searchParams;
   if (!/^[1-9]\d*$/.test(clubId) || Number(clubId) > 2147483647) notFound();
   const host = await requireHost();
