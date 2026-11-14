@@ -9,11 +9,12 @@ import { subscriptionState } from "@/domain/subscription";
 import { localNow } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
 import { gameActor } from "@/server/modules/scheduling/service";
+import { observeWelcome, activationChoice, activationMilestone } from "./activation";
 import { missions, missionById, nextSetup, type MissionId, type TourSnapshot } from "@/features/onboarding/registry";
 
 const id = z.number().int().min(1).max(2147483647);
 export const tourCommandSchema = z.object({
-  action: z.enum(["start", "resume", "pause", "dismiss", "restart", "select", "skip", "refresh", "share"]),
+  action: z.enum(["welcome", "start", "resume", "pause", "dismiss", "restart", "select", "skip", "refresh", "share"]),
   revision: z.number().int().min(0), clubId: id.nullable(), missionId: z.string().max(40).optional(), sessionId: id.optional(),
 }).strict();
 type Preference = { status: TourSnapshot["status"]; mission_id: MissionId | null; club_id: number | null; revision: number };
@@ -112,6 +113,11 @@ export async function updateOnboarding(accountId: number, raw: unknown) {
     const clubId = before.context.clubId;
     let missionId = before.missionId, status = before.status;
     const now = new Date().toISOString();
+    if (command.action === "welcome") {
+      if (before.clubs.length || before.status !== "new") throw new AppError(409, "Hướng dẫn đã thay đổi. Vui lòng tải lại.");
+      await observeWelcome(client, accountId);
+    }
+    if (command.action === "start" || command.action === "dismiss") await activationChoice(client, accountId, command.action);
     if (["select", "skip"].includes(command.action)) {
       const mission = missionById(command.missionId ?? "");
       const state = before.progress.find(p => p.id === mission?.id);
@@ -125,6 +131,7 @@ export async function updateOnboarding(accountId: number, raw: unknown) {
       if (game.isCancelled || !game.isOpen || game.lifecycleStatus !== "OPEN" || game.startsAt <= localNow() || game.registrationDeadline && game.registrationDeadline <= localNow()) throw new AppError(409, "Buổi này không còn mở đăng ký.");
       await client.query(`INSERT INTO clubhost.host_tour_progress(account_id,club_id,mission_id,completed_at) VALUES($1,$2,'share',$3)
         ON CONFLICT(account_id,club_id,mission_id) DO UPDATE SET completed_at=COALESCE(host_tour_progress.completed_at,EXCLUDED.completed_at),skipped_at=NULL`, [accountId, clubId, now]);
+      await activationMilestone(client, accountId, game.clubId, "share");
     }
     if (command.action === "restart" && clubId) await client.query("UPDATE clubhost.host_tour_progress SET skipped_at=NULL WHERE account_id=$1 AND club_id=$2", [accountId, clubId]);
     if (command.action === "skip" && clubId && missionId) await client.query(`INSERT INTO clubhost.host_tour_progress(account_id,club_id,mission_id,skipped_at) VALUES($1,$2,$3,$4)

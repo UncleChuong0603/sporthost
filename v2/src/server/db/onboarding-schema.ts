@@ -12,3 +12,8 @@ export const hostTourProgress = clubhost.table("host_tour_progress", {
   clubId: integer("club_id").notNull().references(() => clubs.id, { onDelete: "cascade" }),
   missionId: varchar("mission_id", { length: 40 }).notNull(), completedAt: varchar("completed_at"), skippedAt: varchar("skipped_at"),
 }, t => [primaryKey({ columns: [t.accountId, t.clubId, t.missionId] }), index("ix_host_tour_progress_club").on(t.clubId)]);
+export const hostActivation = clubhost.table("host_activation", {
+  accountId: integer("account_id").primaryKey().references(() => accounts.id, { onDelete: "cascade" }),
+  clubId: integer("club_id").references(() => clubs.id, { onDelete: "set null" }),
+  seenAt: varchar("seen_at").notNull(), startedAt: varchar("started_at"), dismissedAt: varchar("dismissed_at"), clubAt: varchar("club_at"), sessionAt: varchar("session_at"), shareAt: varchar("share_at"),
+}, t => [index("ix_host_activation_seen").on(t.seenAt), index("ix_host_activation_club").on(t.clubId)]);

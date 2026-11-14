@@ -7,9 +7,9 @@ import { paymentOrders } from "./db/payment-schema";
 import { accountControls,entityRegistry,adminAuditEvents } from "./db/admin-schema";
 import { connectionInvites, connectionRequests } from "./db/connection-schema";
 import { notifications, notificationPreferences, reminderSettings } from "./db/notification-schema";
-import { hostTourPreferences, hostTourProgress } from "./db/onboarding-schema";
+import { hostTourPreferences, hostTourProgress, hostActivation } from "./db/onboarding-schema";
 
-const expected = [...Object.values(schema).filter(value => value !== schema.clubhost), memberAccountLinks, paymentOrders, accountControls, entityRegistry, adminAuditEvents, connectionInvites, connectionRequests, notifications, notificationPreferences, reminderSettings, hostTourPreferences, hostTourProgress].flatMap(table => {
+const expected = [...Object.values(schema).filter(value => value !== schema.clubhost), memberAccountLinks, paymentOrders, accountControls, entityRegistry, adminAuditEvents, connectionInvites, connectionRequests, notifications, notificationPreferences, reminderSettings, hostTourPreferences, hostTourProgress, hostActivation].flatMap(table => {
   const config = getTableConfig(table as Parameters<typeof getTableConfig>[0]);
   return config.columns.map(column => config.name + "." + column.name);
 });

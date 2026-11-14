@@ -25,6 +25,13 @@ export async function pageAccess(url: URL, cookie: string) {
   const host = await findCurrentHost(cookie); if (!host) throw new AppError(401, "Vui lòng đăng nhập để tiếp tục.");
   if (/^\/admin(?:\/|$)/.test(path) && !host.isPlatformAdmin) throw new AppError(403, "Chỉ quản trị nền tảng được truy cập trang này.");
   const db = getDb();
+  if (path === "/schedule/new" && url.searchParams.has("source_id")) {
+    const source = Number(url.searchParams.get("source_id"));
+    if (!Number.isSafeInteger(source) || source < 1 || source > 2147483647) throw new AppError(404, "Không tìm thấy buổi chơi.");
+    const [game] = await db.select({ club: sessions.clubId }).from(sessions).where(eq(sessions.id, source));
+    if (!game) throw new AppError(404, "Không tìm thấy buổi chơi.");
+    await requireClubAccess(db, host.id, game.club, "manage_session");
+  }
   let club: number | null = null, capability: Capability = "view";
   const clubMatch = /^\/clubs\/(\d+)(?:\/(settings|access|qr|subscription|connections|reminders))?$/.exec(path);
   if (clubMatch) { club = Number(clubMatch[1]); capability = clubMatch[2] === "qr" ? "manage_finance" : ["subscription", "connections", "reminders"].includes(clubMatch[2]) ? "owner" : "view"; }

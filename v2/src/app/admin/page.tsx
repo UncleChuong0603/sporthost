@@ -230,6 +230,7 @@ export default async function Overview({
           Sổ thu chi nền tảng
           <ArrowUpRight aria-hidden="true" className="size-4" />
         </Link>
+        <Link className="inline-flex min-h-11 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-semibold" href="/admin/onboarding">Hiệu quả bắt đầu của host<ArrowUpRight aria-hidden="true" className="size-4" /></Link>
       </div>
       <div className="my-6 flex flex-wrap items-center justify-between gap-4">
         <nav aria-label="Khoảng thời gian" className="flex flex-wrap gap-2">

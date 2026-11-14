@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { missions, missionById, nextSetup, setupComplete, type MissionId, type TourSnapshot } from "./registry";
 import { Spotlight } from "./spotlight";
 
-type Command = { action: "start" | "resume" | "pause" | "dismiss" | "restart" | "select" | "skip" | "refresh" | "share"; missionId?: MissionId; sessionId?: number; clubId?: number | null };
+type Command = { action: "welcome" | "start" | "resume" | "pause" | "dismiss" | "restart" | "select" | "skip" | "refresh" | "share"; missionId?: MissionId; sessionId?: number; clubId?: number | null };
 type Context = { snapshot: TourSnapshot | null; error: string; busy: boolean; open: () => void; run: (command: Command) => Promise<TourSnapshot | null> };
 const TourContext = createContext<Context | null>(null);
 function useTour() { const value = useContext(TourContext); if (!value) throw Error("OnboardingProvider missing"); return value; }
@@ -107,6 +107,10 @@ export function OnboardingProvider({ csrf, children }: { csrf: string; children:
 export function OnboardingHelp() { const { open } = useTour(); return <Button id="host-tour-help" data-tour-help type="button" variant="ghost" className="relative z-[70] mb-4 bg-white" onClick={open}><BookOpen aria-hidden="true" className="size-4" />Hướng dẫn</Button>; }
 export function OnboardingHome() {
   const { snapshot, run, open, busy, error } = useTour();
+  const observed = useRef(false);
+  useEffect(() => {
+    if (!observed.current && snapshot?.status === "new" && !snapshot.clubs.length) { observed.current = true; void run({ action: "welcome" }); }
+  }, [snapshot, run]);
   if (!snapshot) return null;
   if (snapshot.status === "new" && !snapshot.clubs.length) return <><Welcome busy={busy} onStart={() => void run({ action: "start" })} onLater={() => void run({ action: "dismiss" })} />{error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}</>;
   if (snapshot.status === "active" && setupComplete(snapshot)) return <Completion onHelp={open} onPause={() => void run({ action: "pause" })} busy={busy} />;

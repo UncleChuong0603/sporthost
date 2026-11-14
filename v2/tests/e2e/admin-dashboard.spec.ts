@@ -66,6 +66,7 @@ test("Phase 1 admin area, direct APIs, confirmations and responsive navigation",
     for (const path of [
       "/admin",
       "/admin/users",
+      "/admin/onboarding",
       "/api/admin/users",
       "/api/admin/overview",
     ]) {
@@ -109,6 +110,12 @@ test("Phase 1 admin area, direct APIs, confirmations and responsive navigation",
     await expect(
       page.getByText("MRR quy đổi 30 ngày", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("link", { name: "Hiệu quả bắt đầu của host", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Hiệu quả bắt đầu của host", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "7 ngày", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Host được hiển thị hướng dẫn trong 7 ngày qua", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.goto("/admin");
     await page.screenshot({ path: info.outputPath("admin-overview.png"), fullPage: true });
     for (const module of modules) {
       const result = await page.request.get(`/api/admin/${module}`);

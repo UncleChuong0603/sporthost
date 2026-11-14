@@ -32,6 +32,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-hook-form": "7.91.0",
+    "read-excel-file": "9.3.17",
     "server-only": "0.0.1",
     "sharp": "0.35.5",
     "tailwind-merge": "3.7.0",

@@ -1,14 +1,12 @@
 import "server-only";
 import { and, eq, inArray, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { z } from "zod";
 import { getDb, transaction } from "@/server/db/client";
 import { membersInClubhost as members, clubsInClubhost as clubs, bookingsInClubhost as bookings, bookingParticipantsInClubhost as people } from "@/server/db/schema";
 import { requireClubAccess } from "@/server/access/permissions";
-import { normalizePhone, phoneAliases } from "@/domain/catalog";
+import { phoneAliases } from "@/domain/catalog";
+import { memberSchema } from "@/domain/member";
 import { AppError } from "@/server/errors";
-
-const memberSchema = z.object({ name: z.string().trim().min(1).max(100), phone: z.string().transform((value, ctx) => { try { return normalizePhone(value); } catch { ctx.addIssue({ code: "custom", message: "Số điện thoại chưa hợp lệ." }); return z.NEVER; } }), kind: z.enum(["fixed", "guest"]), gender: z.enum(["male", "female", "unspecified"]).default("unspecified"), level: z.string().trim().max(40).default("") });
 
 export async function listMembers(hostId: number, clubId: number) {
   await requireClubAccess(getDb(), hostId, clubId, "contacts");

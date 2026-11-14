@@ -11,6 +11,7 @@ import { AppError } from "@/server/errors";
 import { subscriptionState } from "@/domain/subscription";
 import { getSubscriptionPolicy } from "@/server/modules/subscriptions/policy";
 import { requireActiveAccount } from "@/server/auth/account-status";
+import { activationMilestone } from "@/server/modules/onboarding/activation";
 
 export const clubSchema = z.object({
   name: z.string().trim().min(1, "Vui lòng nhập tên CLB.").max(100), location: z.string().trim().max(180).default(""),
@@ -47,6 +48,7 @@ export async function createClub(hostId: number, raw: unknown) {
     await requireActiveAccount(db, hostId);
     const [club] = await db.insert(clubs).values({ ...asColumns(values), ownerId: hostId, trialEndsAt: new Date(Date.now() + getSubscriptionPolicy().trialDays * 86400000).toISOString() }).returning({ id: clubs.id });
     await db.insert(audit).values({ clubId: club.id, hostId, action: "Tạo CLB", details: JSON.stringify({ before: null, after: values }), createdAt: new Date().toISOString() });
+    await activationMilestone(client, hostId, club.id, "club");
     return club;
   });
 }

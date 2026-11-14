@@ -10,6 +10,8 @@ import { sessionSchema, addWeeks, localNow, type SessionInput } from "@/domain/s
 import { createBooking, auditChange, seatCounts, type Game, type Club } from "@/server/modules/bookings/core";
 import { AppError } from "@/server/errors";
 import { requirePro } from "@/server/modules/subscriptions/entitlements";
+import { sessionCopyOf } from "@/domain/session-copy";
+import { activationMilestone } from "@/server/modules/onboarding/activation";
 import { sessionNotification } from "@/server/modules/notifications/events";
 
 function policy(value: SessionInput, club: Club) {
@@ -46,12 +48,22 @@ export async function createSession(hostId: number, clubId: number, raw: Record<
       const [rule] = await db.insert(rules).values({ clubId, title: value.title, venue: value.venue, firstStart: value.starts_at, weeks: value.weeks, capacity: value.capacity, capacityMale: value.capacity_male, capacityFemale: value.capacity_female, fixedFee: value.fixed_fee, guestFee: value.guest_fee, fixedFeeMale: value.fixed_fee_male, fixedFeeFemale: value.fixed_fee_female, guestFeeMale: value.guest_fee_male, guestFeeFemale: value.guest_fee_female, rsvpHours: value.rsvp_hours, active: true, policyJson: JSON.stringify(policy(value, club)) }).returning();
       const count = await generateRule(db, rule.id);
       await auditChange(db, clubId, hostId, "Tạo lịch lặp", null, { rule_id: rule.id, created: count });
+      if (count > 0) await activationMilestone(client, hostId, clubId, "session");
       return { ruleId: rule.id, gameId: null };
     }
     const [game] = await db.insert(sessions).values(gameValues(value, club)).returning();
     await auditChange(db, clubId, hostId, "Tạo buổi chơi", null, { id: game.id, title: game.title });
+    await activationMilestone(client, hostId, clubId, "session");
     return { gameId: game.id, ruleId: null };
   });
+}
+
+export async function copySessionDefaults(hostId: number, sessionId: number) {
+  if (!Number.isSafeInteger(sessionId) || sessionId < 1 || sessionId > 2147483647) throw new AppError(404, "Không tìm thấy buổi chơi.");
+  return transaction(async client => {
+    const { game } = await gameActor(drizzle(client), hostId, sessionId, "manage_session");
+    return sessionCopyOf(game);
+  }, { readOnly: true });
 }
 
 export async function generateRule(db: NodePgDatabase, ruleId: number) {

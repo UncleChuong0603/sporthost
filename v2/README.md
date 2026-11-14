@@ -16,6 +16,8 @@ The player area starts at `/me` (signup/login at `/me/signup` and `/me/login`). 
 
 Host tutorials are available from **Hướng dẫn** throughout the host workspace: first club setup and optional advanced missions with real evidence, per-account/per-club progress, pause/resume/replay and no simulated business transactions. Apply additive `migrations/0006_host_onboarding.sql` before deploying. See [Host onboarding](../docs/nextjs/HOST_ONBOARDING.md) for the audited inventory, extension contract, validation and QA. `npm run db:test:prepare` applies it only to the guarded disposable local database; startup never migrates.
 
+Free host tools include Excel `.xlsx` member import with preview/confirmation and copying session settings into a fresh session. Platform admins can inspect first-party activation cohorts at `/admin/onboarding`. Apply additive `0007_host_activation.sql` after `0006`; see [Host productivity](../docs/nextjs/HOST_PRODUCTIVITY.md) for file limits, authorization, confirmation semantics, privacy, testing and rollout.
+
 Free club invitation/request onboarding is implemented at `/connect/:code`, `/me/connect` and `/clubs/:id/connections`. Apply the additive `migrations/0004_club_connections.sql` before deploying this source; see [Club connection requests](../docs/nextjs/CLUB_CONNECTIONS.md) for authorization, behavior and rollout. This local change has not been deployed.
 
 Uploads are private. Both QR and bank text are snapshotted for existing obligations, and new images are removed if their database transaction fails. Uploaded payment screenshots remain reports until an authorized host explicitly reviews real received money. Issued charge snapshots are immutable; later changes use versioned adjustments and append-only money movements.
