@@ -104,7 +104,7 @@ export function OnboardingProvider({ csrf, children }: { csrf: string; children:
   </TourContext>;
 }
 
-export function OnboardingHelp() { const { open } = useTour(); return <Button id="host-tour-help" data-tour-help type="button" variant="ghost" className="relative z-[70] mb-4 bg-white" onClick={open}><BookOpen aria-hidden="true" className="size-4" />Hướng dẫn</Button>; }
+export function OnboardingHelp() { const { open } = useTour(); return <div className="mb-4 flex flex-wrap items-center gap-2"><Button id="host-tour-help" data-tour-help type="button" variant="ghost" className="relative z-[70] bg-white" onClick={open}><BookOpen aria-hidden="true" className="size-4" />Hướng dẫn</Button><Link href="/guide" className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-primary underline">Tất cả hướng dẫn</Link></div>; }
 export function OnboardingHome() {
   const { snapshot, run, open, busy, error } = useTour();
   const observed = useRef(false);

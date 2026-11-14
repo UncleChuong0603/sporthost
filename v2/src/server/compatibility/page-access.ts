@@ -21,7 +21,7 @@ export async function pageAccess(url: URL, cookie: string) {
     return;
   }
   if (["/verify-email", "/reset-password"].includes(path)) { await validEmailToken(url.searchParams.get("token") || "", path === "/verify-email" ? "verify" : "reset"); return; }
-  if (!/^(?:\/(?:dashboard|account|clubs|members|schedule|finance|payments\/review|admin)(?:\/.*)?|\/games\/\d+(?:\/.*)?|\/proofs\/\d+\/image)$/.test(path)) return;
+  if (!/^(?:\/(?:dashboard|account|guide|clubs|members|schedule|finance|payments\/review|admin)(?:\/.*)?|\/games\/\d+(?:\/.*)?|\/proofs\/\d+\/image)$/.test(path)) return;
   const host = await findCurrentHost(cookie); if (!host) throw new AppError(401, "Vui lòng đăng nhập để tiếp tục.");
   if (/^\/admin(?:\/|$)/.test(path) && !host.isPlatformAdmin) throw new AppError(403, "Chỉ quản trị nền tảng được truy cập trang này.");
   const db = getDb();
@@ -45,7 +45,7 @@ export async function pageAccess(url: URL, cookie: string) {
     const [proof] = await db.select({ club: assets.clubId }).from(proofs).innerJoin(assets, eq(assets.id, proofs.assetId)).where(eq(proofs.id, Number(proofMatch[1])));
     if (!proof) throw new AppError(404, "Không tìm thấy biên nhận."); club = proof.club; capability = "manage_finance";
   }
-  if (["/members", "/schedule", "/finance", "/finance/export.csv", "/payments/review", "/schedule/new"].includes(path) && url.searchParams.get("club_id")) {
+  if (["/guide", "/members", "/schedule", "/finance", "/finance/export.csv", "/payments/review", "/schedule/new"].includes(path) && url.searchParams.get("club_id")) {
     club = Number(url.searchParams.get("club_id")); capability = path.startsWith("/finance") || path === "/payments/review" ? "manage_finance" : path === "/members" ? "contacts" : path === "/schedule/new" ? "manage_session" : "view";
   }
   if (club !== null) { if (!Number.isSafeInteger(club) || club < 1) throw new AppError(400, "CLB chưa hợp lệ."); await requireClubAccess(db, host.id, club, capability); }

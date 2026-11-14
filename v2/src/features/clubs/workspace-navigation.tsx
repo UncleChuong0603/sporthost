@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CalendarDays, ContactRound, LayoutDashboard, ShieldCheck, UserRound, UsersRound, Wallet } from "lucide-react";
+import { BookOpen, CalendarDays, ContactRound, LayoutDashboard, ShieldCheck, UserRound, UsersRound, Wallet } from "lucide-react";
 import { useWorkspaceClub } from "./workspace-scope";
 
 const links = [
@@ -12,6 +12,7 @@ const links = [
   { href: "/finance", name: "Thu chi", Icon: Wallet },
   { href: "/clubs", name: "CLB", desktopName: "Câu lạc bộ", Icon: UsersRound },
   { href: "/account", name: "Tài khoản", Icon: UserRound },
+  { href: "/guide", name: "Hướng dẫn", Icon: BookOpen },
 ];
 
 export function WorkspaceNavigation({ mobile = false, admin = false }: { mobile?: boolean; admin?: boolean }) {
@@ -25,7 +26,7 @@ export function WorkspaceNavigation({ mobile = false, admin = false }: { mobile?
   return <nav aria-label="Điều hướng chính" className={mobile
     ? "fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-white px-1 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
     : "mt-8 flex flex-col gap-1.5"}>
-    {destinations.filter(link => !mobile || link.href !== "/account").map(({ href, name, desktopName, Icon }) => {
+    {destinations.filter(link => !mobile || !["/account", "/guide"].includes(link.href)).map(({ href, name, desktopName, Icon }) => {
       const active = section === href || section.startsWith(href + "/");
       const destination = clubId && ["/schedule", "/members", "/finance"].includes(href) ? `${href}?club_id=${clubId}` : href;
       return <Link key={href} href={destination} aria-current={active ? "page" : undefined} className={mobile
