@@ -1,6 +1,6 @@
 # SportHost in-product guide
 
-The signed-in `/guide` route provides the complete task reference in Vietnamese. It complements the interactive onboarding; reading an article never records tutorial completion or creates business records. Content lives in `v2/src/features/guide/catalog.ts`, ordered by practical need, and the server-rendered page maps actions to existing routes with current club permissions. No migration, external service or dependency is added.
+The signed-in `/guide` route provides 43 task-reference articles in Vietnamese across eight prioritized groups (the last five articles are platform-admin-only). It complements the interactive onboarding; reading an article never records tutorial completion or creates business records. Content lives in `v2/src/features/guide/catalog.ts`, ordered by practical need, and the server-rendered page maps actions to existing routes with current club permissions. No migration, external service or dependency is added.
 
 ## Feature inventory and order
 
@@ -33,4 +33,14 @@ The reference links to the session list when a task needs the host to pick a rea
 4. Read the task steps against the actual product, especially fee issuance, pre-issue receipts, refunds/reversals and connection approval. Do not perform production transactions merely to test a guide.
 5. Platform admin can see the final group; other accounts cannot see its content. Check onboarding resume/pause still works and reading guides never completes missions.
 
-Automated and release results are recorded after final acceptance below.
+## Automated verification
+
+Source commit `59ec0a2`: production build, TypeScript and standalone artifact scan passed; **310/310 unit/integration tests across 32 files** passed with `npx vitest run --no-file-parallelism`. The local desktop/mobile guide, Excel/copy and onboarding selection passed **8/8**. Guide coverage includes no-club behavior, Vietnamese search without accents, empty results, direct article links/reload, keyboard disclosure, scoped action links, expired Pro, check-in-only rights, foreign-club rejection, admin-only visibility, 360/768/1440px overflow, five mobile destinations and no automatic mission completion. No lint script is configured.
+
+Frozen source SHA-256: `6e8a235834a5169341c1a6660a9b5d531e20273c8d96cca9d57b9ae8cac0b531`; source ZIP SHA-256: `da2f4070100029b557b6edaf47edc234628de7c1ff43f04956e2f1eac9734dec` (332 files). Private operator artifacts and screenshots remain ignored.
+
+HTTPS preview deployment `cyAThSNnt9u8NwKPb07gm` passed **8/8 desktop/mobile browser cases** and **18/18 HTTP checks** on that exact ZIP, with healthy image `sha256:e0016050ce490684917bda02ab10336550a5c0a9c984daef977d47b895bc12c7`. Preview remained noindex with an empty sitemap. Existing schema is reused; no migration or production fixture writes are needed.
+
+Production deployment `OJ_dQqzn5qmRjAyw2aRbM` completed on **2026-11-15** using the **same preview-tested image** and ZIP. All 332 deployed source files match the manifest. Production passed **18/18 HTTP checks** plus **eight authenticated read-only page checks**, including the guide and direct Excel-article URL. All 31 original non-operational business tables still match the verified backup from the host-tools release; the legacy revision is unchanged. Runtime flags, UID/GID 10001, port 8000, SMTP, secure cookies and the existing read/write upload volume are preserved; there are no public Docker port bindings. No synthetic production accounts, members, sessions, transactions or messages were created for guide acceptance.
+
+Rollback retains the previous compatible source ZIP (SHA-256 `5ea26fd156ede7b812b9030b53df683ae21ef04adf472d034c1c2202f5d40615`) and image `sha256:7d47a3114160993efa4eae4ad3f0e72844c3645d24aea48b2bc4982535e5fb53`. Preserve current database rows and uploads on rollback. Browser evidence is Edge/Chromium, not a claim of physical-device, Safari, screen-reader or native Excel verification.
