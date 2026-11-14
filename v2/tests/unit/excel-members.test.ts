@@ -33,4 +33,11 @@ describe("bounded real Excel member reader", () => {
       await expect(parseMembersExcel(memberWorkbook([], sheet))).rejects.toMatchObject({ status: 400 });
     }
   });
+  it("bounds coordinates in relocated XML parts and rejects encoded or noncanonical addresses", () => {
+    for (const coordinate of ['A1048576', 'A&#49;048576', 'a1048576', 'A1e9', 'A0']) {
+      const bytes = zipFixture({ '[Content_Types].xml': '<Types/>', 'xl/workbook.xml': '<workbook/>', 'xl/custom/sheet.xml': `<worksheet><sheetData><row r="1"><c extra=">" r = "${coordinate}"/></row></sheetData></worksheet>` });
+      expect(() => validateWorkbook(bytes)).toThrow();
+    }
+    expect(() => validateWorkbook(zipFixture({ '[Content_Types].xml': '<Types/>', 'xl/workbook.xml': '<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>', 'xl/custom/sheet.xml': '<worksheet><sheetData><row r="1"><c r="A1"><is><t> r="A1048576"</t></is></c></row></sheetData></worksheet>' }))).not.toThrow();
+  });
 });

@@ -37,10 +37,13 @@ export function validateWorkbook(bytes: Buffer) {
     if (/\.(xml|rels)$/i.test(name)) {
       const xml = data.toString("utf8");
       if (/<!DOCTYPE|<!ENTITY|TargetMode\s*=\s*["']External["']/i.test(xml)) throw invalid("File có liên kết ngoài hoặc cấu trúc không hỗ trợ. Hãy sao chép giá trị vào file mẫu.");
-      if (/^xl\/worksheets\//.test(name)) {
-        if (/<(?:\w+:)?f(?:\s|>)/.test(xml)) throw invalid("File có ô công thức. Trong Excel, hãy Dán đặc biệt → Giá trị rồi tải lại.");
-        for (const match of xml.matchAll(/\b(?:r|ref)=["']([^"']+)["']/g)) {
+      // Relationships may point to a sheet outside xl/worksheets. Inspect every
+      // XML part, and reject noncanonical/encoded coordinates before parsing.
+      {
+        if (/<(?:\w+:)?f(?:\s|\/|>)/.test(xml)) throw invalid("File có ô công thức. Trong Excel, hãy Dán đặc biệt → Giá trị rồi tải lại.");
+        for (const tag of xml.matchAll(/<[A-Za-z_](?:[^<>"']|"[^"]*"|'[^']*')*>/g)) for (const match of tag[0].matchAll(/\s(?:r|ref)\s*=\s*["']([^"']+)["']/g)) {
           for (const address of match[1].split(":")) {
+            if (!/^(?:[A-Z]+)?[1-9]\d*$/.test(address)) throw invalid();
             const cell = /^([A-Z]+)(\d+)$/.exec(address);
             if (cell && (Number(cell[2]) > 501 || cell[1].length > 2 || cell[1].length === 2 && cell[1] > "AF") || /^\d+$/.test(address) && Number(address) > 501) throw invalid("Chỉ hỗ trợ 500 dòng thành viên và 32 cột. Xóa các dòng/cột thừa hoặc dùng file mẫu.");
           }
