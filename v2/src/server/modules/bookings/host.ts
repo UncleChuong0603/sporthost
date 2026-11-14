@@ -10,6 +10,7 @@ import { registrationOpen } from "@/domain/session-policy";
 import { guestToken, digest } from "@/server/compatibility/guest-capability";
 import { getConfig } from "@/server/config";
 import { AppError } from "@/server/errors";
+import { bookingNotification, type NotificationKind } from "@/server/modules/notifications/events";
 
 export async function bookingDecision(hostId: number, gameId: number, bookingId: number, action: string, reason = "") {
   if (!["approve", "waitlist", "cancel", "reject"].includes(action)) throw new AppError(400, "Thao tác không hợp lệ.");
@@ -26,7 +27,8 @@ export async function bookingDecision(hostId: number, gameId: number, bookingId:
     }
     await db.update(bookings).set({ status, decisionReason: reason.trim().slice(0, 500) }).where(eq(bookings.id, booking.id));
     if (booking.status === "confirmed" && status !== "confirmed") await promoteWaitlist(db, game, booking.id);
-    await auditChange(db, club.id, hostId, "Cập nhật đăng ký", { status: booking.status }, { booking_id: booking.id, status }, reason.trim().slice(0, 500));
+    const event = await auditChange(db, club.id, hostId, "Cập nhật đăng ký", { status: booking.status }, { booking_id: booking.id, status }, reason.trim().slice(0, 500));
+    if (status !== booking.status) await bookingNotification(db, booking.id, `audit:${event}`, status as NotificationKind);
     return status;
   });
 }

@@ -18,4 +18,4 @@ export function safeError(error: unknown) {
   return new AppError(503, "Tạm thời chưa xử lý được yêu cầu. Vui lòng kiểm tra lại trạng thái trước khi thử lại.", "unavailable");
 }
 
-export const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
+export const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" };

@@ -15,6 +15,7 @@ import { recordMoney, scopedBooking } from "./service";
 import { moneySchema } from "@/domain/session-policy";
 import { AppError } from "@/server/errors";
 import type { PlayerBookingAccess, PlayerDueAccess } from "@/server/modules/member-portal/access";
+import { proofNotification } from "@/server/modules/notifications/events";
 
 const now = () => new Date().toISOString();
 // A DB failure, including COMMIT failure, removes the newly written file. Historical assets stay immutable.
@@ -114,6 +115,7 @@ export async function reviewProof(hostId: number, proofId: number, raw: unknown)
     } else throw new AppError(404, "Không tìm thấy khoản thu.");
     const status = value.action === "confirm" ? "confirmed" : "rejected";
     await db.update(proofs).set({ status, reviewedBy: hostId, reviewedAt: now(), note: value.note }).where(eq(proofs.id, proofId));
+    await proofNotification(db, proofId, status);
     await auditChange(db, initial.asset.clubId, hostId, "Đối soát biên nhận", { status: "reported" }, { proof_id: proofId, status, received_amount: value.action === "confirm" ? value.receivedAmount ?? null : null }, value.note);
     return initial.asset.clubId;
   });

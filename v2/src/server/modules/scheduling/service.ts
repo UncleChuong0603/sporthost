@@ -10,6 +10,7 @@ import { sessionSchema, addWeeks, localNow, type SessionInput } from "@/domain/s
 import { createBooking, auditChange, seatCounts, type Game, type Club } from "@/server/modules/bookings/core";
 import { AppError } from "@/server/errors";
 import { requirePro } from "@/server/modules/subscriptions/entitlements";
+import { sessionNotification } from "@/server/modules/notifications/events";
 
 function policy(value: SessionInput, club: Club) {
   return { approval_mode: value.approval_mode, sport_snapshot: club.sportType, skill_guidance: value.skill_guidance, venue_instructions: value.venue_instructions, cancellation_policy: value.cancellation_policy, participation_conditions: value.participation_conditions, maps_url: value.maps_url, registration_deadline: value.registration_deadline, cancellation_deadline: value.cancellation_deadline, fee_mode: value.fee_mode, no_show_policy: value.no_show_policy, monthly_policy: value.monthly_policy };
@@ -115,10 +116,13 @@ export async function toggleSession(hostId: number, gameId: number) {
 }
 export async function cancelSession(hostId: number, gameId: number) {
   await transaction(async client => {
-    const db = drizzle(client); const { game } = await gameActor(db, hostId, gameId, "manage_session", true); mutableAttendance(game);
+    const db = drizzle(client); const { game } = await gameActor(db, hostId, gameId, "manage_session", true);
+    if (game.isCancelled) return;
+    mutableAttendance(game);
+    const event = await auditChange(db, game.clubId, hostId, "Hủy buổi chơi", { status: game.lifecycleStatus }, { game_id: gameId, status: "CANCELLED" });
+    await sessionNotification(db, gameId, `audit:${event}`, "session_cancelled");
     await db.update(sessions).set({ isCancelled: true, isOpen: false, lifecycleStatus: "CANCELLED" }).where(eq(sessions.id, gameId));
     await db.update(bookings).set({ status: "cancelled" }).where(eq(bookings.sessionId, gameId));
-    await auditChange(db, game.clubId, hostId, "Hủy buổi chơi", { status: game.lifecycleStatus }, { status: "CANCELLED" });
   });
 }
 export async function editSession(hostId: number, gameId: number, raw: Record<string, unknown>) {
@@ -137,7 +141,8 @@ export async function editSession(hostId: number, gameId: number, raw: Record<st
     const reason = String(raw.change_reason || "").trim();
     if (reason.length > 500 || (booked && changedPolicy && !reason)) throw new AppError(409, "Vui lòng ghi lý do khi thay đổi chính sách đã có người đăng ký.");
     await db.update(sessions).set({ title: value.title, venue: value.venue, startsAt: value.starts_at, capacity: value.capacity, capacityMale: value.capacity_male, capacityFemale: value.capacity_female, approvalMode: value.approval_mode, skillGuidance: value.skill_guidance, venueInstructions: value.venue_instructions, cancellationPolicy: value.cancellation_policy, participationConditions: value.participation_conditions, mapsUrl: value.maps_url, registrationDeadline: value.registration_deadline, cancellationDeadline: value.cancellation_deadline, feeMode: value.fee_mode, noShowPolicy: value.no_show_policy, monthlyPolicy: value.monthly_policy }).where(eq(sessions.id, gameId));
-    await auditChange(db, game.clubId, hostId, "Sửa thông tin buổi chơi", { title: game.title, starts_at: game.startsAt, policy: { approval_mode: game.approvalMode, cancellation_policy: game.cancellationPolicy } }, { title: value.title, starts_at: value.starts_at, policy: policy(value, club) }, reason);
+    const event = await auditChange(db, game.clubId, hostId, "Sửa thông tin buổi chơi", { title: game.title, starts_at: game.startsAt, policy: { approval_mode: game.approvalMode, cancellation_policy: game.cancellationPolicy } }, { game_id: gameId, title: value.title, starts_at: value.starts_at, policy: policy(value, club) }, reason);
+    if (game.title !== value.title || game.startsAt !== value.starts_at || game.venue !== value.venue || changedPolicy) await sessionNotification(db, gameId, `audit:${event}`, "session_changed");
   });
 }
 

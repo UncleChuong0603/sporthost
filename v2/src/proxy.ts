@@ -3,6 +3,7 @@ import { isLegacyPostPath } from "@/server/compatibility/legacy-paths";
 import { pageAccess } from "@/server/compatibility/page-access";
 import { safeError, privateHeaders } from "@/server/errors";
 import { getConfig } from "@/server/config";
+import { publicIndexing, indexablePath } from "@/lib/public-pages";
 
 // A page and route.ts cannot occupy the same URL segment. Preserve legacy POST
 // forms by an internal rewrite; GET pages retain the original public paths.
@@ -41,6 +42,8 @@ export async function proxy(request: NextRequest) {
     requestHeaders.set("x-sporthost-auth-mode", request.nextUrl.pathname.slice(1));
     return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   }
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("X-Robots-Tag", publicIndexing(settings.APP_ENV, settings.origin) && indexablePath(request.nextUrl.pathname) ? "index, follow" : "noindex, nofollow");
+  return response;
 }
 export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };

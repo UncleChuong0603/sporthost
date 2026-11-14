@@ -107,7 +107,7 @@ def verify(args):
         if restored_revision != manifest['revision']:raise RuntimeError('Restored revision mismatch')
         # Apply reviewed additive tables only on this disposable restored copy.
         with target.connect().execution_options(isolation_level='AUTOCOMMIT') as con:
-            for migration in ('0001_member_accounts.sql', '0002_payos_orders.sql'):
+            for migration in ('0001_member_accounts.sql', '0002_payos_orders.sql', '0003_admin_dashboard.sql', '0004_club_connections.sql', '0005_notifications.sql'):
                 con.exec_driver_sql((workspace/'v2/migrations'/migration).read_text(encoding='utf8'))
         compare_original_columns()
         expired_pruned = 0
@@ -119,11 +119,12 @@ def verify(args):
                 counters = {row['id']:dict(row) for row in con.execute(select(metadata.tables[schema+'.request_limits'])).mappings()}
                 business_before = {name:rows_hash(con.execute(select(table)).mappings().all()) for name,table in metadata.tables.items() if table.name != 'request_limits'}
             test_env = dict(os.environ, SPORTHOST_TEST_DATABASE_URL=target_url.set(drivername='postgresql').render_as_string(hide_password=False))
-            run(['npm.cmd' if os.name=='nt' else 'npm','test'], test_env, root, 'nextjs-regression', cwd=workspace/'v2')
+            run(['npm.cmd' if os.name=='nt' else 'npm','test','--','--maxWorkers=1','--no-file-parallelism'], test_env, root, 'nextjs-regression', cwd=workspace/'v2')
             with target.connect() as con:
-                for name,expected in business_before.items():
-                    if rows_hash(con.execute(select(metadata.tables[name])).mappings().all()) != expected:
-                        raise RuntimeError('Next.js tests changed restored original business rows')
+                changed = [name for name,expected in business_before.items() if rows_hash(con.execute(select(metadata.tables[name])).mappings().all()) != expected]
+                if changed:
+                    (root/'preservation-failure.json').write_text(json.dumps({'changed_tables':changed}),encoding='utf8')
+                    raise RuntimeError('Next.js tests changed restored original business rows')
                 remaining = {row['id']:dict(row) for row in con.execute(select(metadata.tables[schema+'.request_limits'])).mappings()}
                 if any(key not in counters or counters[key] != row for key,row in remaining.items()):
                     raise RuntimeError('Operational test counters leaked into the restored copy')

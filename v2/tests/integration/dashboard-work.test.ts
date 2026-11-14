@@ -59,9 +59,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  const auditIds = (await getPool().query("SELECT id FROM clubhost.audit_logs WHERE club_id=ANY($1::int[])", [clubs.map(club => club.id)])).rows.map(row => row.id);
   for (const club of clubs) await deleteClub(club.owner, club.id, club.name);
   if (hosts.length) {
-    await getPool().query("DELETE FROM clubhost.audit_logs WHERE host_id=ANY($1::int[])", [hosts]);
+    await getPool().query("DELETE FROM clubhost.audit_logs WHERE host_id=ANY($1::int[]) OR id=ANY($2::int[])", [hosts, auditIds]);
     await getPool().query("DELETE FROM clubhost.hosts WHERE id=ANY($1::int[])", [hosts]);
   }
   await closePool();

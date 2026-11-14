@@ -28,5 +28,6 @@ try {
   await client.query(readFileSync("migrations/0002_payos_orders.sql", "utf8"));
   await client.query(readFileSync("migrations/0003_admin_dashboard.sql", "utf8"));
   await client.query(readFileSync("migrations/0004_club_connections.sql", "utf8"));
+  await client.query(readFileSync("migrations/0005_notifications.sql", "utf8"));
   console.log(JSON.stringify({ ready: true, local_test_database: true, initialized_empty_schema: !existing, legacy_revision: revision[0].version_num }));
 } finally { await client.end(); }

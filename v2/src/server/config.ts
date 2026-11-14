@@ -23,6 +23,7 @@ const configSchema = z.object({
   SMTP_TLS_CA_FILE: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   ADMIN_EMAILS: z.string().default(""),
+  REMINDER_CRON_SECRET: z.string().min(32).max(200).optional(),
   PAYOS_CLIENT_ID: z.string().optional(),
   PAYOS_API_KEY: z.string().optional(),
   PAYOS_CHECKSUM_KEY: z.string().optional(),

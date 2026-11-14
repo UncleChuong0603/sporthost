@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { Activity, ArrowRight, CalendarDays, UsersRound, Wallet } from "lucide-react";
+import { ArrowRight, CalendarDays, UsersRound, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { socialMetadata } from "@/lib/site-metadata";
-export const metadata = { alternates: { canonical: "https://sporthost.online/" }, openGraph: { ...socialMetadata.openGraph, url: "https://sporthost.online/" } };
+import { siteTitle, siteDescription } from "@/lib/site-metadata";
+import { publicMetadata } from "@/server/seo";
+import { PublicNavigation, PublicFooter } from "@/features/marketing/public-navigation";
+export function generateMetadata() { return publicMetadata("/", siteTitle, siteDescription); }
 export const dynamic = "force-dynamic";
 export default function Home() {
   return <>
-    <header className="border-b bg-white"><nav aria-label="Điều hướng chính" className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4"><Link href="/" className="inline-flex min-h-11 items-center gap-2 text-xl font-bold"><Activity className="text-primary" aria-hidden="true" />SportHost</Link><div className="flex items-center gap-1 sm:gap-3"><Link href="/me/login" className="hidden min-h-11 items-center px-3 text-sm font-semibold text-muted-foreground sm:inline-flex">Dành cho người chơi</Link><Link href="/login" className="inline-flex min-h-11 items-center px-3 font-semibold text-primary">Đăng nhập host</Link></div></nav></header>
+    <PublicNavigation /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "SportHost", url: "https://sporthost.online/", inLanguage: "vi", description: siteDescription }).replace(/</g, "\u003c") }} />
     <main id="main" className="mx-auto max-w-6xl px-5 py-10 sm:py-20">
       <section className="grid items-center gap-10 lg:grid-cols-[1.25fr_1fr] lg:gap-16">
         <div><p className="mb-6 inline-flex rounded-full border border-primary/20 bg-teal-50 px-3 py-1.5 text-xs font-bold tracking-wide text-primary">Hẹn sân dễ dàng, thu chi rõ ràng</p><h1 className="text-4xl font-bold leading-[1.15] tracking-tight sm:text-5xl xl:text-6xl">Giữ nhịp câu lạc bộ.<br /><span className="text-primary">Dành giờ cho cuộc chơi.</span></h1><p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">Từ lịch hẹn, đăng ký và điểm danh đến từng khoản đóng. Host và người chơi cùng theo dõi trong một nơi.</p><Button asChild className="mt-7 min-h-12 px-6"><Link href="/signup">Bắt đầu tổ chức CLB<ArrowRight aria-hidden="true" /></Link></Button><p className="mt-4 text-sm text-muted-foreground">Tạo tài khoản → Tạo CLB → Lên lịch buổi đầu tiên</p></div>
@@ -17,7 +19,7 @@ export default function Home() {
         { Icon: UsersRound, title: "2. Đăng ký & ra sân", text: "Quản lý cả nhóm, chờ chỗ, xác nhận tham gia và điểm danh từng người." },
         { Icon: Wallet, title: "3. Thanh toán rõ ràng", text: "Xem phí, chuyển khoản theo thông tin CLB và gửi biên nhận. Host đối soát tiền thực nhận." },
       ].map(({ Icon, title, text }) => <article key={title} className="rounded-2xl border bg-white p-6"><Icon aria-hidden="true" className="mb-4 size-6 text-primary" /><h3 className="font-bold">{title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{text}</p></article>)}</section>
-      <section className="mt-10 rounded-2xl border bg-white p-6 sm:p-8"><h2 className="font-bold">Kết nối với CLB của bạn</h2><p className="mt-2 text-sm leading-7 text-muted-foreground">Người chơi tạo tài khoản và xác minh email, sau đó gửi email cho chủ CLB để liên kết hồ sơ. Bạn sẽ thấy lịch tham gia và thanh toán của mình sau khi host xác nhận.</p></section>
-    </main><footer className="mx-auto max-w-6xl px-5 pb-8 text-sm text-muted-foreground">SportHost · Dành thêm thời gian cho những trận đấu.</footer>
+      <section className="mt-10 rounded-2xl border bg-white p-6 sm:p-8"><h2 className="font-bold">Kết nối với CLB của bạn</h2><p className="mt-2 text-sm leading-7 text-muted-foreground">Người chơi tạo tài khoản, xác minh email và gửi yêu cầu qua liên kết kết nối CLB. Chủ CLB kiểm tra và liên kết đúng hồ sơ; bạn sẽ thấy lịch tham gia, thông báo và thanh toán của mình sau khi được xác nhận.</p></section>
+    </main><PublicFooter />
   </>;
 }

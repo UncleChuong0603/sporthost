@@ -43,7 +43,7 @@ test("native member settings, recurring RSVP, monthly proof and typed deletion p
     await page.goto(`/payments/review?club_id=${club}`); const proofPath = (await page.getByRole("link", { name: /^Mở ảnh biên nhận #/ }).getAttribute("href"))!; const proof = proofPath.match(/\/proofs\/(\d+)\//)![1];
     await post(page.request, `/proofs/${proof}/review`, token, { action: "confirm" });
     await visitor.reload(); await expect(visitor.getByText("Host đã ghi nhận thanh toán", { exact: true })).toBeVisible();
-    await page.goto(`/finance?club_id=${club}&period=${period}`); await page.getByRole("button", { name: "Hoàn tác đã thu phí tháng", exact: true }).click(); await expect(page.getByRole("button", { name: "Host xác nhận đã thu phí tháng", exact: true })).toBeVisible();
+    await page.goto(`/finance?club_id=${club}&period=${period}`); await page.getByRole("button", { name: "Hoàn tác đã thu phí tháng", exact: true }).click(); await page.getByRole("dialog").getByRole("button", { name: "Xác nhận", exact: true }).click(); await expect(page.getByRole("button", { name: "Host xác nhận đã thu phí tháng", exact: true })).toBeVisible();
     await post(page.request, "/workspace/games", token, { club_id: club, title: "Recurring parity", starts_at: localNow(new Date(Date.now() + 7 * 86400000)), capacity: "3", weeks: "2", guest_fee: "70000" });
     await page.goto(`/schedule?club_id=${club}`); await expect(page.getByRole("heading", { name: "Recurring parity", exact: true })).toHaveCount(3);
     await page.getByLabel("Thêm tuần cho Recurring parity", { exact: true }).fill("1"); await page.getByRole("button", { name: "Gia hạn lịch lặp", exact: true }).click();

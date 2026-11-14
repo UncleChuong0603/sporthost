@@ -8,6 +8,7 @@ import { guestToken, digest } from "@/server/compatibility/guest-capability";
 import { AppError } from "@/server/errors";
 import { localNow, registrationOpen } from "@/domain/session-policy";
 import type { Gender } from "@/domain/catalog";
+import { bookingNotification } from "@/server/modules/notifications/events";
 
 export type Game = typeof sessions.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
@@ -26,7 +27,8 @@ export function bookedPolicy(booking: Booking | null, game: Game): Record<string
   return value && Object.keys(value).length ? value : { cancellation_deadline: game.cancellationDeadline || game.startsAt, cancellation_policy: game.cancellationPolicy, fee_mode: game.feeMode, no_show_policy: game.noShowPolicy, monthly_policy: game.monthlyPolicy };
 }
 export async function auditChange(db: NodePgDatabase, clubId: number | null, hostId: number | null, action: string, before: unknown, after: unknown, reason = "") {
-  await db.insert(audit).values({ clubId, hostId, action, details: JSON.stringify({ before, after, reason }), createdAt: new Date().toISOString() });
+  const [entry] = await db.insert(audit).values({ clubId, hostId, action, details: JSON.stringify({ before, after, reason }), createdAt: new Date().toISOString() }).returning({ id: audit.id });
+  return entry.id;
 }
 export async function seatCounts(db: NodePgDatabase, gameId: number, excludeId?: number) {
   const gender = sql<string>`coalesce(${people.gender}, ${bookings.genderAtBooking})`;
@@ -50,6 +52,7 @@ export async function createBooking(db: NodePgDatabase, game: Game, club: Club, 
   const accepted = party || [{ position: 0, memberId: member.id, name: member.name, gender: member.gender as Gender, level: member.level, feeAmount: memberFee(game, member) }];
   const [booking] = await db.insert(bookings).values({ sessionId: game.id, memberId: member.id, status, paid: false, attended: false, feeAmount: accepted.reduce((sum, person) => sum + person.feeAmount, 0), accessKey: "", tokenNonce: nonce, tokenDigest: digest(raw), tokenExpiresAt: expires, tokenRevoked: false, channel, qrKey: club.qrKey, genderAtBooking: member.gender, policySnapshot: JSON.stringify(bookedPolicy(null, game)), paymentSnapshot: JSON.stringify(paymentSnapshot(club)), payerMode: "GROUP" }).returning();
   await db.insert(people).values(accepted.map(person => ({ ...person, bookingId: booking.id })));
+  if (status === "invited") await bookingNotification(db, booking.id, `invited:${booking.id}`, "invited");
   return { booking, key: raw };
 }
 export async function allowGuestChange(db: NodePgDatabase, booking: Booking, game: Game, editing = true) {
@@ -66,6 +69,10 @@ export async function promoteWaitlist(db: NodePgDatabase, game: Game, excludeId?
   for (const { booking, member } of queue) {
     if (booking.id === excludeId || (game.approvalMode === "MANUAL_APPROVE" && member.kind === "guest")) continue;
     const party = await participants(db, booking.id);
-    if (await canFit(db, game, party.length ? party.map(p => p.gender) : [booking.genderAtBooking])) { await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, booking.id)); break; }
+    if (await canFit(db, game, party.length ? party.map(p => p.gender) : [booking.genderAtBooking])) {
+      await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, booking.id));
+      const event = await auditChange(db, game.clubId, null, "Lên từ danh sách chờ", { status: "waitlist" }, { booking_id: booking.id, status: "confirmed" });
+      await bookingNotification(db, booking.id, `audit:${event}`, "promoted"); break;
+    }
   }
 }
