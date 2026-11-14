@@ -1,0 +1,80 @@
+import { beforeAll, afterAll, it, expect } from "vitest";
+import { randomBytes } from "node:crypto";
+import { readSheet } from "read-excel-file/node";
+import { unzipSync, strFromU8 } from "fflate";
+import { installTestEnv } from "./environment";
+import { signup } from "@/server/auth/service";
+import { getPool, closePool } from "@/server/db/client";
+import { createClub } from "@/server/modules/clubs/service";
+import { deleteClub } from "@/server/modules/clubs/deletion";
+import { grantAccess, revokeAccess } from "@/server/modules/clubs/access";
+import { saveMember } from "@/server/modules/members/service";
+import { saveDue, toggleDue } from "@/server/modules/finance/club";
+import { createSession, inviteFixed } from "@/server/modules/scheduling/service";
+import { bookingDecision } from "@/server/modules/bookings/host";
+import { attendanceCommand, lifecycle } from "@/server/modules/attendance/service";
+import { issueCharges, hostRecordMoney } from "@/server/modules/finance/service";
+import { financeView } from "@/server/modules/finance/queries";
+import { membersWorkbook, attendanceWorkbook, sessionFinanceWorkbook, financeWorkbook } from "@/server/reports/exports";
+import { reportWorkbook } from "@/server/reports/workbook";
+import { localNow } from "@/domain/session-policy";
+
+const prefix = "v2-reports-" + randomBytes(5).toString("hex"), ids: number[] = [];
+let owner: number, checker: number, outsider: number, club: number, game: number, member: number;
+beforeAll(async () => {
+  installTestEnv(); for (const r of ["owner", "checker", "outsider"]) ids.push((await signup(`${prefix}-${r}@example.com`, "report-integration-password")).id); [owner, checker, outsider] = ids;
+  club = (await createClub(owner, { name: prefix })).id;
+  await grantAccess(owner, club, `${prefix}-checker@example.com`, "custom", ["check_in"]);
+  member = (await saveMember(owner, club, null, { name: '=HYPERLINK("https://invalid.test")', phone: "0905566778", kind: "fixed", gender: "female" })).id;
+  await saveMember(owner, club, null, { name: "Another", phone: "0905566779", kind: "guest" });
+  game = (await createSession(owner, club, { title: prefix, starts_at: localNow(new Date(Date.now() + 86400000)), capacity: 10, fixed_fee: 50000 })).gameId!; await inviteFixed(owner, game);
+});
+afterAll(async () => { if (club) await deleteClub(owner, club, prefix); await getPool().query("DELETE FROM clubhost.audit_logs WHERE host_id=ANY($1::int[])", [ids]); await getPool().query("DELETE FROM clubhost.hosts WHERE id=ANY($1::int[])", [ids]); await closePool(); });
+it("exports real XLSX cells with phone text, numeric money, dates and no executable formulas", async () => {
+  const bytes = await membersWorkbook(owner, club, { kind: "fixed" }); const rows = await readSheet(bytes, 1);
+  expect(rows).toHaveLength(2); expect(rows[1][2]).toBe("0905566778"); expect(rows[1][1]).toBe('=HYPERLINK("https://invalid.test")');
+  const parts = unzipSync(bytes); expect(strFromU8(parts["xl/worksheets/sheet1.xml"])).not.toMatch(/<f[\s>]/); expect(strFromU8(parts["xl/worksheets/sheet1.xml"])).toContain("frozen");
+  const typed = await reportWorkbook([{ name: "Kiểu dữ liệu", headers: ["Ngày", "Tiền", "Văn bản"], rows: [[new Date("2030-06-05T00:00:00Z"), -123000, "@SUM(1)\u0001"]] }]);
+  const result = await readSheet(typed, 1); expect(result[1][0]).toEqual(new Date("2030-06-05T00:00:00Z")); expect(result[1][1]).toBe(-123000); expect(result[1][2]).toBe("@SUM(1)");
+});
+it("allows check-in-only attendance exports without contacts, money or capabilities", async () => {
+  const bytes = await attendanceWorkbook(checker, game), rows = await readSheet(bytes, 1); expect(rows.length).toBeGreaterThan(1);
+  expect(rows[0]).not.toContain("Số điện thoại"); expect(JSON.stringify(rows)).not.toContain("0905566778");
+  expect(JSON.stringify(rows)).not.toMatch(/access_key|token|50000|bank|payment/i);
+  await expect(membersWorkbook(checker, club)).rejects.toMatchObject({ status: 403 }); await expect(sessionFinanceWorkbook(checker, game)).rejects.toMatchObject({ status: 403 }); await expect(financeWorkbook(checker, club)).rejects.toMatchObject({ status: 403 });
+  await expect(attendanceWorkbook(outsider, game)).rejects.toMatchObject({ status: 404 });
+});
+it("exports filtered ledger sheets with truthful cancellation/payment state, numeric totals and headers when empty", async () => {
+  const due = await saveDue(owner, club, member, { period: "2030-06", amount: 123000 });
+  const unpaid = await financeWorkbook(owner, club, "2030-06", "unpaid"); expect((await readSheet(unpaid, "Thu chi"))[1][4]).toBe(123000); expect((await readSheet(unpaid, "Công nợ"))).toHaveLength(2);
+  await toggleDue(owner, due.id);
+  const empty = await financeWorkbook(owner, club, "2030-06", "unpaid"); expect(await readSheet(empty, "Thu chi")).toHaveLength(1);
+  const paid = await financeWorkbook(owner, club, "2030-06", "paid"); expect((await readSheet(paid, "Thu chi"))[1][5]).toBe("Đã ghi nhận"); expect((await readSheet(paid, "Tổng quan")).some(r => r[0] === "Đã ghi nhận (đ)" && r[1] === 123000)).toBe(true);
+  const before = (await getPool().query("SELECT count(*)::int n FROM clubhost.money_movements WHERE session_id=$1", [game])).rows[0].n;
+  const source = await sessionFinanceWorkbook(owner, game); expect((await readSheet(source, "Tổng quan")).some(r => r[1] === "Bản nháp — chưa phát hành")).toBe(true);
+  expect((await getPool().query("SELECT count(*)::int n FROM clubhost.money_movements WHERE session_id=$1", [game])).rows[0].n).toBe(before);
+  await expect(financeWorkbook(owner, club, "bad-period")).rejects.toMatchObject({ status: 400 });
+  await expect(reportWorkbook([{ name: "Huge", headers: ["A"], rows: Array.from({ length: 20001 }, () => ["A"]) }])).rejects.toMatchObject({ status: 413 });
+});
+it("exports issued balances, partial receipts, signed refunds and reversals without changing the ledger", async () => {
+  const booking = (await getPool().query("SELECT id FROM clubhost.bookings WHERE session_id=$1 AND member_id=$2", [game, member])).rows[0].id;
+  const person = (await getPool().query("SELECT id FROM clubhost.booking_participants WHERE booking_id=$1", [booking])).rows[0].id;
+  await bookingDecision(owner, game, booking, "approve"); await lifecycle(owner, game, "start");
+  await attendanceCommand(owner, game, person, "check_in", 0); await lifecycle(owner, game, "finish");
+  await issueCharges(owner, game, (await financeView(owner, game)).draftHash);
+  await hostRecordMoney(owner, game, booking, { amount: 30000, kind: "RECEIVED", source: "CASH", requestKey: prefix + "-received" });
+  const refund = await hostRecordMoney(owner, game, booking, { amount: 5000, kind: "REFUND_RECORDED", source: "CASH", requestKey: prefix + "-refund", reason: "Return payment" });
+  const partial = await sessionFinanceWorkbook(owner, game);
+  expect((await readSheet(partial, "Khoản đóng"))[1].slice(1, 7)).toEqual([50000, 30000, 5000, 25000, 25000, 0]);
+  expect((await readSheet(partial, "Giao dịch")).slice(1).map(row => row[2]).sort((a, b) => Number(a) - Number(b))).toEqual([-5000, 30000]);
+  await hostRecordMoney(owner, game, booking, { amount: 5000, kind: "REVERSAL", source: "CASH", requestKey: prefix + "-reversal", reversesId: refund.id, reason: "Correct refund" });
+  const before = (await getPool().query("SELECT id,amount,kind FROM clubhost.money_movements WHERE session_id=$1 ORDER BY id", [game])).rows;
+  expect((await readSheet(await sessionFinanceWorkbook(owner, game), "Khoản đóng"))[1].slice(1, 7)).toEqual([50000, 30000, 0, 30000, 20000, 0]);
+  expect((await getPool().query("SELECT id,amount,kind FROM clubhost.money_movements WHERE session_id=$1 ORDER BY id", [game])).rows).toEqual(before);
+});
+it("exports on Free but rechecks revoked cohost rights", async () => {
+  await getPool().query("UPDATE clubhost.clubs SET trial_ends_at=NULL,pro_ends_at=NULL WHERE id=$1", [club]);
+  expect((await membersWorkbook(owner, club)).subarray(0, 2).toString()).toBe("PK");
+  const access = (await getPool().query("SELECT id FROM clubhost.club_access WHERE club_id=$1 AND host_id=$2", [club, checker])).rows[0].id;
+  await revokeAccess(owner, club, access); await expect(attendanceWorkbook(checker, game)).rejects.toMatchObject({ status: 404 });
+});

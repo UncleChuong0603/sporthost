@@ -13,9 +13,11 @@ export const notifications = clubhost.table("notifications", {
 export const notificationPreferences = clubhost.table("notification_preferences", {
   accountId: integer("account_id").primaryKey().references(() => accounts.id, { onDelete: "cascade" }),
   remindersEnabled: boolean("reminders_enabled").notNull().default(false), updatedAt: varchar("updated_at").notNull(),
+  monthlyRemindersEnabled: boolean("monthly_reminders_enabled").notNull().default(false),
 });
 export const reminderSettings = clubhost.table("reminder_settings", {
   clubId: integer("club_id").primaryKey().references(() => clubs.id, { onDelete: "cascade" }),
   rsvpEnabled: boolean("rsvp_enabled").notNull().default(false), paymentEnabled: boolean("payment_enabled").notNull().default(false),
   rsvpLeadHours: integer("rsvp_lead_hours").notNull().default(24), paymentIntervalDays: integer("payment_interval_days").notNull().default(3), updatedAt: varchar("updated_at").notNull(),
+  monthlyEnabled: boolean("monthly_enabled").notNull().default(false), monthlyDay: integer("monthly_day").notNull().default(5), monthlyIntervalDays: integer("monthly_interval_days").notNull().default(3),
 });

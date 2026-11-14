@@ -9,7 +9,7 @@ The signed-in `/guide` route provides 43 task-reference articles in Vietnamese a
 | 1 | First usable club/session | Create club, create session, pricing modes, gender limits, deadlines/policies, sharing, interactive onboarding and daily dashboard tasks |
 | 2 | Members/registration | XLSX import, manual members/filtering/editing, group approval/waitlist/cancellation, fixed-member RSVP/walk-ins, rotate/revoke private links and verified player connections |
 | 3 | Day of play | Attendance/reset/check-out/replacement, registration open/close, start/finish/reopen, edit settings and cancel sessions |
-| 4 | Money | Bank/QR/default fees, expense drafts, allocations/waivers, fee issuance, pre-issue receipts, partial receipts/refunds/reversals, proof review, monthly dues, ledger/debt reminders/adjustments/close, existing CSV exports and ICS downloads |
+| 4 | Money | Bank/QR/default fees, expense drafts, allocations/waivers, fee issuance, pre-issue receipts, partial receipts/refunds/reversals, proof review, monthly dues, ledger/debt reminders/adjustments/close, Free XLSX exports for members/attendance/finance, existing CSV and ICS downloads |
 | 5 | Time savers/Pro | Free session copying, weekly series/generate/extend/stop, cohost rights/revocation, opt-in in-app reminders, Pro purchase/renewal and payment status/history |
 | 6 | Player flows | Public/group registration without account, RSVP/edit/cancel, payment/proof/retry, signup/verification/connection requests, schedule/payments/profile and notification consent |
 | 7 | Account/club maintenance | Verification/password/recovery/logout, default club settings and confirmed club deletion |
@@ -21,7 +21,7 @@ The page offers accent-insensitive multiword search, group filters, a club selec
 
 ## Maintenance and limits
 
-Update the catalog when changing a real product flow. Do not describe unimplemented features as available. In particular, there is no automatic Zalo/email messaging, automatic monthly-dues reminder, bank transfer/refund triggered by manual money records, live calendar synchronization or proof that sharing reached a recipient. Prices and trial periods are read on the existing purchase screen, not hardcoded into articles. Administrative and financial guidance directs users through existing validation and confirmations.
+Update the catalog when changing a real product flow. Do not describe unimplemented features as available. In particular, there is no automatic Zalo/email messaging, bank transfer/refund triggered by manual money records, live calendar synchronization or proof that sharing reached a recipient. Monthly-dues reminders require active Pro, owner settings and separate verified/linked player consent; see [Excel and monthly reminders](EXCEL_MONTHLY_REMINDERS.md). Prices and trial periods are read on the existing purchase screen, not hardcoded into articles. Administrative and financial guidance directs users through existing validation and confirmations.
 
 The reference links to the session list when a task needs the host to pick a real session; it does not guess a session ID. It is an authenticated host reference including instructions hosts can give players, rather than a public help-sharing portal. It does not store read history or mark viewed articles complete.
 

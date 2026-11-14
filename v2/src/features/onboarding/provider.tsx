@@ -132,7 +132,7 @@ export function QuestPanel({ snapshot, busy, onSelect, onStart, onRestart, onPau
       const p = snapshot.progress.find(p => p.id === m.id)!;
       return <li key={m.id} className="py-3"><div className="flex items-start gap-2">{p.done ? <CircleCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-primary" /> : <Circle aria-hidden="true" className="mt-1 size-4 shrink-0 text-muted-foreground" />}<div className="min-w-0 flex-1"><p className="text-sm font-semibold">{m.title}{"pro" in m && m.pro ? " · Pro" : ""}</p><p className="mt-1 text-xs text-muted-foreground">{p.done ? "Đã hoàn tất từ dữ liệu thật" : p.skipped ? "Đã bỏ qua · chưa hoàn tất" : p.reason || "Chưa hoàn tất"}</p><Button type="button" variant="ghost" disabled={busy || !p.available} onClick={() => onSelect(m.id)}>{p.done ? "Xem lại hướng dẫn" : "Hướng dẫn thao tác"}</Button></div></div></li>;
     })}</ol></section>)}
-    <p className="mt-4 text-xs text-muted-foreground">Lịch cá nhân và CSV có tại trang buổi chơi / Thu chi. Đổi mật khẩu ở Tài khoản. Gói Pro chỉ mua từ trang CLB khi bạn có nhu cầu.</p>
+    <p className="mt-4 text-xs text-muted-foreground">Xuất Excel ở Thành viên, buổi chơi và Thu chi. Lịch cá nhân ở trang buổi chơi. Đổi mật khẩu ở Tài khoản. Gói Pro chỉ mua từ trang CLB khi bạn có nhu cầu.</p>
   </>;
 }
 export function Tooltip({ snapshot, missionId, busy, onPause, onSkip, onHelp }: { snapshot: TourSnapshot; missionId: MissionId; busy: boolean; onPause: () => void; onSkip: () => void; onHelp: () => void }) {

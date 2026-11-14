@@ -1,3 +1,4 @@
+import { ExcelDownload } from "@/features/shared/excel-download";
 import { SessionClubScope } from "@/features/clubs/workspace-scope";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { dateTimeText } from "@/domain/format";
@@ -28,6 +29,7 @@ export default async function GamePage({ params }: { params: Promise<{ gameId: s
     {game.canFinance && <Link className="mb-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 text-sm font-semibold text-white" href={`/games/${id}/billing`}>Thu chi và phát hành tiền cần đóng</Link>}
     {game.canSession && <Link href={`/schedule/new?source_id=${id}`} className="mb-5 inline-flex min-h-11 items-center rounded-lg border bg-white px-4 text-sm font-semibold text-primary">Sao chép thành buổi mới</Link>}
     <CalendarDownload href={`/games/${id}/calendar.ics`} />
+    <div className="mb-6 flex flex-wrap gap-3">{game.canCheckIn && <ExcelDownload href={`/games/${id}/attendance.xlsx`} label="Xuất điểm danh Excel" />}{game.canFinance && <ExcelDownload href={`/games/${id}/export.xlsx`} label="Xuất thu chi buổi Excel" />}</div>
     <section className="mb-6 flex flex-wrap items-start gap-3 rounded-2xl border bg-white p-5">
       <Link className="inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-semibold text-primary" href={`/join/${game.publicId}`}>Mở trang đăng ký công khai</Link>
       {game.canSession && editable && <>

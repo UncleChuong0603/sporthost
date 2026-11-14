@@ -55,7 +55,7 @@ async function snapshot(client: PoolClient, accountId: number, requestedClub?: n
       EXISTS(SELECT 1 FROM clubhost.member_account_links l JOIN clubhost.members m ON m.id=l.member_id WHERE m.club_id=$1) AS connections,
       EXISTS(SELECT 1 FROM clubhost.recurring_rules WHERE club_id=$1) AS recurrence,
       EXISTS(SELECT 1 FROM clubhost.club_access WHERE club_id=$1) AS access,
-      EXISTS(SELECT 1 FROM clubhost.reminder_settings WHERE club_id=$1 AND (rsvp_enabled OR payment_enabled)) AS reminders`, [clubId])).rows[0] };
+      EXISTS(SELECT 1 FROM clubhost.reminder_settings WHERE club_id=$1 AND (rsvp_enabled OR payment_enabled OR monthly_enabled)) AS reminders`, [clubId])).rows[0] };
     saved = (await client.query<ProgressRow>("SELECT mission_id,completed_at,skipped_at FROM clubhost.host_tour_progress WHERE account_id=$1 AND club_id=$2", [accountId, clubId])).rows;
     if (!facts.invitations && hasPermission(owner, rights, "manage_bookings")) {
       // Invitations may already have replies. Match a positive creation count

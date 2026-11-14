@@ -107,7 +107,7 @@ def verify(args):
         if restored_revision != manifest['revision']:raise RuntimeError('Restored revision mismatch')
         # Apply reviewed additive tables only on this disposable restored copy.
         with target.connect().execution_options(isolation_level='AUTOCOMMIT') as con:
-            for migration in ('0001_member_accounts.sql', '0002_payos_orders.sql', '0003_admin_dashboard.sql', '0004_club_connections.sql', '0005_notifications.sql', '0006_host_onboarding.sql', '0007_host_activation.sql'):
+            for migration in ('0001_member_accounts.sql', '0002_payos_orders.sql', '0003_admin_dashboard.sql', '0004_club_connections.sql', '0005_notifications.sql', '0006_host_onboarding.sql', '0007_host_activation.sql', '0008_monthly_reminders.sql'):
                 con.exec_driver_sql((workspace/'v2/migrations'/migration).read_text(encoding='utf8'))
         compare_original_columns()
         expired_pruned = 0

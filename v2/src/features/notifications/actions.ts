@@ -17,12 +17,12 @@ export async function readAll(_state: FormState, form: FormData): Promise<FormSt
   catch (error) { return { error: safeError(error).message }; }
 }
 export async function reminderPreference(_state: FormState, form: FormData): Promise<FormState> {
-  try { await setReminderPreference(await actor(form), form.get("enabled") === "on"); revalidatePath("/me/notifications"); return { success: "Đã lưu tùy chọn nhắc việc." }; }
+  try { await setReminderPreference(await actor(form), form.get("enabled") === "on", form.get("monthly_enabled") === "on"); revalidatePath("/me/notifications"); return { success: "Đã lưu tùy chọn nhắc việc." }; }
   catch (error) { return { error: safeError(error).message }; }
 }
 export async function updateReminders(clubId: number, _state: FormState, form: FormData): Promise<FormState> {
   try {
-    await saveClubReminders(await actor(form), clubId, { rsvpEnabled: form.get("rsvp") === "on", paymentEnabled: form.get("payment") === "on", rsvpLeadHours: form.get("lead"), paymentIntervalDays: form.get("interval") });
+    await saveClubReminders(await actor(form), clubId, { rsvpEnabled: form.get("rsvp") === "on", paymentEnabled: form.get("payment") === "on", rsvpLeadHours: form.get("lead"), paymentIntervalDays: form.get("interval"), monthlyEnabled: form.get("monthly") === "on", monthlyDay: form.get("monthly_day") || 5, monthlyIntervalDays: form.get("monthly_interval") || 3 });
     revalidatePath(`/clubs/${clubId}/reminders`); return { success: "Đã lưu lịch nhắc trong ứng dụng." };
   } catch (error) { return { error: safeError(error).message }; }
 }

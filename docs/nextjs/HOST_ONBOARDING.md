@@ -1,5 +1,7 @@
 # Host onboarding
 
+Current additions: [Free Excel exports and Pro monthly-dues reminders](EXCEL_MONTHLY_REMINDERS.md) update reference copy and the reminder mission's saved-setting evidence. The original inventory below records the pre-implementation audit; exports now support XLSX as well as the existing CSV routes. No new mission completes merely by downloading or reading a guide.
+
 ## Repository audit (2026-11-14, before implementation)
 
 The host workspace is the authenticated `(workspace)` layout, with desktop navigation to overview, schedule, members, finance, clubs and account; mobile has five destinations and account in the header. Player, public registration and platform administration are separate experiences. `requireActiveAccount`, `requireClubAccess`, explicit capabilities and `requirePro` are the existing authority boundaries. Server actions validate origin, CSRF and the signed session. Tutorials must not grant permissions.
