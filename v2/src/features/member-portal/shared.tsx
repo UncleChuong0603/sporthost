@@ -1,15 +1,17 @@
+import { StatusBadge } from "@/components/ui/status-badge";
+import { dateTimeText } from "@/domain/format";
 import Link from "next/link";
 import { CalendarDays, MapPin, ArrowUpRight, UsersRound } from "lucide-react";
 import type { PlayerBooking, PlayerPayment } from "@/server/modules/member-portal/service";
-import { bookingLabels } from "@/domain/status";
 import { moneyText } from "@/domain/catalog";
 
 export const panel = "rounded-2xl border bg-white p-5 sm:p-6";
 export function MemberEmpty({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className={panel}><div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-teal-50 text-primary"><UsersRound aria-hidden="true" className="size-6" /></div><h2 className="text-lg font-bold">{title}</h2><div className="mt-2 space-y-3 text-sm leading-6 text-muted-foreground">{children}</div></section>;
 }
-export function BookingCard({ booking }: { booking: PlayerBooking }) {
-  return <article className={panel}><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-primary">{booking.club_name}</p><span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">{booking.is_cancelled ? "Buổi đã hủy" : bookingLabels[booking.status] || booking.status}</span></div><h3 className="text-xl font-bold"><Link className="inline-flex min-h-11 items-center gap-2 hover:text-primary" href={`/me/bookings/${booking.id}`}>{booking.title}<ArrowUpRight className="size-4 shrink-0" aria-hidden="true" /></Link></h3><p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground"><CalendarDays className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{booking.starts_at.replace("T", " · ")}</p><p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{booking.venue || "Liên hệ host để biết địa điểm"}</p><div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3"><p className="text-sm text-muted-foreground">{booking.party_size || 1} người trong đăng ký</p><Link href={`/me/bookings/${booking.id}`} className="inline-flex min-h-11 items-center font-semibold text-primary">{booking.status === "invited" ? "Trả lời lời mời" : "Xem đăng ký"}</Link></div></article>;
+export function BookingCard({ booking, headingLevel = 2 }: { booking: PlayerBooking; headingLevel?: 2 | 3 }) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
+  return <article className={panel}><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-primary">{booking.club_name}</p><StatusBadge status={booking.is_cancelled ? "cancelled" : booking.status} label={booking.is_cancelled ? "Buổi đã hủy" : undefined} /></div><Heading className="text-xl font-bold"><Link className="inline-flex min-h-11 items-center gap-2 hover:text-primary" href={`/me/bookings/${booking.id}`}>{booking.title}<ArrowUpRight className="size-4 shrink-0" aria-hidden="true" /></Link></Heading><p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground"><CalendarDays className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{dateTimeText(booking.starts_at)}</p><p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{booking.venue || "Liên hệ host để biết địa điểm"}</p><div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3"><p className="text-sm text-muted-foreground">{booking.party_size || 1} người trong đăng ký</p><Link href={`/me/bookings/${booking.id}`} className="inline-flex min-h-11 items-center font-semibold text-primary">{booking.status === "invited" ? "Trả lời lời mời" : "Xem đăng ký"}</Link></div></article>;
 }
 export function PaymentCard({ payment }: { payment: PlayerPayment }) {
   const href = payment.type === "due" ? `/me/dues/${payment.id}` : `/me/bookings/${payment.id}`;

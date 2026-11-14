@@ -12,7 +12,7 @@ export function disposablePool() {
     connectionString = info.runtime_url;
     if (new URL(connectionString).pathname !== "/sporthost_v2_preview_c2905007") throw Error("Refused database fixture target");
   } else {
-    connectionString = parse(readFileSync(".env.local")).DATABASE_URL;
+    connectionString = process.env.SPORTHOST_TEST_DATABASE_URL || process.env.DATABASE_URL || parse(readFileSync(".env.local")).DATABASE_URL;
     const url = new URL(connectionString);
     if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !url.pathname.endsWith("_test")) throw Error("Refused non-test browser database");
   }

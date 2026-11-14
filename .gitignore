@@ -8,4 +8,5 @@ dist/
 .venv/
 __pycache__/
 .pytest_cache/
+.tools/
 *.py[cod]

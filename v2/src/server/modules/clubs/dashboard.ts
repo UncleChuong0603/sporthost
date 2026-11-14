@@ -8,8 +8,8 @@ import { financeLedger, ledgerTotals } from "@/server/modules/finance/ledger";
 import { localNow } from "@/domain/session-policy";
 import { connectionRequests } from "@/server/db/connection-schema";
 
-export async function dashboardData(hostId: number) {
-  const clubs = await listClubs(hostId), now = localNow();
+export async function dashboardData(hostId: number, authorizedClubs?: Awaited<ReturnType<typeof listClubs>>) {
+  const clubs = authorizedClubs ?? await listClubs(hostId), now = localNow();
   const games = await listSessions(hostId);
   const upcoming = games.filter(game => game.startsAt >= now && !game.isCancelled).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const bookingClubs = clubs.filter(club => club.owner || club.rights.includes("manage_bookings")).map(club => club.id);

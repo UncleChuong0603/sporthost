@@ -96,7 +96,12 @@ describe("atomic group booking capacity on real PostgreSQL", () => {
       await client.query("UPDATE clubhost.booking_participants SET gender='female' WHERE booking_id=$1", [male.bookingId]);
       deciding = bookingDecision(hostId, session.id, male.bookingId!, "approve");
       // Hold the contact transaction until the independent approval connection waits.
-      await expect.poll(async () => Number((await client.query("SELECT count(*) AS n FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%clubhost%'")).rows[0].n)).toBeGreaterThan(0);
+      await expect.poll(async () => {
+        // pg_stat_activity is cached for this open transaction. Refresh it so
+        // an initial observation before the approval blocks cannot stay stale.
+        await client.query("SELECT pg_stat_clear_snapshot()");
+        return Number((await client.query("SELECT count(*) AS n FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%clubhost%'")).rows[0].n);
+      }).toBeGreaterThan(0);
       await client.query("COMMIT");
       expect(await deciding).toBe("waitlist");
     } finally { await client.query("ROLLBACK"); client.release(); if (deciding) await deciding.catch(() => undefined); }
