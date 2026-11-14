@@ -91,4 +91,4 @@ Verified locally on 2026-11-14 against the guarded disposable PostgreSQL databas
 - Visual inspection: desktop/mobile spotlight and completion screenshots in `v2/test-results/onboarding-{spotlight,complete}-{desktop,mobile}.png` (ignored local artifacts). Tooltip placement has an explicit no-overlap assertion for the real club-name input.
 - `git diff --check`: passed. No lint script/linter is configured in the repository; no lint result is claimed.
 
-Production onboarding migration/deployment has **not** been performed as part of this implementation. The existing dashboard change keeping **Tạo buổi chơi** always visible was retained as requested; the destination still enforces existing server permissions.
+Production onboarding migration/deployment completed on **2026-11-15** with the Excel/copy/activation release. See [HOST_PRODUCTIVITY.md](HOST_PRODUCTIVITY.md) for exact source, migration, backup, browser acceptance and production preservation evidence. The existing dashboard change keeping **Tạo buổi chơi** always visible was retained as requested; the destination still enforces existing server permissions.
