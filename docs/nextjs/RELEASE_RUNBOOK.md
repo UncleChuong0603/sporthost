@@ -1,5 +1,15 @@
 # SportHost v2 release and rollback
 
+## Production 502 recovery, 2026-11-21
+
+The public origin returned 502 at 09:04 UTC (16:04 Asia/Bangkok). Dokploy's deployment status still said `done`, but no production container was running. Swarm repeatedly rejected replacement tasks with `No such image: app-generate-auxiliary-capacitor-z5dy1q:latest`. Disk and memory were available, preview remained healthy, and PostgreSQL was reachable. The missing local image is confirmed; the operation that removed it has not been established.
+
+Recovery used the documented [application.redeploy API](https://docs.dokploy.com/docs/api/application) for the existing production application only. Before starting it, all 344 retained source files matched the November 15 tested manifest, and the current private configuration plus read-only database row hashes were captured. No application source, schema, environment, domain or upload mount was changed. Do not recover a missing image by restoring an older database or by restarting shared services.
+
+Recovery deployment `1SAnuSy2UVd1icLYFybaG` completed with healthy image `sha256:cc020e656cf786e34b2a22aa0a22ccff61ef5ee76f589cf4effc271bd626c36c`. The homepage was observed serving 200 again at 09:09:56 UTC. One running task, readiness and all 22 HTTP/SEO/privacy checks passed. Port 8000, UID/GID 10001, secure cookies, SMTP, normal writes and the original private upload volume were preserved. All 34 non-operational database tables retained their pre-recovery row counts/hashes and legacy revision. No production fixtures were created. The retained operator login session was no longer authorized (401), so authenticated browser checks were not claimed for this incident.
+
+Private before/after configuration, task errors, source verification, row fingerprints and HTTP evidence are retained under `.vercel/incidents/20261121-502/`. Keep them private. When diagnosing a similar outage, inspect current Swarm tasks and actual container health rather than relying on a historical successful deployment. Preserve active service image tags during image cleanup, including services temporarily without a running container; do not prune the shared host as a recovery action.
+
 This procedure was executed on 2026-11-04; production now serves Next.js with normal writes enabled. Follow `PROGRESS.md` for test and preservation evidence. No destructive schema migration or DNS change was required for the reviewed 0011 database.
 
 For the current host/member and payment candidate, use [LAUNCH_RELEASE.md](LAUNCH_RELEASE.md) for the frozen source identity, fresh restore drill, explicit payment migration and preview results. The execution records below describe earlier releases.

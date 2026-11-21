@@ -2,6 +2,10 @@
 
 SportHost v2 is live at <https://sporthost.online> on 2026-11-04. The existing Dokploy production Application now runs one full-stack Next.js application with normal writes enabled, the original PostgreSQL `clubhost` schema and signing key, private VPS uploads and SMTP. Its runtime contains Node, not Python/FastAPI. No destructive database migration or agent DNS edit was performed.
 
+## Runtime recovery, 2026-11-21
+
+A missing local production image caused Swarm replacement tasks to be rejected and the public origin to return 502. The unchanged, manifest-verified November 15 source was rebuilt/redeployed to the existing application as `1SAnuSy2UVd1icLYFybaG`; current healthy image is `sha256:cc020e656cf786e34b2a22aa0a22ccff61ef5ee76f589cf4effc271bd626c36c`. All 22 HTTP checks passed and all 34 non-operational table fingerprints were preserved. Private environment, domains and upload mounts are unchanged. See the [incident recovery record](RELEASE_RUNBOOK.md) for evidence and verification limits; the feature-release identities below remain historical.
+
 ## Latest feature release: Excel and monthly reminders, 2026-11-15
 
 Free `.xlsx` exports now cover members, attendance, session finance and filtered club finance. Pro owners can configure monthly-dues reminders with separate verified/linked player consent; all new switches remain disabled by default. The 43-article Vietnamese guide and interactive tutorial copy reflect these flows. An onboarding pause/unload race found on preview is also fixed. See [Excel and monthly reminders](EXCEL_MONTHLY_REMINDERS.md) for the feature inventory, walkthrough, permissions, limits, QA and full release/rollback evidence.
